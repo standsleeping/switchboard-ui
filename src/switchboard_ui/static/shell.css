@@ -1,0 +1,129 @@
+/* switchboard-ui shell — the canonical three-column app frame.
+ *
+ * A 3x3 grid: a top chrome rail, the three island-hosting columns, and a
+ * bottom chrome rail. Nine named regions; the outer ring is chrome so every
+ * viewport edge is owned (EDGE_ALWAYS_CHROME), and only the middle row scrolls
+ * (SCROLL_CONTAINMENT). Regions are sized by tokens at first paint so islands
+ * mount into boxes that already hold their final geometry
+ * (HYDRATION_RESERVES_GEOMETRY): layout is the invariant, islands the variable.
+ *
+ * Every value reads a design-kit token with a standalone fallback, so the
+ * shell renders correctly with zero host and inherits DK's visual language
+ * (and PEER_RAIL alignment) verbatim when tokens.css is present. */
+
+:root {
+  color-scheme: light dark;
+}
+
+html,
+body {
+  block-size: 100%;
+  margin: 0;
+  /* No page-level scrolling; the shell owns the viewport (VIEWPORT_LOCKED). */
+  overflow: hidden;
+}
+
+body {
+  background: var(--color-bg, light-dark(#ffffff, #0e0e10));
+  color: var(--color-text, light-dark(#1a1a1a, #ededed));
+  font-family: var(--typography-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--font-size-xs, 13px);
+  line-height: 1.5;
+}
+
+.sb-shell {
+  display: grid;
+  grid-template-columns:
+    var(--sb-rail-l, var(--layout-sidebar-width, 220px))
+    1fr
+    var(--sb-rail-r, var(--layout-toc-width, 200px));
+  grid-template-rows:
+    var(--layout-chrome-bar-h, 2.5rem)
+    1fr
+    var(--layout-chrome-bar-h, 2.5rem);
+  grid-template-areas:
+    "head-l head-c head-r"
+    "body-l body-c body-r"
+    "foot-l foot-c foot-r";
+  inline-size: 100%;
+  block-size: 100dvh;
+  /* Above the scrolling leaves, every container clips (SCROLL_CONTAINMENT). */
+  overflow: hidden;
+}
+
+/* A region always renders (HYDRATION_RESERVES_GEOMETRY) but collapses to
+ * nothing when it holds no islands (EMPTY_STATE_COLLAPSE), so one shell serves
+ * many layouts without leaving gaps. */
+.sb-region {
+  min-inline-size: 0;
+  min-block-size: 0;
+}
+.sb-region:empty {
+  display: none;
+}
+
+.sb-head-l { grid-area: head-l; }
+.sb-head-c { grid-area: head-c; }
+.sb-head-r { grid-area: head-r; }
+.sb-body-l { grid-area: body-l; }
+.sb-body-c { grid-area: body-c; }
+.sb-body-r { grid-area: body-r; }
+.sb-foot-l { grid-area: foot-l; }
+.sb-foot-c { grid-area: foot-c; }
+.sb-foot-r { grid-area: foot-r; }
+
+/* Chrome rails: fixed height, clipped, never scroll. The three head cells form
+ * one rail and the three foot cells another (PEER_RAIL) — same height token. */
+.sb-head-l,
+.sb-head-c,
+.sb-head-r,
+.sb-foot-l,
+.sb-foot-c,
+.sb-foot-r {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md, 12px);
+  padding: var(--spacing-md, 12px);
+  overflow: hidden;
+  background: var(--color-surface, light-dark(#fafafa, #161618));
+}
+.sb-head-l,
+.sb-head-c,
+.sb-head-r {
+  border-block-end: var(--border-width-thin, 1px) solid var(--color-border, light-dark(#e2e2e2, #2a2a2c));
+}
+.sb-foot-l,
+.sb-foot-c,
+.sb-foot-r {
+  border-block-start: var(--border-width-thin, 1px) solid var(--color-border, light-dark(#e2e2e2, #2a2a2c));
+}
+
+/* Side rails: fixed-width chrome that may scroll vertically (SCROLL_CONTAINMENT
+ * permits sidebars). Bars hidden by default (SCROLLBAR_HIDDEN_BY_DEFAULT). */
+.sb-body-l,
+.sb-body-r {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  background: var(--color-surface, light-dark(#fafafa, #161618));
+}
+.sb-body-l { border-inline-end: var(--border-width-thin, 1px) solid var(--color-border, light-dark(#e2e2e2, #2a2a2c)); }
+.sb-body-r { border-inline-start: var(--border-width-thin, 1px) solid var(--color-border, light-dark(#e2e2e2, #2a2a2c)); }
+
+/* The one elastic main region. Vertical scroll only; horizontal scroll belongs
+ * to leaf elements inside it (wide tables, code blocks), at their own edge. */
+.sb-body-c {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  background: var(--color-bg, light-dark(#ffffff, #0e0e10));
+}
+.sb-body-l::-webkit-scrollbar,
+.sb-body-r::-webkit-scrollbar,
+.sb-body-c::-webkit-scrollbar { display: none; }
+
+/* An island fills its region's content box; geometry comes from the region. */
+.sb-island {
+  display: block;
+  min-inline-size: 0;
+}

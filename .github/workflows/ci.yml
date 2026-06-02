@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      # `just` ships on PyPI as `rust-just`; installing it through uv avoids a
+      # separate marketplace action to pin and trust.
+      - name: Install just
+        run: uv tool install rust-just
+
+      # No explicit Python setup: `uv sync` provisions the interpreter from
+      # .python-version / requires-python. Add a `strategy.matrix` here when
+      # the template needs to test against more than one Python version.
+      - name: Sync dependencies (locked)
+        run: uv sync --locked --all-groups
+
+      # Same target developers run locally, so green here means green there.
+      - name: Run checks (lint, format, types, tests)
+        run: just check
+
+      # ty is Astral's pre-1.0 type checker. Kept as a supplementary signal;
+      # mypy is the authoritative gate until ty reaches a stable release.
+      - name: Type check (ty, non-blocking)
+        run: just typecheck-ty
+        continue-on-error: true
