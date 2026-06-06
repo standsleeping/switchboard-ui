@@ -9,8 +9,23 @@ a pre-sized region and talks to others over a declarative event bus.
 import logging
 from importlib.metadata import PackageNotFoundError, version
 
-from switchboard_ui.model import REGIONS, Island, Region, Shell
-from switchboard_ui.render import RuntimeMode, render_island, render_shell
+from switchboard_ui.model import (
+    REGIONS,
+    Direction,
+    Document,
+    Frame,
+    Island,
+    Region,
+    Shell,
+    Slot,
+)
+from switchboard_ui.render import (
+    RuntimeMode,
+    render_document,
+    render_frame,
+    render_island,
+    render_shell,
+)
 
 try:
     # The argument is the distribution name, not the import name.
@@ -25,11 +40,17 @@ logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 __all__ = [
     "REGIONS",
+    "Direction",
+    "Document",
+    "Frame",
     "Island",
     "Region",
     "RuntimeMode",
     "Shell",
+    "Slot",
     "__version__",
+    "render_document",
+    "render_frame",
     "render_island",
     "render_shell",
 ]

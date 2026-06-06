@@ -79,3 +79,54 @@ class Shell:
 
     title: str = "switchboard-ui"
     regions: Mapping[Region, Sequence[Island]] = field(default_factory=dict)
+
+
+Direction = Literal["row", "column"]
+"""The axis of a :class:`Frame`'s flex stack."""
+
+
+@dataclass(frozen=True)
+class Frame:
+    """A recursive layout node: a one-dimensional flex stack of ordered children.
+
+    ``direction`` is the stack axis. ``children`` lay out along it; each is an
+    :class:`Island` leaf or a nested :class:`Frame`, so layouts compose to
+    arbitrary depth. The event bus is global, so nesting is a layout concern
+    only and never affects how islands coordinate.
+
+    The nine-region :class:`Shell` is one preset arranged from frames; a frame
+    is the general layout primitive beneath it.
+    """
+
+    direction: Direction
+    children: tuple["Island | Frame | Slot", ...] = ()
+
+
+@dataclass(frozen=True)
+class Slot:
+    """A sized position in a frame: a child plus its main-axis size.
+
+    ``basis`` is a fixed CSS length or token, rendered as ``flex: 0 0 <basis>``.
+    ``None`` makes the child flexible, growing to share the remaining space
+    (``flex: 1 1 0``). A child placed in a frame *without* a slot is content-
+    sized (the browser default).
+    """
+
+    child: "Island | Frame"
+    basis: str | None = None
+
+
+@dataclass(frozen=True)
+class Document:
+    """A full page: a root layout :class:`Frame` and a document title.
+
+    The document is the envelope (it renders to a complete ``<!doctype html>``);
+    the body is the root layout. Separating envelope from layout means a layout
+    renders standalone or nested, and the envelope appears once, at the root.
+
+    The nine-region :class:`Shell` is a sibling preset for the standard
+    application frame; a document is the general page beneath it.
+    """
+
+    body: Frame
+    title: str = "switchboard-ui"

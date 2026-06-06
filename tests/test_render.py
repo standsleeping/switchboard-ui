@@ -1,7 +1,12 @@
 """Tests for the renderer (structural assertions over parsed HTML)."""
 
-from switchboard_ui.model import REGIONS, Island, Shell
-from switchboard_ui.render import render_island, render_shell
+from switchboard_ui.model import REGIONS, Document, Frame, Island, Shell, Slot
+from switchboard_ui.render import (
+    render_document,
+    render_frame,
+    render_island,
+    render_shell,
+)
 from tests.htmlprobe import find
 
 
@@ -68,3 +73,64 @@ def test_render_shell_includes_extra_head_and_scripts() -> None:
     )
     assert find(html, "meta", name="x")
     assert "/* adapter */" in html  # script payload is content, asserted directly
+
+
+def test_render_frame_renders_an_empty_flex_stack() -> None:
+    """A childless frame is an empty flex stack carrying its direction class."""
+    html = render_frame(Frame(direction="row"))
+    assert html == '<div class="sb-frame sb-frame-row"></div>'
+
+
+def test_render_frame_nests_frames_and_islands() -> None:
+    """Frames compose to depth; leaves are islands, branches are nested frames."""
+    inner = Frame(direction="row", children=(Island(name="a"), Island(name="b")))
+    html = render_frame(Frame(direction="column", children=(inner, Island(name="c"))))
+    assert find(html, "div", **{"class": "sb-frame sb-frame-column"})  # outer stack
+    assert find(html, "div", **{"class": "sb-frame sb-frame-row"})  # nested stack
+    for name in ("a", "b", "c"):
+        assert find(html, "div", **{"data-island": name})
+
+
+def test_render_document_wraps_a_frame_root_in_the_envelope() -> None:
+    """A document renders its body frame as the viewport-locked page root."""
+    doc = Document(
+        body=Frame(direction="row", children=(Island(name="a"), Island(name="b"))),
+        title="Doc & Co",
+    )
+    html = render_document(doc)
+    assert html.startswith("<!doctype html>")
+    assert find(html, "title")  # escaped title present
+    assert find(
+        html, "div", **{"class": "sb-frame sb-frame-row sb-shell"}
+    )  # root frame
+    assert find(html, "style")  # inline assets embedded by default
+    for name in ("a", "b"):
+        assert find(html, "div", **{"data-island": name})
+
+
+def test_render_frame_sizes_children_with_slots() -> None:
+    """A Slot pins a child's flex; a bare child is content-sized."""
+    html = render_frame(
+        Frame(
+            direction="row",
+            children=(
+                Slot(Island(name="nav"), basis="16rem"),  # fixed rail
+                Slot(Island(name="main")),  # flexible (basis None)
+                Island(name="aside"),  # bare = content-sized
+            ),
+        )
+    )
+    [nav] = find(html, "div", **{"data-island": "nav"})
+    [main] = find(html, "div", **{"data-island": "main"})
+    [aside] = find(html, "div", **{"data-island": "aside"})
+    assert nav["style"] == "flex: 0 0 16rem"
+    assert main["style"] == "flex: 1 1 0"
+    assert "style" not in aside
+
+
+def test_render_frame_sizes_a_nested_frame_slot() -> None:
+    """A Slot sizes a nested frame, not only an island."""
+    inner = Frame(direction="column", children=(Island(name="x"),))
+    html = render_frame(Frame(direction="row", children=(Slot(inner, basis="200px"),)))
+    [stack] = find(html, "div", **{"class": "sb-frame sb-frame-column"})
+    assert stack["style"] == "flex: 0 0 200px"

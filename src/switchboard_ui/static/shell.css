@@ -1,15 +1,15 @@
-/* switchboard-ui shell — the canonical three-column app frame.
+/* switchboard-ui shell — the canonical three-column app frame, built as nested
+ * flex stacks (FLAT_CLASSED_FLEX_TREE, FIXED_FLEXIBLE_REGIONS). An outer column
+ * of three rows: a top chrome rail, the flexible body row, a bottom chrome rail.
+ * Each row is a flex row of three cells. The outer ring is chrome so every
+ * viewport edge is owned (EDGE_ALWAYS_CHROME), and only the body row's cells
+ * scroll (SCROLL_CONTAINMENT). Cells hold their geometry at first paint so
+ * islands mount into final-sized boxes (HYDRATION_RESERVES_GEOMETRY): layout is
+ * the invariant, islands the variable.
  *
- * A 3x3 grid: a top chrome rail, the three island-hosting columns, and a
- * bottom chrome rail. Nine named regions; the outer ring is chrome so every
- * viewport edge is owned (EDGE_ALWAYS_CHROME), and only the middle row scrolls
- * (SCROLL_CONTAINMENT). Regions are sized by tokens at first paint so islands
- * mount into boxes that already hold their final geometry
- * (HYDRATION_RESERVES_GEOMETRY): layout is the invariant, islands the variable.
- *
- * Every value reads a design-kit token with a standalone fallback, so the
- * shell renders correctly with zero host and inherits DK's visual language
- * (and PEER_RAIL alignment) verbatim when tokens.css is present. */
+ * Every value reads a design-kit token with a standalone fallback, so the shell
+ * renders correctly with zero host and inherits DK's visual language (and
+ * PEER_RAIL alignment) when tokens.css is present. */
 
 :root {
   color-scheme: light dark;
@@ -31,29 +31,40 @@ body {
   line-height: 1.5;
 }
 
+/* A frame is a one-dimensional flex stack; the direction class sets its axis.
+ * Min-size 0 lets a frame shrink so its scrolling descendants can size. */
+.sb-frame {
+  display: flex;
+  min-inline-size: 0;
+  min-block-size: 0;
+}
+.sb-frame-row {
+  flex-direction: row;
+}
+.sb-frame-column {
+  flex-direction: column;
+}
+
+/* The viewport-locked root frame. Any document's body renders as this root,
+ * and the nine-region shell is one such root: locked to the viewport, clipping. */
 .sb-shell {
-  display: grid;
-  grid-template-columns:
-    var(--sb-rail-l, var(--layout-sidebar-width, 220px))
-    1fr
-    var(--sb-rail-r, var(--layout-toc-width, 200px));
-  grid-template-rows:
-    var(--layout-chrome-bar-h, 2.5rem)
-    1fr
-    var(--layout-chrome-bar-h, 2.5rem);
-  grid-template-areas:
-    "head-l head-c head-r"
-    "body-l body-c body-r"
-    "foot-l foot-c foot-r";
   inline-size: 100%;
   block-size: 100dvh;
-  /* Above the scrolling leaves, every container clips (SCROLL_CONTAINMENT). */
   overflow: hidden;
 }
 
-/* A region always renders (HYDRATION_RESERVES_GEOMETRY) but collapses to
- * nothing when it holds no islands (EMPTY_STATE_COLLAPSE), so one shell serves
- * many layouts without leaving gaps. */
+/* Three rows: fixed-height chrome rails top and bottom, the flexible body row
+ * between them. */
+.sb-head,
+.sb-foot {
+  flex: 0 0 var(--layout-chrome-bar-h, 2.5rem);
+}
+.sb-body {
+  flex: 1 1 0;
+}
+
+/* A cell holds its geometry (HYDRATION_RESERVES_GEOMETRY) but collapses when it
+ * hosts no islands (EMPTY_STATE_COLLAPSE). */
 .sb-region {
   min-inline-size: 0;
   min-block-size: 0;
@@ -62,18 +73,26 @@ body {
   display: none;
 }
 
-.sb-head-l { grid-area: head-l; }
-.sb-head-c { grid-area: head-c; }
-.sb-head-r { grid-area: head-r; }
-.sb-body-l { grid-area: body-l; }
-.sb-body-c { grid-area: body-c; }
-.sb-body-r { grid-area: body-r; }
-.sb-foot-l { grid-area: foot-l; }
-.sb-foot-c { grid-area: foot-c; }
-.sb-foot-r { grid-area: foot-r; }
+/* Column widths are shared across the three rows so the rails align with the
+ * body columns (PEER_RAIL): left and right are fixed rails, center is elastic. */
+.sb-head-l,
+.sb-body-l,
+.sb-foot-l {
+  flex: 0 0 var(--sb-rail-l, var(--layout-sidebar-width, 220px));
+}
+.sb-head-c,
+.sb-body-c,
+.sb-foot-c {
+  flex: 1 1 0;
+}
+.sb-head-r,
+.sb-body-r,
+.sb-foot-r {
+  flex: 0 0 var(--sb-rail-r, var(--layout-toc-width, 200px));
+}
 
-/* Chrome rails: fixed height, clipped, never scroll. The three head cells form
- * one rail and the three foot cells another (PEER_RAIL) — same height token. */
+/* Chrome rail cells: fixed height, clipped, never scroll. The three head cells
+ * form one rail and the three foot cells another (PEER_RAIL). */
 .sb-head-l,
 .sb-head-c,
 .sb-head-r,
@@ -98,13 +117,13 @@ body {
   border-block-start: var(--border-width-thin, 1px) solid var(--color-border, light-dark(#e2e2e2, #2a2a2c));
 }
 
-/* Side rails: fixed-width chrome that may scroll vertically (SCROLL_CONTAINMENT
- * permits sidebars). Bars hidden by default (SCROLLBAR_HIDDEN_BY_DEFAULT). */
+/* Side rails of the body row: fixed-width chrome that may scroll vertically
+ * (SCROLL_CONTAINMENT permits sidebars). The platform paints and themes its own
+ * scrollbar via color-scheme; it is never hidden or restyled (NATIVE_SCROLLBAR). */
 .sb-body-l,
 .sb-body-r {
   overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-width: none;
   background: var(--color-surface, light-dark(#fafafa, #161618));
 }
 .sb-body-l { border-inline-end: var(--border-width-thin, 1px) solid var(--color-border, light-dark(#e2e2e2, #2a2a2c)); }
@@ -115,15 +134,33 @@ body {
 .sb-body-c {
   overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-width: none;
   background: var(--color-bg, light-dark(#ffffff, #0e0e10));
 }
-.sb-body-l::-webkit-scrollbar,
-.sb-body-r::-webkit-scrollbar,
-.sb-body-c::-webkit-scrollbar { display: none; }
 
-/* An island fills its region's content box; geometry comes from the region. */
+/* An island fills its cell's content box; geometry comes from the cell. */
 .sb-island {
   display: block;
   min-inline-size: 0;
+}
+
+/* Demo control styling (used by the bundled demo islands). */
+.sb-demo-btn {
+  font: inherit;
+  color: var(--color-text, light-dark(#1a1a1a, #ededed));
+  background: var(--color-surface, light-dark(#fafafa, #161618));
+  border: var(--border-width-thin, 1px) solid var(--color-border, light-dark(#e2e2e2, #2a2a2c));
+  padding: var(--spacing-sm, 8px);
+  min-inline-size: 8rem;
+  cursor: pointer;
+}
+.sb-demo-btn:focus-visible {
+  outline: 2px solid var(--color-accent, light-dark(#7c3aed, #a78bfa));
+  outline-offset: -2px;
+}
+.sb-demo-readout {
+  color: var(--color-text-muted, light-dark(#6a6a6a, #9a9a9a));
+  padding: var(--spacing-sm, 8px);
+}
+.sb-demo-pad {
+  padding: var(--spacing-xl, 24px);
 }

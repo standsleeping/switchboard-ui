@@ -1,8 +1,7 @@
 """Bind the CSS region names to the Python region model.
 
 The nine region names live in both ``model.REGIONS`` and ``static/shell.css``
-(its ``grid-template-areas`` plus a per-region ``grid-area`` rule). CSS named
-grid areas must enumerate the names, so the duplication is intrinsic; the set is
+(a per-region placement class). The duplication is intrinsic and the set is
 small and stable, so a consistency test is the proportionate guard against drift
 rather than a codegen step (GENERATE_INVARIANTS_LINT_VARIATION). Rename, add, or
 remove a region in Python and this fails until shell.css agrees.
@@ -15,16 +14,22 @@ from switchboard_ui.model import REGIONS
 
 
 def test_css_places_every_region() -> None:
-    """Each region has a placement class and is placed into its own grid-area."""
+    """Each region has a placement class in the flex shell."""
     css = read_static("shell.css")
     for region in REGIONS:
         assert f".sb-{region}" in css
-        assert f"grid-area: {region}" in css
 
 
-def test_grid_template_areas_names_exactly_the_regions() -> None:
-    """The grid-template-areas block references exactly the nine regions."""
+def test_css_region_classes_are_exactly_the_regions() -> None:
+    """The stylesheet's region-cell classes are exactly the nine regions."""
     css = read_static("shell.css")
-    block = re.search(r"grid-template-areas:(.*?);", css, re.DOTALL)
-    assert block is not None
-    assert set(re.findall(r"\b[a-z]+-[a-z]\b", block.group(1))) == set(REGIONS)
+    found = set(re.findall(r"\.sb-([a-z]+-[a-z])\b", css))
+    assert found == set(REGIONS)
+
+
+def test_shell_is_composed_of_flex_stacks_not_a_grid() -> None:
+    """The shell is built from flex frames; no CSS grid template remains."""
+    css = read_static("shell.css")
+    assert ".sb-frame" in css
+    assert "display: flex" in css
+    assert "grid-template-areas" not in css
