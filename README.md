@@ -49,6 +49,14 @@ Full documentation lives in [`docs/`](docs/index.md), organized by the [Diátaxi
 - **Reference:** [page model](docs/reference/page-model.md), [rendering](docs/reference/rendering.md), [the shell layout](docs/reference/shell-layout.md), [the browser runtime](docs/reference/browser-runtime.md), [the CLI](docs/reference/cli.md), [glossary](docs/reference/glossary.md).
 - **Explanation:** [architecture](docs/explanation/architecture.md), [backend independence](docs/explanation/backend-independence.md), [layout](docs/explanation/layout.md), [design decisions](docs/explanation/design-decisions.md).
 
+## Examples
+
+Runnable examples live in [`examples/`](examples/README.md):
+
+- [Vanilla DOM](examples/vanilla/README.md).
+- [Web Components](examples/web-components/README.md).
+- [React](examples/react/README.md).
+
 ## Development
 
 ```bash

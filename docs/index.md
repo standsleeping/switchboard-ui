@@ -45,3 +45,5 @@ New to the package: read [Getting started](tutorials/getting-started.md), then [
 Integrating it into an app: read [Serve rendered HTML](how-to/serve-rendered-html.md) and the [Rendering](reference/rendering.md) reference.
 
 Building interactive islands: read [Write an island adapter](how-to/write-an-island-adapter.md) and the [Browser runtime](reference/browser-runtime.md) reference.
+
+Runnable examples live in [`../examples/`](../examples/README.md): vanilla DOM, Web Components, and React adapters over the same mount contract.
