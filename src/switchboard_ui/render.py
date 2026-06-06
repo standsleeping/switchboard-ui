@@ -25,10 +25,15 @@ RuntimeMode = Literal["inline", "linked"]
 _COMPACT = (",", ":")
 
 
+def _classes(*parts: str) -> str:
+    """Join non-empty class fragments with spaces."""
+    return " ".join(p for p in parts if p)
+
+
 def _render_island(island: Island, *, style: str | None = None) -> str:
     """Render an island mount-point ``<div>``, optionally with a flex style."""
     attrs: dict[str, str | None] = {
-        "class": "sb-island",
+        "class": _classes("sb-island", island.class_),
         "style": style,
         "data-island": island.name,
         "data-props": (
@@ -55,9 +60,7 @@ def _render_frame(
     style: str | None = None,
 ) -> str:
     """Render a flex stack: a div whose children lay out along ``direction``."""
-    cls = f"sb-frame sb-frame-{direction}"
-    if extra_class:
-        cls = f"{cls} {extra_class}"
+    cls = _classes("sb-frame", f"sb-frame-{direction}", extra_class)
     return element("div", {"class": cls, "style": style}, children)
 
 
@@ -67,6 +70,7 @@ def _render_node(node: Island | Frame, *, style: str | None) -> str:
         return _render_frame(
             node.direction,
             [_render_child(c) for c in node.children],
+            extra_class=node.class_,
             style=style,
         )
     return _render_island(node, style=style)
@@ -137,7 +141,7 @@ def _render_root(frame: Frame) -> str:
     return _render_frame(
         frame.direction,
         [_render_child(c) for c in frame.children],
-        extra_class="sb-root",
+        extra_class=_classes("sb-root", frame.class_),
     )
 
 

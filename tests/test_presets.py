@@ -29,3 +29,4 @@ def test_three_column_places_an_island_in_the_named_cell() -> None:
     assert isinstance(cell, Frame)
 
     assert cell.children == (island,)
+    assert cell.class_ == "sb-body-c"  # region identity hook for theming

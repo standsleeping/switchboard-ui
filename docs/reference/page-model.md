@@ -25,6 +25,7 @@ Island(
 | `publishes` | `tuple[str, ...]` | `()` | `data-pub` | Topics this island emits onto the bus. |
 | `subscribes` | `tuple[str, ...]` | `()` | `data-sub` | Topics this island listens for. |
 | `initial` | `str` | `""` | inner HTML | Server-rendered content present at first paint. Trusted raw HTML. |
+| `class_` | `str` | `""` | `class` | Extra CSS class(es), appended after `sb-island`. A theming hook the packaged CSS leaves unpainted. |
 
 ### Validation
 
@@ -54,8 +55,9 @@ Frame(
 |---|---|---|---|
 | `direction` | `Direction` (`"row"` \| `"column"`) | required | The stack axis. |
 | `children` | `tuple[Island \| Frame \| Slot, ...]` | `()` | Ordered children laid out along the axis; islands and frames are content-sized, a `Slot` sizes its child. |
+| `class_` | `str` | `""` | Extra CSS class(es), appended after the `sb-frame` classes. A theming hook the packaged CSS leaves unpainted. |
 
-A `Frame` renders (via [`render_frame`](rendering.md#render_frame)) to `<div class="sb-frame sb-frame-{direction}">` with each child rendered in order. Nesting composes to arbitrary depth; the event bus is global, so nesting never affects island coordination.
+A `Frame` renders (via [`render_frame`](rendering.md#render_frame)) to `<div class="sb-frame sb-frame-{direction}">` (plus any `class_`) with each child rendered in order. Nesting composes to arbitrary depth; the event bus is global, so nesting never affects island coordination.
 
 ## `Slot`
 

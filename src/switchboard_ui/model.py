@@ -50,6 +50,8 @@ class Island:
         subscribes: Topics this island listens for (``data-sub``).
         initial: Server-rendered inner HTML, present at first paint before any
             adapter mounts. Treated as trusted raw HTML.
+        class_: Extra CSS class(es) for the mount-point ``<div>``, a theming
+            hook the packaged CSS leaves unpainted. Appended after ``sb-island``.
     """
 
     name: str
@@ -57,6 +59,7 @@ class Island:
     publishes: tuple[str, ...] = ()
     subscribes: tuple[str, ...] = ()
     initial: str = ""
+    class_: str = ""
 
     def __post_init__(self) -> None:
         """Validate that props serialize to JSON at the authoring boundary.
@@ -86,10 +89,14 @@ class Frame:
 
     A frame is the general layout primitive; presets such as ``three_column``
     (in :mod:`switchboard_ui.presets`) arrange frames into ready-made layouts.
+
+    ``class_`` adds CSS class(es) to the frame ``<div>``, a theming hook the
+    packaged CSS leaves unpainted. It is appended after the ``sb-frame`` classes.
     """
 
     direction: Direction
     children: tuple["Island | Frame | Slot", ...] = ()
+    class_: str = ""
 
 
 @dataclass(frozen=True)

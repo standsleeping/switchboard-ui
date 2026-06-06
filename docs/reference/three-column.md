@@ -38,17 +38,17 @@ The preset builds an outer **column** of three rows: a fixed-height top and bott
 
 ## Generated markup
 
-The preset is plain frames and slots, so it renders through [`render_document`](rendering.md#render_document) like any other layout. There are no region-specific classes or attributes: every element is an `sb-frame`, sized by an inline `flex` style from its [`Slot`](page-model.md#slot).
+The preset is plain frames and slots, so it renders through [`render_document`](rendering.md#render_document) like any other layout. Every element is an `sb-frame`, sized by an inline `flex` style from its [`Slot`](page-model.md#slot). Each cell also carries an `sb-<region>` class: a theming hook the packaged CSS leaves unpainted, so a host stylesheet can target one region without the preset imposing any look.
 
 ```html
 <div class="sb-frame sb-frame-column sb-root">
-  <div class="sb-frame sb-frame-row" style="flex: 0 0 2.5rem">                <!-- head row -->
-    <div class="sb-frame sb-frame-column" style="flex: 0 0 220px"></div>     <!-- head-l, empty: collapses -->
-    <div class="sb-frame sb-frame-column" style="flex: 1 1 0">...</div>      <!-- head-c -->
-    <div class="sb-frame sb-frame-column" style="flex: 0 0 200px"></div>     <!-- head-r, empty: collapses -->
+  <div class="sb-frame sb-frame-row" style="flex: 0 0 2.5rem">                       <!-- head row -->
+    <div class="sb-frame sb-frame-column sb-head-l" style="flex: 0 0 220px"></div>  <!-- empty: collapses -->
+    <div class="sb-frame sb-frame-column sb-head-c" style="flex: 1 1 0">...</div>
+    <div class="sb-frame sb-frame-column sb-head-r" style="flex: 0 0 200px"></div>  <!-- empty: collapses -->
   </div>
-  <div class="sb-frame sb-frame-row" style="flex: 1 1 0">...</div>           <!-- body row -->
-  <div class="sb-frame sb-frame-row" style="flex: 0 0 2.5rem">...</div>      <!-- foot row -->
+  <div class="sb-frame sb-frame-row" style="flex: 1 1 0">...</div>                   <!-- body row -->
+  <div class="sb-frame sb-frame-row" style="flex: 0 0 2.5rem">...</div>              <!-- foot row -->
 </div>
 ```
 
@@ -56,6 +56,7 @@ The preset is plain frames and slots, so it renders through [`render_document`](
 |---|---|
 | `.sb-frame` + `.sb-frame-row` / `.sb-frame-column` | A flex stack and its axis. |
 | `.sb-root` | The document root frame, sized to the viewport. |
+| `.sb-<region>` | A cell's region identity (`sb-head-l` through `sb-foot-r`), a theming hook. |
 | `.sb-island` | A mount point inside a cell. |
 
 ## Layout sizes

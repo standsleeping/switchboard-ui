@@ -75,6 +75,17 @@ def test_render_document_includes_extra_head_and_scripts() -> None:
     assert "/* adapter */" in html  # script payload is content, asserted directly
 
 
+def test_render_appends_user_classes_to_frame_and_island() -> None:
+    """A `class_` on a frame or island is appended after the package classes."""
+    html = render_frame(
+        Frame(
+            direction="row", class_="grid", children=(Island(name="a", class_="card"),)
+        )
+    )
+    assert find(html, "div", **{"class": "sb-frame sb-frame-row grid"})
+    assert find(html, "div", **{"class": "sb-island card"})
+
+
 def test_render_frame_renders_an_empty_flex_stack() -> None:
     """A childless frame is an empty flex stack carrying its direction class."""
     html = render_frame(Frame(direction="row"))

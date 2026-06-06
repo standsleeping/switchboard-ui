@@ -20,23 +20,29 @@ _LEFT_WIDTH = "220px"
 _RIGHT_WIDTH = "200px"
 
 
-def _cell(islands: Sequence[Island]) -> Frame:
-    """A region cell: a column stack of its islands (empty when it has none)."""
-    return Frame(direction="column", children=tuple(islands))
+def _cell(region: Region, placed: Mapping[Region, Sequence[Island]]) -> Frame:
+    """A region cell: a column stack of its islands, hooked by an ``sb-<region>``
+    class (a theming hook the packaged CSS leaves unpainted)."""
+    return Frame(
+        direction="column",
+        children=tuple(placed.get(region, ())),
+        class_=f"sb-{region}",
+    )
 
 
 def _row(
-    left: Sequence[Island],
-    center: Sequence[Island],
-    right: Sequence[Island],
+    left: Region,
+    center: Region,
+    right: Region,
+    placed: Mapping[Region, Sequence[Island]],
 ) -> Frame:
     """One row: fixed-width side cells around a flexible center cell."""
     return Frame(
         direction="row",
         children=(
-            Slot(_cell(left), basis=_LEFT_WIDTH),
-            Slot(_cell(center)),
-            Slot(_cell(right), basis=_RIGHT_WIDTH),
+            Slot(_cell(left, placed), basis=_LEFT_WIDTH),
+            Slot(_cell(center, placed)),
+            Slot(_cell(right, placed), basis=_RIGHT_WIDTH),
         ),
     )
 
@@ -51,20 +57,17 @@ def three_column(
     A column of three rows (a fixed-height top and bottom around a flexible
     middle), each a row of three cells (fixed-width sides around a flexible
     center). Islands are placed by region name (``head-l`` through ``foot-r``);
-    an omitted region renders as an empty cell that collapses. The result is an
-    ordinary ``Document`` you render with :func:`switchboard_ui.render_document`.
+    an omitted region renders as an empty cell that collapses. Each cell carries
+    an ``sb-<region>`` class as a theming hook. The result is an ordinary
+    ``Document`` you render with :func:`switchboard_ui.render_document`.
     """
     placed = regions or {}
-
-    def at(name: Region) -> Sequence[Island]:
-        return placed.get(name, ())
-
     body = Frame(
         direction="column",
         children=(
-            Slot(_row(at("head-l"), at("head-c"), at("head-r")), basis=_RAIL_HEIGHT),
-            Slot(_row(at("body-l"), at("body-c"), at("body-r"))),
-            Slot(_row(at("foot-l"), at("foot-c"), at("foot-r")), basis=_RAIL_HEIGHT),
+            Slot(_row("head-l", "head-c", "head-r", placed), basis=_RAIL_HEIGHT),
+            Slot(_row("body-l", "body-c", "body-r", placed)),
+            Slot(_row("foot-l", "foot-c", "foot-r", placed), basis=_RAIL_HEIGHT),
         ),
     )
     return Document(body=body, title=title)
