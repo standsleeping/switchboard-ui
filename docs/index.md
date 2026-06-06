@@ -43,7 +43,7 @@ Understanding-oriented background on why the package is shaped the way it is.
 |---|---|
 | [Architecture](explanation/architecture.md) | Islands, the event bus, and the one-descriptor-three-consumers spine. |
 | [Backend independence](explanation/backend-independence.md) | Why the output is a string, and what that buys. |
-| [Layout](explanation/layout.md) | The frame primitive, and the nine-region shell as one preset. |
+| [Layout](explanation/layout.md) | The frame primitive, and the nine-region shell as an example preset. |
 | [Design decisions](explanation/design-decisions.md) | The choices made, the alternatives weighed, and the corrections. |
 
 ## Where to start

@@ -90,7 +90,7 @@ render_frame(Frame(direction="row", children=(Island(name="a"), Island(name="b")
 # <div class="sb-frame sb-frame-row"><div class="sb-island" data-island="a"></div><div class="sb-island" data-island="b"></div></div>
 ```
 
-The nine-region shell that `render_shell` produces is one preset arrangement of frames; see [The shell layout](shell-layout.md).
+The nine-region shell that `render_shell` produces is an example preset arrangement of frames; see [The shell layout](shell-layout.md).
 
 ## Escaping
 

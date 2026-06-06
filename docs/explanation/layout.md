@@ -1,6 +1,6 @@
 # Explanation: layout
 
-Layout is a recursive value. The package provides one general primitive, the `Frame`, and ships one ready-made arrangement of it, the nine-region shell. This page explains both: the primitive first, then the preset. For the shell's CSS contract, see [The shell layout](../reference/shell-layout.md).
+Layout is a recursive value. The package provides one general primitive, the `Frame`; the nine-region shell is an example arrangement of it. This page explains both: the primitive first, then the example preset. For the shell's CSS contract, see [The shell layout](../reference/shell-layout.md).
 
 ## Layout is a recursive value
 
@@ -10,9 +10,9 @@ One mechanism (a flex stack) at every level means there is no separate page-leve
 
 For why the primitive is flexbox rather than CSS grid, see [Design decisions](design-decisions.md).
 
-## The shell: one preset
+## The shell: an example preset
 
-The nine-region shell is the one arrangement the package ships ready-made: a column of three rows, each row a stack of three cells. It is a preset of the frame primitive, not a separate system; the same `render_frame` mechanism produces it. The region names in the stylesheet are the same nine names the Python model declares, and a consistency test keeps the two in agreement.
+The nine-region shell is an example preset: a column of three rows, each row a stack of three cells. It is a preset of the frame primitive, not a separate system; the same `render_frame` mechanism produces it. The region names in the stylesheet are the same nine names the Python model declares, and a consistency test keeps the two in agreement.
 
 The governing idea of the shell is that its regions and their sizes are fixed and known before any data loads, while islands are the changing content poured into them. This is the same boundary the island model expresses, seen from the layout side: render the stable structure, then hydrate the changing content into boxes that never resize. A region holds its size whether or not it is ever filled, so islands mount into geometry that is final at first paint, and adding or removing an island never reflows the page.
 

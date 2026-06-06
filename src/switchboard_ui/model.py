@@ -8,7 +8,7 @@ pub/sub dependency graph from the declared topics — without executing anything
 
 Layout is a recursive value. A :class:`Frame` is a one-dimensional flex stack of
 islands or nested frames, the general layout primitive; a :class:`Slot` sizes a
-child within it. The nine-region :class:`Shell` is one preset of that primitive,
+child within it. The nine-region :class:`Shell` is an example preset of that primitive,
 placing islands into a top chrome rail, the three columns, and a bottom chrome
 rail. The region names match the placement classes in ``static/shell.css``.
 """
@@ -96,7 +96,7 @@ class Frame:
     arbitrary depth. The event bus is global, so nesting is a layout concern
     only and never affects how islands coordinate.
 
-    The nine-region :class:`Shell` is one preset arranged from frames; a frame
+    The nine-region :class:`Shell` is an example preset arranged from frames; a frame
     is the general layout primitive beneath it.
     """
 

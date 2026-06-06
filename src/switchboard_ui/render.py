@@ -103,7 +103,7 @@ def render_frame(frame: Frame) -> str:
 
 
 def _render_shell_body(shell: Shell) -> str:
-    """Render the nine-region shell as nested flex frames (the canonical preset).
+    """Render the nine-region shell as nested flex frames (an example preset).
 
     An outer column of three rows, each a flex row of three region cells. This
     is the general :func:`render_frame` primitive arranged into the standard

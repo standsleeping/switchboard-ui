@@ -1,6 +1,6 @@
 # Reference: the shell layout
 
-The shell is one preset of the [`Frame`](page-model.md#frame) primitive, defined in `switchboard_ui/static/shell.css`. It is a set of nested flex stacks: an outer column of three rows, each row a flex row of three region cells. This page documents the CSS contract; for the design rationale see [Layout](../explanation/layout.md).
+The shell is an example preset of the [`Frame`](page-model.md#frame) primitive, defined in `switchboard_ui/static/shell.css`. It is a set of nested flex stacks: an outer column of three rows, each row a flex row of three region cells. This page documents the CSS contract; for the design rationale see [Layout](../explanation/layout.md).
 
 ## The nine regions
 
@@ -53,7 +53,7 @@ Each row is a flex **row** of three cells (`l`, `c`, `r`). The names match `mode
 | `.sb-region` + `.sb-{region}` | A region cell. |
 | `.sb-island` | A mount point inside a cell. |
 
-This is the same structure `render_frame` produces for any [`Frame`](page-model.md#frame); the shell is one preset arrangement of it.
+This is the same structure `render_frame` produces for any [`Frame`](page-model.md#frame); the shell is an example preset arrangement of it.
 
 ## Sizing
 

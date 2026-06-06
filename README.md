@@ -10,7 +10,7 @@ uv sync --all-groups
 
 ## Usage
 
-`Shell` is one ready-made layout: place islands into its nine regions and render to HTML.
+`Shell` is an example layout: place islands into its nine regions and render to HTML.
 
 ```python
 from switchboard_ui import Island, Shell, render_shell

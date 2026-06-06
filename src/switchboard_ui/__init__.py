@@ -2,7 +2,7 @@
 
 Render a layout of :class:`Island` mount descriptors to a backend-free HTML
 string. A :class:`Frame` is the general layout primitive; the nine-region
-:class:`Shell` is the ready-made preset, rendered with :func:`render_shell`.
+:class:`Shell` is an example preset, rendered with :func:`render_shell`.
 Each island is a self-contained mini-app that mounts into a pre-sized region and
 talks to others over a declarative event bus.
 """

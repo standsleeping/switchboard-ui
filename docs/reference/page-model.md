@@ -36,7 +36,7 @@ Island(name="bad", props={"x": object()})   # raises ValueError: non-JSON-serial
 
 ## `Frame`
 
-A frozen dataclass: a recursive layout node, a one-dimensional flex stack. The general layout primitive; the nine-region [`Shell`](#shell) is one preset arrangement of it.
+A frozen dataclass: a recursive layout node, a one-dimensional flex stack. The general layout primitive; the nine-region [`Shell`](#shell) is an example preset arrangement of it.
 
 ```python
 from switchboard_ui import Frame, Island
@@ -80,7 +80,7 @@ The size renders as a `flex` style on the child's own element. A bare child (not
 
 ## `Shell`
 
-A frozen dataclass: one preset of [`Frame`](#frame), the nine-region layout the package ships ready-made. A page title plus islands placed by region.
+A frozen dataclass: an example preset of [`Frame`](#frame), the nine-region layout. A page title plus islands placed by region.
 
 ```python
 from switchboard_ui import Island, Shell
