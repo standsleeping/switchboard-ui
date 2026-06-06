@@ -8,12 +8,12 @@
 | Adapter | The browser-side implementation of an island, registered by name. |
 | Bus | The topic-keyed publish/subscribe channel islands coordinate through. |
 | Topic | A string key on the bus, by convention `subject:event` (for example `count:changed`). |
-| Shell | The nine-region three-column page frame. |
-| Document | A full page: a root layout frame plus a title; renders to a complete HTML document. |
-| Frame | A recursive layout node: a one-dimensional flex stack (`row` or `column`, the `Direction`) of islands or nested frames; the shell is one preset of it. |
+| Frame | A recursive layout node: a one-dimensional flex stack (`row` or `column`, the `Direction`) of islands or nested frames. The general layout primitive. |
 | Slot | A sized position in a frame: a child plus a fixed (`flex: 0 0 basis`) or flexible (`flex: 1 1 0`) main-axis size. |
+| Shell | One preset of `Frame`: the nine-region three-column page layout the package ships ready-made. |
+| Document | A full page: a root layout frame plus a title; renders to a complete HTML document. |
 | Region | One of the nine named cells of the shell (`head`/`body`/`foot` by `l`/`c`/`r`). |
 | Chrome | The outer ring of regions (the top and bottom rails and the side rails) that frames the scrolling center. |
 | Registry | The runtime's name-to-adapter map; dispatch is an explicit registry, not inheritance. |
 | Inline / linked | The two modes for delivering the CSS and runtime (embedded in the document, or referenced by URL). |
-| Hydration | Filling a server-rendered shell with interactive islands after load, into boxes that already hold their final geometry. |
+| Hydration | Filling a server-rendered page with interactive islands after load, into boxes that already hold their final geometry. |

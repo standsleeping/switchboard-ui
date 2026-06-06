@@ -1,4 +1,4 @@
-"""The page model: islands and the nine-region shell.
+"""The page model: islands, the recursive frame layout, and presets.
 
 An :class:`Island` is a *declarative* mount descriptor. It names an adapter, the
 props serialized into the mount point, and the event topics it publishes and
@@ -6,9 +6,11 @@ subscribes to. That single descriptor has three consumers: Python emits it, the
 browser runtime mounts and wires from it, and a static analyzer can draw the
 pub/sub dependency graph from the declared topics — without executing anything.
 
-A :class:`Shell` places islands into the nine regions of the canonical
-three-column frame (a top chrome rail, the three columns, a bottom chrome rail).
-The region names match the ``grid-template-areas`` in ``static/shell.css``.
+Layout is a recursive value. A :class:`Frame` is a one-dimensional flex stack of
+islands or nested frames, the general layout primitive; a :class:`Slot` sizes a
+child within it. The nine-region :class:`Shell` is one preset of that primitive,
+placing islands into a top chrome rail, the three columns, and a bottom chrome
+rail. The region names match the placement classes in ``static/shell.css``.
 """
 
 import json
@@ -30,7 +32,7 @@ Region = Literal[
     "foot-c",
     "foot-r",
 ]
-"""One of the nine named regions of the shell grid."""
+"""One of the nine named regions of the shell preset."""
 
 REGIONS: tuple[Region, ...] = get_args(Region)
 """All nine regions, in document (row-major) order."""

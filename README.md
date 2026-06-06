@@ -1,16 +1,6 @@
 # switchboard-ui
 
-Render server-side HTML shells that host arbitrarily complex, self-contained interactive **islands**, wired together by a declarative event bus. Pure Python, zero runtime dependencies; the output is a string, so any backend (or none) can serve it.
-
-## Features
-
-- Python 3.14+
-- Standard src-layout package structure
-- Strict typing (mypy with `follow_imports = "error"`), `py.typed` shipped
-- Linting and formatting with Ruff
-- Testing with pytest at 100% coverage
-- uv for dependency management and builds
-- `just` task runner mirrored by CI
+Render server-side HTML pages that host arbitrarily complex, self-contained interactive **islands**, wired together by a declarative event bus. Pure Python, zero runtime dependencies; the output is a string, so any backend (or none) can serve it.
 
 ## Installation
 
@@ -20,7 +10,7 @@ uv sync --all-groups
 
 ## Usage
 
-Place islands into the nine regions of the three-column shell and render to HTML:
+`Shell` is one ready-made layout: place islands into its nine regions and render to HTML.
 
 ```python
 from switchboard_ui import Island, Shell, render_shell
@@ -37,17 +27,39 @@ shell = Shell(
 html = render_shell(shell)  # a complete, self-contained <!doctype html> string
 ```
 
-Each `Island` is a mount point a browser-side adapter fills; islands talk to each
-other over the event bus via the topics they declare (`publishes` / `subscribes`).
+Each `Island` is a mount point a browser-side adapter fills; islands talk to each other over the event bus via the topics they declare (`publishes` / `subscribes`).
+
+`Shell` is a preset over the lower-level `Frame`; `render_frame` renders an arbitrary `Frame`, so other layouts are possible. See [the shell layout](docs/reference/shell-layout.md) and [page model](docs/reference/page-model.md).
 
 ## Documentation
 
-Full documentation lives in [`docs/`](docs/index.md), organized by the [Diátaxis](https://diataxis.fr/) framework:
+Full documentation lives in [`docs/`](docs/index.md):
 
-- **Tutorials:** [Getting started](docs/tutorials/getting-started.md).
-- **How-to guides:** [serve rendered HTML](docs/how-to/serve-rendered-html.md), [write an island adapter](docs/how-to/write-an-island-adapter.md), [render the demo and docs](docs/how-to/render-demo-and-docs.md).
-- **Reference:** [page model](docs/reference/page-model.md), [rendering](docs/reference/rendering.md), [the shell layout](docs/reference/shell-layout.md), [the browser runtime](docs/reference/browser-runtime.md), [the CLI](docs/reference/cli.md), [glossary](docs/reference/glossary.md).
-- **Explanation:** [architecture](docs/explanation/architecture.md), [backend independence](docs/explanation/backend-independence.md), [layout](docs/explanation/layout.md), [design decisions](docs/explanation/design-decisions.md).
+**Tutorials**
+
+- [Getting started](docs/tutorials/getting-started.md)
+
+**How-to guides**
+
+- [Serve rendered HTML](docs/how-to/serve-rendered-html.md)
+- [Write an island adapter](docs/how-to/write-an-island-adapter.md)
+- [Render the demo and docs](docs/how-to/render-demo-and-docs.md)
+
+**Reference**
+
+- [Page model](docs/reference/page-model.md)
+- [Rendering](docs/reference/rendering.md)
+- [The shell layout](docs/reference/shell-layout.md)
+- [The browser runtime](docs/reference/browser-runtime.md)
+- [The CLI](docs/reference/cli.md)
+- [Glossary](docs/reference/glossary.md)
+
+**Explanation**
+
+- [Architecture](docs/explanation/architecture.md)
+- [Backend independence](docs/explanation/backend-independence.md)
+- [Layout](docs/explanation/layout.md)
+- [Design decisions](docs/explanation/design-decisions.md)
 
 ## Examples
 

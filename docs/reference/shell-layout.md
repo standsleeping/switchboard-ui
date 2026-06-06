@@ -1,6 +1,6 @@
 # Reference: the shell layout
 
-The page frame is defined in `switchboard_ui/static/shell.css`. It is a set of nested flex stacks: an outer column of three rows, each row a flex row of three region cells. This page documents the CSS contract; for the design rationale see [Layout](../explanation/layout.md).
+The shell is one preset of the [`Frame`](page-model.md#frame) primitive, defined in `switchboard_ui/static/shell.css`. It is a set of nested flex stacks: an outer column of three rows, each row a flex row of three region cells. This page documents the CSS contract; for the design rationale see [Layout](../explanation/layout.md).
 
 ## The nine regions
 
@@ -15,7 +15,7 @@ The page frame is defined in `switchboard_ui/static/shell.css`. It is a set of n
    rail     main    rail
 ```
 
-The frame is an outer **column** of three rows:
+The shell is an outer **column** of three rows:
 
 - `head`: a fixed-height chrome rail.
 - `body`: the flexible row; its cells scroll.

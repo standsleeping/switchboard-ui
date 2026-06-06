@@ -34,26 +34,6 @@ Props are validated at construction. If a value is not JSON-serializable, `Islan
 Island(name="bad", props={"x": object()})   # raises ValueError: non-JSON-serializable props
 ```
 
-## `Shell`
-
-A frozen dataclass: a page title plus islands placed by region.
-
-```python
-from switchboard_ui import Island, Shell
-
-Shell(
-    title="My app",
-    regions={"body-c": (Island(name="app"),)},
-)
-```
-
-| Field | Type | Default | Meaning |
-|---|---|---|---|
-| `title` | `str` | `"switchboard-ui"` | The document `<title>`. |
-| `regions` | `Mapping[Region, Sequence[Island]]` | `{}` | Each region name mapped to the islands it hosts, in order. |
-
-A region may be omitted; an omitted region renders as an empty box and collapses.
-
 ## `Frame`
 
 A frozen dataclass: a recursive layout node, a one-dimensional flex stack. The general layout primitive; the nine-region [`Shell`](#shell) is one preset arrangement of it.
@@ -97,6 +77,26 @@ Frame(direction="row", children=(
 | `basis` | `str \| None` | `None` | A CSS length or token pins the size (`flex: 0 0 <basis>`); `None` grows to share the remaining space (`flex: 1 1 0`). |
 
 The size renders as a `flex` style on the child's own element. A bare child (not wrapped) is content-sized, the browser's default flex item. The nine-region [`Shell`](#shell) keeps its own rail/center sizing in CSS; `Slot` is the sizing mechanism for general frames.
+
+## `Shell`
+
+A frozen dataclass: one preset of [`Frame`](#frame), the nine-region layout the package ships ready-made. A page title plus islands placed by region.
+
+```python
+from switchboard_ui import Island, Shell
+
+Shell(
+    title="My app",
+    regions={"body-c": (Island(name="app"),)},
+)
+```
+
+| Field | Type | Default | Meaning |
+|---|---|---|---|
+| `title` | `str` | `"switchboard-ui"` | The document `<title>`. |
+| `regions` | `Mapping[Region, Sequence[Island]]` | `{}` | Each region name mapped to the islands it hosts, in order. |
+
+A region may be omitted; an omitted region renders as an empty box and collapses.
 
 ## `Document`
 

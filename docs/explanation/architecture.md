@@ -4,7 +4,7 @@ switchboard-ui exists to put interactive behavior on a server-rendered page with
 
 ## Islands and an event bus
 
-A page is a static HTML shell. Inside it, certain `<div>` elements are mount points for islands: self-contained mini-applications, each owning its own DOM, lifecycle, and state. This is the islands architecture. The page is mostly static, with interactivity confined to known, independent spots rather than spread across one monolithic application.
+A page is static server-rendered HTML. Inside it, certain `<div>` elements are mount points for islands: self-contained mini-applications, each owning its own DOM, lifecycle, and state. This is the islands architecture. The page is mostly static, with interactivity confined to known, independent spots rather than spread across one monolithic application.
 
 Islands are not isolated. They coordinate through an event bus: a single, topic-keyed publish/subscribe channel. An island announces a change by publishing to a topic; other islands react by subscribing to it. The bus is the shared-state layer, and an event-driven channel matches how the browser already works.
 
@@ -32,12 +32,12 @@ The third consumer is why the topics are declared rather than discovered at runt
 
 **Pure-Python page model.** A page is built from immutable dataclasses (`Island`, `Shell`) and turned into HTML by pure functions. State lives in the browser bus at runtime, not in the Python layer; rendering is a pure function of the page model.
 
-**Framework-agnostic islands.** The mount contract lets island internals be anything while the surrounding shell, the descriptor, and the renderer stay constant.
+**Framework-agnostic islands.** The mount contract lets island internals be anything while the surrounding layout, the descriptor, and the renderer stay constant.
 
 **Declarative wiring.** Island pub/sub is declared on the descriptor, which is what makes the dependency graph drawable by static analysis.
 
 ## See also
 
 - [Backend independence](backend-independence.md): why rendering returns a string.
-- [Layout](layout.md): the shell as invariant, the islands as variable.
+- [Layout](layout.md): the frame primitive, and the nine-region shell as one preset.
 - [Design decisions](design-decisions.md): the choices and alternatives behind all of the above.

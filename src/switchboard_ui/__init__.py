@@ -1,9 +1,10 @@
-"""switchboard-ui: server-rendered HTML shells that host interactive islands.
+"""switchboard-ui: server-rendered HTML pages that host interactive islands.
 
-Render a :class:`Shell` (a nine-region three-column frame) full of
-:class:`Island` mount descriptors to a backend-free HTML string with
-:func:`render_shell`. Each island is a self-contained mini-app that mounts into
-a pre-sized region and talks to others over a declarative event bus.
+Render a layout of :class:`Island` mount descriptors to a backend-free HTML
+string. A :class:`Frame` is the general layout primitive; the nine-region
+:class:`Shell` is the ready-made preset, rendered with :func:`render_shell`.
+Each island is a self-contained mini-app that mounts into a pre-sized region and
+talks to others over a declarative event bus.
 """
 
 import logging

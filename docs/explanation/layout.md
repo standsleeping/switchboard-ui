@@ -1,16 +1,24 @@
 # Explanation: layout
 
-The first standard surface the package provides is the page shell itself: a three-column application frame. This page explains the idea behind it. For the CSS contract, see [The shell layout](../reference/shell-layout.md).
+Layout is a recursive value. The package provides one general primitive, the `Frame`, and ships one ready-made arrangement of it, the nine-region shell. This page explains both: the primitive first, then the preset. For the shell's CSS contract, see [The shell layout](../reference/shell-layout.md).
 
-## The shell is the invariant; the islands are the variable
+## Layout is a recursive value
 
-The governing idea is that the shell, its regions, and their sizes are fixed and known before any data loads, while islands are the changing content poured into them. Islands mount into regions that already hold their final geometry at first paint.
+A `Frame` is a one-dimensional flex stack (a row or a column) whose children are islands or nested frames. Composition to arbitrary depth is the same mechanism repeated, so a region can hold a nested sub-layout as naturally as it holds islands. A child may be wrapped in a `Slot` to pin its size (a fixed rail) or let it grow (an elastic pane), so layouts of fixed and flexible parts compose from the same primitive.
 
-This is the same boundary the island model expresses, seen from the layout side. Render the stable frame, then hydrate the changing content into boxes that never resize. A region holds its size whether or not it is ever filled, so adding or removing an island never reflows the page.
+One mechanism (a flex stack) at every level means there is no separate page-level layout system to learn: the outermost arrangement and the deepest nested one are the same kind of value. The event bus is global, so nesting is a layout concern only; an island anywhere in the tree coordinates with any other over the same bus.
+
+For why the primitive is flexbox rather than CSS grid, see [Design decisions](design-decisions.md).
+
+## The shell: one preset
+
+The nine-region shell is the one arrangement the package ships ready-made: a column of three rows, each row a stack of three cells. It is a preset of the frame primitive, not a separate system; the same `render_frame` mechanism produces it. The region names in the stylesheet are the same nine names the Python model declares, and a consistency test keeps the two in agreement.
+
+The governing idea of the shell is that its regions and their sizes are fixed and known before any data loads, while islands are the changing content poured into them. This is the same boundary the island model expresses, seen from the layout side: render the stable structure, then hydrate the changing content into boxes that never resize. A region holds its size whether or not it is ever filled, so islands mount into geometry that is final at first paint, and adding or removing an island never reflows the page.
 
 ## Three columns plus six chrome areas
 
-The frame is nine named regions, `head`/`body`/`foot` by `l`/`c`/`r`, arranged as an outer column of three rows. The top and bottom rows are chrome rails; the middle row is the three island-hosting columns; only the middle row scrolls.
+The shell is nine named regions, `head`/`body`/`foot` by `l`/`c`/`r`, arranged as an outer column of three rows. The top and bottom rows are chrome rails; the middle row is the three island-hosting columns; only the middle row scrolls.
 
 ```
 ┌────────┬────────┬────────┐
@@ -24,19 +32,11 @@ The frame is nine named regions, `head`/`body`/`foot` by `l`/`c`/`r`, arranged a
 
 The outer ring is chrome, so the one elastic main region (`body-c`) never touches the viewport edge. The side columns host islands but are sized as fixed-width rails.
 
-## Nested flex stacks, one layout mechanism
-
-Layout is a recursive value. A `Frame` is a one-dimensional flex stack (a row or a column) whose children are islands or nested frames. The nine-region shell is one preset of that primitive: a column of three rows, each row a stack of three cells. Composition to arbitrary depth is the same mechanism repeated, so a region can hold a nested sub-layout as naturally as it holds islands. A child may be wrapped in a `Slot` to pin its size (a fixed rail) or let it grow (an elastic pane), so layouts of fixed and flexible parts compose from the same primitive.
-
-The event bus is global, so nesting is a layout concern only; an island anywhere in the tree coordinates with any other over the same bus. The region names in the stylesheet are the same nine names the Python model declares, and a consistency test keeps the two in agreement.
-
-For why the layout primitive is flexbox rather than CSS grid, see [Design decisions](design-decisions.md).
-
 ## Tokens with standalone fallbacks
 
-Every value reads a design-system token with a built-in fallback. The shell renders correctly with no host, using the fallbacks, and inherits the design system's visual language when its tokens are present. The rails are sized by tokens; an empty region collapses to nothing so one shell serves many layouts.
+Every value reads a design-system token with a built-in fallback. The shell renders correctly with no host, using the fallbacks, and inherits the design system's visual language when its tokens are present. The rails are sized by tokens; an empty region collapses to nothing so one shell serves many pages.
 
-## The layout follows three rules
+## The shell follows three rules
 
 **Every viewport edge is chrome.** The rails frame the center so main content never touches the viewport edge.
 

@@ -1,4 +1,4 @@
-"""Render a :class:`Shell` to a self-contained HTML document string.
+"""Render a :class:`Shell` or :class:`Document` to a self-contained HTML document string.
 
 The output is a ``str``; integration is a one-liner at the host's edge
 (``HTMLResponse(render_shell(shell))``, ``path.write_text(...)``, ``print(...)``)

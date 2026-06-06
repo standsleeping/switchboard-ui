@@ -24,7 +24,7 @@ uv sync --all-groups
 
 ## 2. Render an empty shell
 
-The page frame is a `Shell`. Rendering it produces a complete HTML document as a string.
+The simplest page is a `Shell`, the nine-region preset. Rendering it produces a complete HTML document as a string.
 
 ```python
 from switchboard_ui import Shell, render_shell
