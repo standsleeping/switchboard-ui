@@ -1,0 +1,139 @@
+# Reference: the page model
+
+The page model is defined in `switchboard_ui.model`. It is built from immutable dataclasses turned into HTML by pure functions.
+
+## `Island`
+
+A frozen dataclass: the declarative mount descriptor for one interactive island.
+
+```python
+from switchboard_ui import Island
+
+Island(
+    name="counter",
+    props={"start": 0},
+    publishes=("count:changed",),
+    subscribes=(),
+    initial="",
+)
+```
+
+| Field | Type | Default | Rendered as | Meaning |
+|---|---|---|---|---|
+| `name` | `str` | required | `data-island` | The adapter key the browser registry mounts. |
+| `props` | `Mapping[str, Json]` | `{}` | `data-props` | JSON-serializable values handed to the adapter. |
+| `publishes` | `tuple[str, ...]` | `()` | `data-pub` | Topics this island emits onto the bus. |
+| `subscribes` | `tuple[str, ...]` | `()` | `data-sub` | Topics this island listens for. |
+| `initial` | `str` | `""` | inner HTML | Server-rendered content present at first paint. Trusted raw HTML. |
+
+### Validation
+
+Props are validated at construction. If a value is not JSON-serializable, `Island(...)` raises `ValueError` immediately, naming the island. The failure happens where the bad value was supplied, not deep inside rendering.
+
+```python
+Island(name="bad", props={"x": object()})   # raises ValueError: non-JSON-serializable props
+```
+
+## `Shell`
+
+A frozen dataclass: a page title plus islands placed by region.
+
+```python
+from switchboard_ui import Island, Shell
+
+Shell(
+    title="My app",
+    regions={"body-c": (Island(name="app"),)},
+)
+```
+
+| Field | Type | Default | Meaning |
+|---|---|---|---|
+| `title` | `str` | `"switchboard-ui"` | The document `<title>`. |
+| `regions` | `Mapping[Region, Sequence[Island]]` | `{}` | Each region name mapped to the islands it hosts, in order. |
+
+A region may be omitted; an omitted region renders as an empty box and collapses.
+
+## `Frame`
+
+A frozen dataclass: a recursive layout node, a one-dimensional flex stack. The general layout primitive; the nine-region [`Shell`](#shell) is one preset arrangement of it.
+
+```python
+from switchboard_ui import Frame, Island
+
+Frame(
+    direction="column",
+    children=(
+        Frame(direction="row", children=(Island(name="nav"), Island(name="main"))),
+        Island(name="status"),
+    ),
+)
+```
+
+| Field | Type | Default | Meaning |
+|---|---|---|---|
+| `direction` | `Direction` (`"row"` \| `"column"`) | required | The stack axis. |
+| `children` | `tuple[Island \| Frame \| Slot, ...]` | `()` | Ordered children laid out along the axis; islands and frames are content-sized, a `Slot` sizes its child. |
+
+A `Frame` renders (via [`render_frame`](rendering.md#render_frame)) to `<div class="sb-frame sb-frame-{direction}">` with each child rendered in order. Nesting composes to arbitrary depth; the event bus is global, so nesting never affects island coordination.
+
+## `Slot`
+
+A frozen dataclass: a sized position in a [`Frame`](#frame). Wrap a child in a slot to control its main-axis size; a bare child is content-sized.
+
+```python
+from switchboard_ui import Frame, Island, Slot
+
+Frame(direction="row", children=(
+    Slot(Island(name="nav"), basis="16rem"),   # fixed rail
+    Slot(Island(name="main")),                 # flexible, takes the rest
+    Island(name="aside"),                      # content-sized
+))
+```
+
+| Field | Type | Default | Meaning |
+|---|---|---|---|
+| `child` | `Island \| Frame` | required | The content placed at this position. |
+| `basis` | `str \| None` | `None` | A CSS length or token pins the size (`flex: 0 0 <basis>`); `None` grows to share the remaining space (`flex: 1 1 0`). |
+
+The size renders as a `flex` style on the child's own element. A bare child (not wrapped) is content-sized, the browser's default flex item. The nine-region [`Shell`](#shell) keeps its own rail/center sizing in CSS; `Slot` is the sizing mechanism for general frames.
+
+## `Document`
+
+A frozen dataclass: a full page, a root layout frame plus a title.
+
+```python
+from switchboard_ui import Document, Frame, Island
+
+Document(
+    body=Frame(direction="row", children=(Island(name="nav"), Island(name="main"))),
+    title="My app",
+)
+```
+
+| Field | Type | Default | Meaning |
+|---|---|---|---|
+| `body` | `Frame` | required | The root layout; rendered as the viewport-locked page root. |
+| `title` | `str` | `"switchboard-ui"` | The document `<title>`. |
+
+Render with [`render_document`](rendering.md#render_document). The nine-region [`Shell`](#shell) is a sibling preset for the standard application frame.
+
+## `Region` and `REGIONS`
+
+`Region` is a `Literal` of the nine region names.
+
+```python
+"head-l", "head-c", "head-r",
+"body-l", "body-c", "body-r",
+"foot-l", "foot-c", "foot-r"
+```
+
+`REGIONS` is the tuple of all nine names in document (row-major) order. The names match the per-region placement classes in `static/shell.css`; see [The shell layout](shell-layout.md).
+
+## `Json`
+
+A type alias for a JSON-serializable value, the shape `props` values must take.
+
+```python
+type Json = str | int | float | bool | None | Mapping[str, Json] | Sequence[Json]
+```

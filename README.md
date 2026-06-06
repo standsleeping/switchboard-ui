@@ -40,6 +40,15 @@ html = render_shell(shell)  # a complete, self-contained <!doctype html> string
 Each `Island` is a mount point a browser-side adapter fills; islands talk to each
 other over the event bus via the topics they declare (`publishes` / `subscribes`).
 
+## Documentation
+
+Full documentation lives in [`docs/`](docs/index.md), organized by the [Diátaxis](https://diataxis.fr/) framework:
+
+- **Tutorials:** [Getting started](docs/tutorials/getting-started.md).
+- **How-to guides:** [serve rendered HTML](docs/how-to/serve-rendered-html.md), [write an island adapter](docs/how-to/write-an-island-adapter.md), [render the demo and docs](docs/how-to/render-demo-and-docs.md).
+- **Reference:** [page model](docs/reference/page-model.md), [rendering](docs/reference/rendering.md), [the shell layout](docs/reference/shell-layout.md), [the browser runtime](docs/reference/browser-runtime.md), [the CLI](docs/reference/cli.md), [glossary](docs/reference/glossary.md).
+- **Explanation:** [architecture](docs/explanation/architecture.md), [backend independence](docs/explanation/backend-independence.md), [layout](docs/explanation/layout.md), [design decisions](docs/explanation/design-decisions.md).
+
 ## Development
 
 ```bash
