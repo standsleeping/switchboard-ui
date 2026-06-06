@@ -15,3 +15,7 @@ wheels/
 .pytest_cache
 .coverage
 htmlcov/
+
+# Example-generated files
+examples/react/index.html
+examples/react/node_modules/
