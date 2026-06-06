@@ -34,6 +34,9 @@ Homepage = "https://github.com/standsleeping/switchboard-ui"
 Repository = "https://github.com/standsleeping/switchboard-ui"
 Issues = "https://github.com/standsleeping/switchboard-ui/issues"
 
+[project.scripts]
+switchboard-ui = "switchboard_ui.cli:main"
+
 [dependency-groups]
 dev = [
     "mypy>=1.19",
@@ -95,6 +98,7 @@ xfail_strict = true
 [tool.coverage.run]
 source = ["switchboard_ui"]
 branch = true
+omit = ["*/__main__.py"]  # trivial `python -m` entry shim
 
 [tool.coverage.report]
 exclude_also = [
@@ -118,7 +122,8 @@ select = [
     "RUF",    # Ruff-specific rules
 ]
 ignore = [
-    "E501",   # line too long (handled by formatter)
+    "E501",    # line too long (handled by formatter)
+    "UP037",   # keep quotes on forward references; we never use `from __future__ import annotations`
 ]
 
 [tool.ruff.lint.isort]
