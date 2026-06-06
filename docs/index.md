@@ -10,7 +10,7 @@ Learning-oriented lessons that take you through a working example step by step.
 
 | Doc | Description |
 |---|---|
-| [Getting started](tutorials/getting-started.md) | Render your first shell, place an island, and watch two islands talk over the bus. |
+| [Getting started](tutorials/getting-started.md) | Render your first page, place an island, and watch two islands talk over the bus. |
 
 ## How-to guides
 
@@ -28,9 +28,9 @@ Information-oriented description of every surface.
 
 | Doc | Description |
 |---|---|
-| [Page model](reference/page-model.md) | `Island`, `Frame`, `Slot`, `Shell`, `Document`, `Region`, `REGIONS`. |
-| [Rendering](reference/rendering.md) | `render_shell`, `render_document`, `render_frame`, `render_island`, `RuntimeMode`. |
-| [The shell layout](reference/shell-layout.md) | The nine-region preset: its regions, flex CSS contract, and tokens. |
+| [Page model](reference/page-model.md) | `Island`, `Frame`, `Slot`, `Document`, `Region`, `REGIONS`. |
+| [Rendering](reference/rendering.md) | `render_document`, `render_frame`, `render_island`, `RuntimeMode`. |
+| [The three-column preset](reference/three-column.md) | The nine-region preset built on `Frame`, and the structural layout CSS. |
 | [The browser runtime](reference/browser-runtime.md) | `window.switchboard`, the bus, the registry, the mount loop. |
 | [The CLI](reference/cli.md) | The `switchboard-ui` command. |
 | [Glossary](reference/glossary.md) | The vocabulary in one table. |
@@ -43,7 +43,7 @@ Understanding-oriented background on why the package is shaped the way it is.
 |---|---|
 | [Architecture](explanation/architecture.md) | Islands, the event bus, and the one-descriptor-three-consumers spine. |
 | [Backend independence](explanation/backend-independence.md) | Why the output is a string, and what that buys. |
-| [Layout](explanation/layout.md) | The frame primitive, and the nine-region shell as an example preset. |
+| [Layout](explanation/layout.md) | The frame primitive, and the three-column layout as an example preset. |
 | [Design decisions](explanation/design-decisions.md) | The choices made, the alternatives weighed, and the corrections. |
 
 ## Where to start

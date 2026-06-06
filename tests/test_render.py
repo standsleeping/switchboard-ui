@@ -1,11 +1,11 @@
 """Tests for the renderer (structural assertions over parsed HTML)."""
 
-from switchboard_ui.model import REGIONS, Document, Frame, Island, Shell, Slot
+from switchboard_ui.model import REGIONS, Document, Frame, Island, Slot
+from switchboard_ui.presets import three_column
 from switchboard_ui.render import (
     render_document,
     render_frame,
     render_island,
-    render_shell,
 )
 from tests.htmlprobe import find
 
@@ -36,38 +36,38 @@ def test_render_island_omits_empty_attributes() -> None:
     assert "data-sub" not in div
 
 
-def test_render_shell_inline_embeds_assets_and_places_islands() -> None:
+def test_three_column_inline_embeds_assets_and_places_islands() -> None:
     """Inline mode embeds a <style> and a srcless <script>, and places islands."""
-    shell = Shell(title="Demo & Co", regions={"body-c": (Island(name="app"),)})
-    html = render_shell(shell, runtime="inline")
+    doc = three_column({"body-c": (Island(name="app"),)}, title="Demo & Co")
+    html = render_document(doc, runtime="inline")
     assert html.startswith("<!doctype html>")
     assert find(html, "title")
     assert find(html, "style")  # CSS embedded as an element
     assert any("src" not in s for s in find(html, "script"))  # runtime inline
-    assert find(html, "div", **{"data-region": "body-c"})
     assert find(html, "div", **{"data-island": "app"})
 
 
-def test_render_shell_renders_all_nine_regions() -> None:
-    """Every region element is present even when empty (reserved geometry)."""
-    html = render_shell(Shell(), runtime="inline")
+def test_three_column_places_an_island_in_every_region() -> None:
+    """Every region accepts an island; all nine appear in the output."""
+    regions = {region: (Island(name=region),) for region in REGIONS}
+    html = render_document(three_column(regions), runtime="inline")
     for region in REGIONS:
-        assert find(html, "div", **{"data-region": region})
+        assert find(html, "div", **{"data-island": region})
 
 
-def test_render_shell_linked_references_assets() -> None:
+def test_render_document_linked_references_assets() -> None:
     """Linked mode references the assets under asset_base; nothing embedded."""
-    html = render_shell(Shell(), runtime="linked", asset_base="/static/")
+    html = render_document(three_column(), runtime="linked", asset_base="/static/")
     [link] = find(html, "link", rel="stylesheet")
-    assert link["href"] == "/static/shell.css"
+    assert link["href"] == "/static/layout.css"
     assert find(html, "script", src="/static/switchboard.js")
     assert not find(html, "style")
 
 
-def test_render_shell_includes_extra_head_and_scripts() -> None:
+def test_render_document_includes_extra_head_and_scripts() -> None:
     """Extra head markup and island adapter scripts are injected."""
-    html = render_shell(
-        Shell(),
+    html = render_document(
+        three_column(),
         extra_head='<meta name="x">',
         extra_scripts=("/* adapter */",),
     )
@@ -100,9 +100,7 @@ def test_render_document_wraps_a_frame_root_in_the_envelope() -> None:
     html = render_document(doc)
     assert html.startswith("<!doctype html>")
     assert find(html, "title")  # escaped title present
-    assert find(
-        html, "div", **{"class": "sb-frame sb-frame-row sb-shell"}
-    )  # root frame
+    assert find(html, "div", **{"class": "sb-frame sb-frame-row sb-root"})  # root frame
     assert find(html, "style")  # inline assets embedded by default
     for name in ("a", "b"):
         assert find(html, "div", **{"data-island": name})

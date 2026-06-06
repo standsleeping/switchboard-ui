@@ -10,26 +10,26 @@ uv sync --all-groups
 
 ## Usage
 
-`Shell` is an example layout: place islands into its nine regions and render to HTML.
+`three_column` is a preset that places islands into a nine-region layout and returns a `Document` you render to HTML.
 
 ```python
-from switchboard_ui import Island, Shell, render_shell
+from switchboard_ui import Island, render_document, three_column
 
-shell = Shell(
-    title="My app",
-    regions={
+page = three_column(
+    {
         "body-l": (Island(name="nav"),),
         "body-c": (Island(name="app", props={"start": 0}, publishes=("count:changed",)),),
         "body-r": (Island(name="inspector", subscribes=("count:changed",)),),
     },
+    title="My app",
 )
 
-html = render_shell(shell)  # a complete, self-contained <!doctype html> string
+html = render_document(page)  # a complete, self-contained <!doctype html> string
 ```
 
 Each `Island` is a mount point a browser-side adapter fills; islands talk to each other over the event bus via the topics they declare (`publishes` / `subscribes`).
 
-`Shell` is a preset over the lower-level `Frame`; `render_frame` renders an arbitrary `Frame`, so other layouts are possible. See [the shell layout](docs/reference/shell-layout.md) and [page model](docs/reference/page-model.md).
+`three_column` is just a preset over the layout primitive: a `Frame` is a recursive flex stack, a `Document` wraps one as a page, and `render_document` renders any layout you build by hand. See [the three-column preset](docs/reference/three-column.md) and [page model](docs/reference/page-model.md).
 
 ## Documentation
 
@@ -49,7 +49,7 @@ Full documentation lives in [`docs/`](docs/index.md):
 
 - [Page model](docs/reference/page-model.md)
 - [Rendering](docs/reference/rendering.md)
-- [The shell layout](docs/reference/shell-layout.md)
+- [The three-column preset](docs/reference/three-column.md)
 - [The browser runtime](docs/reference/browser-runtime.md)
 - [The CLI](docs/reference/cli.md)
 - [Glossary](docs/reference/glossary.md)

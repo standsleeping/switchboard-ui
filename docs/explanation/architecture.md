@@ -30,7 +30,7 @@ The third consumer is why the topics are declared rather than discovered at runt
 
 **Zero runtime dependencies.** The package imports only the Python standard library. This is a defining property. It governs the decisions below it: the renderer is a hand-written HTML builder, and the browser runtime is hand-written vanilla JavaScript with no build step.
 
-**Pure-Python page model.** A page is built from immutable dataclasses (`Island`, `Shell`) and turned into HTML by pure functions. State lives in the browser bus at runtime, not in the Python layer; rendering is a pure function of the page model.
+**Pure-Python page model.** A page is built from immutable dataclasses (`Island`, `Frame`, `Document`) and turned into HTML by pure functions. State lives in the browser bus at runtime, not in the Python layer; rendering is a pure function of the page model.
 
 **Framework-agnostic islands.** The mount contract lets island internals be anything while the surrounding layout, the descriptor, and the renderer stay constant.
 

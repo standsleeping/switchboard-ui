@@ -2,7 +2,7 @@
 
 import pytest
 
-from switchboard_ui.model import REGIONS, Island, Shell
+from switchboard_ui.model import REGIONS, Island
 
 
 def test_regions_are_the_nine_named_areas() -> None:
@@ -27,13 +27,6 @@ def test_island_defaults_are_empty() -> None:
     assert island.publishes == ()
     assert island.subscribes == ()
     assert island.initial == ""
-
-
-def test_shell_defaults() -> None:
-    """A shell defaults to its title and no placed islands."""
-    shell = Shell()
-    assert shell.title == "switchboard-ui"
-    assert shell.regions == {}
 
 
 def test_island_rejects_non_json_props() -> None:

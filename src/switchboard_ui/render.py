@@ -1,14 +1,14 @@
-"""Render a :class:`Shell` or :class:`Document` to a self-contained HTML document string.
+"""Render a :class:`Document` to a self-contained HTML document string.
 
 The output is a ``str``; integration is a one-liner at the host's edge
-(``HTMLResponse(render_shell(shell))``, ``path.write_text(...)``, ``print(...)``)
+(``HTMLResponse(render_document(doc))``, ``path.write_text(...)``, ``print(...)``)
 and that one-liner lives outside this package. The package imports no framework
 type, so it is independent of any backend.
 
 Two delivery modes for the CSS + JS runtime:
 
 - ``"inline"`` embeds both, so the output is one droppable, host-free file.
-- ``"linked"`` references ``shell.css`` / ``switchboard.js`` under ``asset_base``
+- ``"linked"`` references ``layout.css`` / ``switchboard.js`` under ``asset_base``
   for a real app to serve and cache.
 """
 
@@ -18,7 +18,7 @@ from typing import Literal
 
 from switchboard_ui.assets import read_static
 from switchboard_ui.html import element, escape_attr, escape_text
-from switchboard_ui.model import REGIONS, Document, Frame, Island, Shell, Slot
+from switchboard_ui.model import Document, Frame, Island, Slot
 
 RuntimeMode = Literal["inline", "linked"]
 
@@ -45,19 +45,6 @@ def _render_island(island: Island, *, style: str | None = None) -> str:
 def render_island(island: Island) -> str:
     """Render a single island as its declarative mount-point ``<div>``."""
     return _render_island(island)
-
-
-def _render_region(region: str, islands: Sequence[Island]) -> str:
-    """Render one grid region as a div carrying its islands.
-
-    The div is emitted even when empty: it holds its geometry at first paint
-    and collapses via CSS ``:empty`` when it hosts nothing.
-    """
-    attrs: dict[str, str | None] = {
-        "class": f"sb-region sb-{region}",
-        "data-region": region,
-    }
-    return element("div", attrs, [render_island(i) for i in islands])
 
 
 def _render_frame(
@@ -102,27 +89,6 @@ def render_frame(frame: Frame) -> str:
     return _render_node(frame, style=None)
 
 
-def _render_shell_body(shell: Shell) -> str:
-    """Render the nine-region shell as nested flex frames (an example preset).
-
-    An outer column of three rows, each a flex row of three region cells. This
-    is the general :func:`render_frame` primitive arranged into the standard
-    application frame, so the layout is one mechanism (flex) at every level.
-    """
-    rows = [
-        _render_frame(
-            "row",
-            [
-                _render_region(region, shell.regions.get(region, ()))
-                for region in REGIONS[start : start + 3]
-            ],
-            extra_class=f"sb-{row}",
-        )
-        for start, row in ((0, "head"), (3, "body"), (6, "foot"))
-    ]
-    return _render_frame("column", rows, extra_class="sb-shell")
-
-
 def _document(
     body: str,
     *,
@@ -139,10 +105,10 @@ def _document(
     rendered standalone or nested inside another.
     """
     if runtime == "inline":
-        styles = f"<style>{read_static('shell.css')}</style>"
+        styles = f"<style>{read_static('layout.css')}</style>"
         runtime_tag = f"<script>{read_static('switchboard.js')}</script>"
     else:
-        styles = f'<link rel="stylesheet" href="{escape_attr(asset_base)}shell.css">'
+        styles = f'<link rel="stylesheet" href="{escape_attr(asset_base)}layout.css">'
         runtime_tag = f'<script src="{escape_attr(asset_base)}switchboard.js"></script>'
 
     scripts = "".join(f"<script>{s}</script>" for s in extra_scripts)
@@ -153,7 +119,6 @@ def _document(
         "<head>\n"
         '<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width,initial-scale=1">\n'
-        '<meta name="color-scheme" content="light dark">\n'
         f"<title>{escape_text(title)}</title>\n"
         f"{styles}\n"
         f"{extra_head}"
@@ -167,31 +132,12 @@ def _document(
     )
 
 
-def render_shell(
-    shell: Shell,
-    *,
-    runtime: RuntimeMode = "inline",
-    asset_base: str = "",
-    extra_head: str = "",
-    extra_scripts: Sequence[str] = (),
-) -> str:
-    """Render ``shell`` to a complete ``<!doctype html>`` document string."""
-    return _document(
-        _render_shell_body(shell),
-        title=shell.title,
-        runtime=runtime,
-        asset_base=asset_base,
-        extra_head=extra_head,
-        extra_scripts=extra_scripts,
-    )
-
-
 def _render_root(frame: Frame) -> str:
-    """Render a frame as the viewport-locked document root (``sb-shell``)."""
+    """Render a frame as the viewport-locked document root (``sb-root``)."""
     return _render_frame(
         frame.direction,
         [_render_child(c) for c in frame.children],
-        extra_class="sb-shell",
+        extra_class="sb-root",
     )
 
 
@@ -205,9 +151,8 @@ def render_document(
 ) -> str:
     """Render a :class:`Document` (a root layout frame plus a title) to a page.
 
-    The body frame becomes the viewport-locked root; the envelope and keyword
-    options are shared with :func:`render_shell`, so a general layout and the
-    nine-region shell preset produce the same kind of page.
+    The body frame becomes the viewport-locked root. Build the document by hand,
+    or from a preset such as ``three_column`` in :mod:`switchboard_ui.presets`.
     """
     return _document(
         _render_root(document.body),

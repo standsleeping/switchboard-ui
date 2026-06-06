@@ -11,7 +11,7 @@ import logging
 import sys
 
 from switchboard_ui.demo import build_demo, demo_scripts
-from switchboard_ui.render import render_shell
+from switchboard_ui.render import render_document
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +75,7 @@ def main(args: list[str] | None = None) -> int:
     parsed = parse_args(args)
     configure_logging(level=getattr(logging, parsed.log_level))
     logger.debug("Parsed arguments: %s", parsed)
-    html = render_shell(
+    html = render_document(
         build_demo(),
         runtime=parsed.runtime,
         extra_scripts=demo_scripts(),

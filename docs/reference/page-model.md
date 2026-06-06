@@ -36,7 +36,7 @@ Island(name="bad", props={"x": object()})   # raises ValueError: non-JSON-serial
 
 ## `Frame`
 
-A frozen dataclass: a recursive layout node, a one-dimensional flex stack. The general layout primitive; the nine-region [`Shell`](#shell) is an example preset arrangement of it.
+A frozen dataclass: a recursive layout node, a one-dimensional flex stack. The general layout primitive; presets such as [`three_column`](three-column.md) arrange frames into ready-made layouts.
 
 ```python
 from switchboard_ui import Frame, Island
@@ -76,27 +76,7 @@ Frame(direction="row", children=(
 | `child` | `Island \| Frame` | required | The content placed at this position. |
 | `basis` | `str \| None` | `None` | A CSS length or token pins the size (`flex: 0 0 <basis>`); `None` grows to share the remaining space (`flex: 1 1 0`). |
 
-The size renders as a `flex` style on the child's own element. A bare child (not wrapped) is content-sized, the browser's default flex item. The nine-region [`Shell`](#shell) keeps its own rail/center sizing in CSS; `Slot` is the sizing mechanism for general frames.
-
-## `Shell`
-
-A frozen dataclass: an example preset of [`Frame`](#frame), the nine-region layout. A page title plus islands placed by region.
-
-```python
-from switchboard_ui import Island, Shell
-
-Shell(
-    title="My app",
-    regions={"body-c": (Island(name="app"),)},
-)
-```
-
-| Field | Type | Default | Meaning |
-|---|---|---|---|
-| `title` | `str` | `"switchboard-ui"` | The document `<title>`. |
-| `regions` | `Mapping[Region, Sequence[Island]]` | `{}` | Each region name mapped to the islands it hosts, in order. |
-
-A region may be omitted; an omitted region renders as an empty box and collapses.
+The size renders as a `flex` style on the child's own element. A bare child (not wrapped) is content-sized, the browser's default flex item. `Slot` is the sizing mechanism for frames; the [`three_column`](three-column.md) preset uses it to size its rails.
 
 ## `Document`
 
@@ -116,7 +96,7 @@ Document(
 | `body` | `Frame` | required | The root layout; rendered as the viewport-locked page root. |
 | `title` | `str` | `"switchboard-ui"` | The document `<title>`. |
 
-Render with [`render_document`](rendering.md#render_document). The nine-region [`Shell`](#shell) is a sibling preset for the standard application frame.
+Render with [`render_document`](rendering.md#render_document). Build the document by hand, or from a preset such as [`three_column`](three-column.md).
 
 ## `Region` and `REGIONS`
 
@@ -128,7 +108,7 @@ Render with [`render_document`](rendering.md#render_document). The nine-region [
 "foot-l", "foot-c", "foot-r"
 ```
 
-`REGIONS` is the tuple of all nine names in document (row-major) order. The names match the per-region placement classes in `static/shell.css`; see [The shell layout](shell-layout.md).
+`REGIONS` is the tuple of all nine names in document (row-major) order. They are the placement keys the [`three_column`](three-column.md) preset accepts.
 
 ## `Json`
 

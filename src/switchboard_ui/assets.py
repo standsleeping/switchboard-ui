@@ -1,6 +1,6 @@
 """Read packaged static assets (the CSS/JS shipped under ``static/``).
 
-One reader for both the renderer (shell.css, switchboard.js) and the demo
+One reader for both the renderer (layout.css, switchboard.js) and the demo
 (its island adapters), so package data is read one way, memoized once.
 """
 

@@ -22,31 +22,31 @@ An **adapter** is the browser-side code that brings an island to life: a functio
 uv sync --all-groups
 ```
 
-## 2. Render an empty shell
+## 2. Render an empty page
 
-The simplest page is a `Shell`, the nine-region preset. Rendering it produces a complete HTML document as a string.
+The simplest page comes from the `three_column` preset, which places islands into a nine-region layout and returns a `Document`. Rendering it produces a complete HTML document as a string.
 
 ```python
-from switchboard_ui import Shell, render_shell
+from switchboard_ui import render_document, three_column
 
-html = render_shell(Shell(title="My first page"))
+html = render_document(three_column(title="My first page"))
 print(html)
 ```
 
-The output begins with `<!doctype html>` and contains nine empty region boxes. Each box already holds its final size; it is reserved at first paint even when nothing fills it.
+The output begins with `<!doctype html>` and contains the three-column structure. The cells are empty for now, and an empty cell collapses until an island fills it.
 
 ## 3. Place an island
 
 An `Island` is a descriptor: a plain data value naming the adapter that will fill it. Put one in the center column.
 
 ```python
-from switchboard_ui import Island, Shell, render_shell
+from switchboard_ui import Island, render_document, three_column
 
-shell = Shell(
+page = three_column(
+    {"body-c": (Island(name="counter", props={"start": 0}),)},
     title="My first page",
-    regions={"body-c": (Island(name="counter", props={"start": 0}),)},
 )
-html = render_shell(shell)
+html = render_document(page)
 ```
 
 `name` is the adapter key the browser will look up.
@@ -60,12 +60,12 @@ The renderer turns this island into a `<div data-island="counter" data-props='{"
 The counter will announce a message; a readout will listen for it. You declare those topics on the descriptors, as data.
 
 ```python
-shell = Shell(
-    title="My first page",
-    regions={
+page = three_column(
+    {
         "body-c": (Island(name="counter", props={"start": 0}, publishes=("count:changed",)),),
         "body-r": (Island(name="readout", subscribes=("count:changed",)),),
     },
+    title="My first page",
 )
 ```
 
@@ -113,7 +113,7 @@ Pass the adapter source to the renderer so it is included in the document.
 counter_js = "...the counter adapter from step 5..."
 readout_js = "...the readout adapter from step 5..."
 
-html = render_shell(shell, extra_scripts=(counter_js, readout_js))
+html = render_document(page, extra_scripts=(counter_js, readout_js))
 ```
 
 Write the result to a file and open it.

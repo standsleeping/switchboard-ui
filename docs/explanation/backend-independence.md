@@ -1,16 +1,16 @@
 # Explanation: backend independence
 
-Backend independence is a property the package preserves, not a feature it adds. This page explains the rule that produces it and the consequences that follow.
+Backend independence is a property the package preserves. This page explains the rule that produces it and the consequences that follow.
 
 ## The rule
 
-`render_shell` returns a `str` and imports no web-framework type. Because the output is a plain string, any host can serve it, and the integration is a one-liner that lives outside the package:
+`render_document` returns a `str` and imports no web-framework type. Because the output is a plain string, any host can serve it, and the integration is a one-liner that lives outside the package:
 
 ```python
-# Starlette   HTMLResponse(render_shell(shell))
-# Flask       return render_shell(shell)
-# SSG         path.write_text(render_shell(shell))
-# CLI         print(render_shell(shell))
+# Starlette   HTMLResponse(render_document(page))
+# Flask       return render_document(page)
+# SSG         path.write_text(render_document(page))
+# CLI         print(render_document(page))
 ```
 
 Nothing in the package knows which of these will run. The framework coupling lives entirely in the one line at the host's edge.
@@ -35,6 +35,6 @@ Through the island fetching at runtime. The adapter calls the network itself onc
 
 Either way the package stays pure. Only the application is coupled to a backend, and only through the descriptor boundary.
 
-## The payoff: the package documents itself
+## The package documents itself
 
-Because rendering needs no host, switchboard-ui can render its own sandbox, storybook, and guides to static HTML and host the result anywhere. It demonstrates its own behavior with its own output. The bundled demo is the first instance of this: a page built by the same `Shell` and `render_shell` an application would use, rendered to a self-contained file by the CLI. See [Render the demo and docs](../how-to/render-demo-and-docs.md).
+Because rendering needs no host, switchboard-ui can render its own sandbox, storybook, and guides to static HTML and host the result anywhere. It demonstrates its own behavior with its own output. The bundled demo is the first instance of this: a page built by the same `three_column` and `render_document` an application would use, rendered to a self-contained file by the CLI. See [Render the demo and docs](../how-to/render-demo-and-docs.md).

@@ -1,31 +1,6 @@
 # Reference: rendering
 
-The renderer is defined in `switchboard_ui.render`. It turns a `Shell` into a complete HTML document string. It imports no web-framework type, so the output is independent of any backend.
-
-## `render_shell`
-
-```python
-def render_shell(
-    shell: Shell,
-    *,
-    runtime: RuntimeMode = "inline",
-    asset_base: str = "",
-    extra_head: str = "",
-    extra_scripts: Sequence[str] = (),
-) -> str
-```
-
-Renders `shell` to a complete `<!doctype html>` document.
-
-| Parameter | Type | Default | Effect |
-|---|---|---|---|
-| `shell` | `Shell` | required | The page to render. |
-| `runtime` | `RuntimeMode` | `"inline"` | How the CSS and JS reach the page (see below). |
-| `asset_base` | `str` | `""` | URL prefix for the linked assets. Only used when `runtime="linked"`. |
-| `extra_head` | `str` | `""` | Raw HTML inserted into `<head>`. |
-| `extra_scripts` | `Sequence[str]` | `()` | Script bodies inserted before `</body>`, each wrapped in its own `<script>`. |
-
-The document always includes a UTF-8 charset, a responsive viewport, `<meta name="color-scheme" content="light dark">`, the escaped title, and the nine region boxes in row-major order.
+The renderer is defined in `switchboard_ui.render`. It turns a `Document` into a complete HTML document string. It imports no web-framework type, so the output is independent of any backend.
 
 ## `render_document`
 
@@ -40,7 +15,17 @@ def render_document(
 ) -> str
 ```
 
-Renders a [`Document`](page-model.md#document) (a root layout frame plus a title) to a complete `<!doctype html>` page. The body frame becomes the viewport-locked page root; the keyword options match [`render_shell`](#render_shell). Use `render_document` for any layout; use `render_shell` for the nine-region application-frame preset.
+Renders a [`Document`](page-model.md#document) (a root layout frame plus a title) to a complete `<!doctype html>` page. The body frame becomes the viewport-locked page root. The document always includes a UTF-8 charset, a responsive viewport, and the escaped title.
+
+| Parameter | Type | Default | Effect |
+|---|---|---|---|
+| `document` | `Document` | required | The page to render. |
+| `runtime` | `RuntimeMode` | `"inline"` | How the CSS and JS reach the page (see below). |
+| `asset_base` | `str` | `""` | URL prefix for the linked assets. Only used when `runtime="linked"`. |
+| `extra_head` | `str` | `""` | Raw HTML inserted into `<head>`. |
+| `extra_scripts` | `Sequence[str]` | `()` | Script bodies inserted before `</body>`, each wrapped in its own `<script>`. |
+
+Build the `Document` by hand, or from a preset such as [`three_column`](three-column.md).
 
 ```python
 render_document(
@@ -56,7 +41,7 @@ RuntimeMode = Literal["inline", "linked"]
 
 `"inline"` embeds the stylesheet in a `<style>` and the runtime in a `<script>`, producing a self-contained document.
 
-`"linked"` emits `<link rel="stylesheet" href="{asset_base}shell.css">` and `<script src="{asset_base}switchboard.js">`, which a host must serve at `asset_base`.
+`"linked"` emits `<link rel="stylesheet" href="{asset_base}layout.css">` and `<script src="{asset_base}switchboard.js">`, which a host must serve at `asset_base`.
 
 See [Serve rendered HTML](../how-to/serve-rendered-html.md) for choosing between them and serving the linked assets.
 
@@ -66,7 +51,7 @@ See [Serve rendered HTML](../how-to/serve-rendered-html.md) for choosing between
 def render_island(island: Island) -> str
 ```
 
-Renders one island as its mount-point `<div>`. Used internally by `render_shell`; exposed for rendering a single island in isolation (for tests or partial responses).
+Renders one island as its mount-point `<div>`. Used internally by the renderer; exposed for rendering a single island in isolation (for tests or partial responses).
 
 The `<div>` carries `class="sb-island"`, `data-island`, and the `data-props` / `data-pub` / `data-sub` attributes for any non-empty fields. Empty fields are omitted entirely. The island's `initial` HTML is placed inside.
 
@@ -90,7 +75,7 @@ render_frame(Frame(direction="row", children=(Island(name="a"), Island(name="b")
 # <div class="sb-frame sb-frame-row"><div class="sb-island" data-island="a"></div><div class="sb-island" data-island="b"></div></div>
 ```
 
-The nine-region shell that `render_shell` produces is an example preset arrangement of frames; see [The shell layout](shell-layout.md).
+The [`three_column`](three-column.md) preset is one arrangement of frames built this way; you can build any other by hand.
 
 ## Escaping
 

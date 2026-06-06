@@ -1,6 +1,6 @@
 # How to serve rendered HTML
 
-`render_shell` returns a `str` and imports no web-framework type, so integration is a one-liner at the edge of your application. This guide covers the common targets.
+`render_document` returns a `str` and imports no web-framework type, so integration is a one-liner at the edge of your application. This guide covers the common targets.
 
 ## Serve from a backend
 
@@ -9,14 +9,14 @@ The rendered string drops into any framework's HTML response.
 ```python
 # Starlette / FastAPI
 from starlette.responses import HTMLResponse
-return HTMLResponse(render_shell(shell))
+return HTMLResponse(render_document(page))
 
 # Flask
-return render_shell(shell)
+return render_document(page)
 
 # Django
 from django.http import HttpResponse
-return HttpResponse(render_shell(shell))
+return HttpResponse(render_document(page))
 ```
 
 ## Write a static file
@@ -25,13 +25,13 @@ With no server at all, write the document to disk.
 
 ```python
 from pathlib import Path
-Path("index.html").write_text(render_shell(shell))
+Path("index.html").write_text(render_document(page))
 ```
 
 ## Print from a CLI
 
 ```python
-print(render_shell(shell))
+print(render_document(page))
 ```
 
 ## Choose inline or linked delivery
@@ -41,16 +41,16 @@ The CSS and the JavaScript runtime reach the page in one of two modes, selected 
 **Inline** (the default) embeds both the stylesheet and the runtime in the document. The result is a single self-contained file that runs with no host.
 
 ```python
-html = render_shell(shell, runtime="inline")
+html = render_document(page, runtime="inline")
 ```
 
 **Linked** references the two assets by URL, for a host to serve and cache.
 
 ```python
-html = render_shell(shell, runtime="linked", asset_base="/static/")
+html = render_document(page, runtime="linked", asset_base="/static/")
 ```
 
-This emits `<link rel="stylesheet" href="/static/shell.css">` and `<script src="/static/switchboard.js">`. Your server must serve those two files at `asset_base`.
+This emits `<link rel="stylesheet" href="/static/layout.css">` and `<script src="/static/switchboard.js">`. Your server must serve those two files at `asset_base`.
 
 Use inline for generated files, emails, and anything opened directly. Use linked when a host serves many pages and should cache the assets across them, or when a strict Content-Security-Policy forbids inline `<style>` and `<script>`.
 
@@ -60,7 +60,7 @@ The two files ship as package data under `switchboard_ui/static/`. Locate them w
 
 ```python
 from importlib.resources import files
-static_dir = files("switchboard_ui") / "static"  # holds shell.css and switchboard.js
+static_dir = files("switchboard_ui") / "static"  # holds layout.css and switchboard.js
 ```
 
 Mount it directly (Starlette / FastAPI):
@@ -95,8 +95,8 @@ Two further arguments let you extend the document without touching the package.
 `extra_scripts` is a sequence of script bodies inserted before `</body>`, used to register island adapters.
 
 ```python
-html = render_shell(
-    shell,
+html = render_document(
+    page,
     extra_head='<link rel="icon" href="/favicon.ico">',
     extra_scripts=(counter_adapter_js, readout_adapter_js),
 )

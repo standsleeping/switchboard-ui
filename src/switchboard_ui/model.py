@@ -1,4 +1,4 @@
-"""The page model: islands, the recursive frame layout, and presets.
+"""The page model: islands and the recursive frame layout.
 
 An :class:`Island` is a *declarative* mount descriptor. It names an adapter, the
 props serialized into the mount point, and the event topics it publishes and
@@ -8,9 +8,10 @@ pub/sub dependency graph from the declared topics — without executing anything
 
 Layout is a recursive value. A :class:`Frame` is a one-dimensional flex stack of
 islands or nested frames, the general layout primitive; a :class:`Slot` sizes a
-child within it. The nine-region :class:`Shell` is an example preset of that primitive,
-placing islands into a top chrome rail, the three columns, and a bottom chrome
-rail. The region names match the placement classes in ``static/shell.css``.
+child within it, and a :class:`Document` wraps a root frame as a full page.
+Presets build ready-made layouts from these pieces: ``three_column`` (in
+:mod:`switchboard_ui.presets`) arranges islands into a nine-region three-column
+page, addressed by the names in :data:`REGIONS`.
 """
 
 import json
@@ -32,7 +33,7 @@ Region = Literal[
     "foot-c",
     "foot-r",
 ]
-"""One of the nine named regions of the shell preset."""
+"""One of the nine named regions of the three-column preset."""
 
 REGIONS: tuple[Region, ...] = get_args(Region)
 """All nine regions, in document (row-major) order."""
@@ -70,19 +71,6 @@ class Island:
             raise ValueError(msg) from exc
 
 
-@dataclass(frozen=True)
-class Shell:
-    """A three-column page: a title plus islands placed by region.
-
-    Attributes:
-        title: The document ``<title>``.
-        regions: A mapping of region name to the islands it hosts, in order.
-    """
-
-    title: str = "switchboard-ui"
-    regions: Mapping[Region, Sequence[Island]] = field(default_factory=dict)
-
-
 Direction = Literal["row", "column"]
 """The axis of a :class:`Frame`'s flex stack."""
 
@@ -96,8 +84,8 @@ class Frame:
     arbitrary depth. The event bus is global, so nesting is a layout concern
     only and never affects how islands coordinate.
 
-    The nine-region :class:`Shell` is an example preset arranged from frames; a frame
-    is the general layout primitive beneath it.
+    A frame is the general layout primitive; presets such as ``three_column``
+    (in :mod:`switchboard_ui.presets`) arrange frames into ready-made layouts.
     """
 
     direction: Direction
@@ -126,8 +114,8 @@ class Document:
     the body is the root layout. Separating envelope from layout means a layout
     renders standalone or nested, and the envelope appears once, at the root.
 
-    The nine-region :class:`Shell` is a sibling preset for the standard
-    application frame; a document is the general page beneath it.
+    A document is the general page; presets such as ``three_column`` (in
+    :mod:`switchboard_ui.presets`) build one for a ready-made layout.
     """
 
     body: Frame

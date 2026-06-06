@@ -37,4 +37,4 @@ switchboard-ui > demo.html        # HTML to the file, logs to the terminal
 
 ## What it renders
 
-The demo `Shell` (`switchboard_ui.demo.build_demo`) with its two vanilla adapters (`switchboard_ui.demo.demo_scripts`). See [Render the demo and docs](../how-to/render-demo-and-docs.md) for building static HTML directly, without the CLI.
+The demo page (`switchboard_ui.demo.build_demo`, a `Document`) with its two vanilla adapters (`switchboard_ui.demo.demo_scripts`). See [Render the demo and docs](../how-to/render-demo-and-docs.md) for building static HTML directly, without the CLI.

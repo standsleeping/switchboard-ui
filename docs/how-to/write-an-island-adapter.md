@@ -86,7 +86,7 @@ Island(name="results", initial="<p>Loading results...</p>", subscribes=("filter:
 Pass the adapter source to the renderer through `extra_scripts`, or serve it as its own file and reference it from `extra_head`.
 
 ```python
-html = render_shell(shell, extra_scripts=(clock_adapter_js,))
+html = render_document(page, extra_scripts=(clock_adapter_js,))
 ```
 
 The bundled demo ships its two adapters as real files under `static/` and reads them with the package's asset reader; see `demo.py` for that pattern.

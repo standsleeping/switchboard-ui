@@ -56,15 +56,15 @@ The conclusion was a property to preserve, not a feature to add: the package ret
 
 ## Layout
 
-**Decision: the shell is the invariant and islands are the variable.** Originally built as a CSS grid: the model is literally a 3x3, so `grid-template-areas` mapped one-to-one onto the nine regions.
+**Decision: layout is a recursive flex value.** Originally built as a CSS grid: the model is literally a 3x3, so `grid-template-areas` mapped one-to-one onto the nine regions.
 
-**Reversed to nested flex stacks** once layout became a recursive value. A recursive layout is a tree of one-dimensional stacks, which is flexbox; grid's 2D template fights nesting and over-emphasizes grid. The 3x3 shell is now a preset of nested flex frames (a `Frame` is the general primitive beneath it), with tokens sizing the rails and standalone fallbacks so the shell works host-free. See [Layout](layout.md).
+**Reversed to nested flex stacks** once layout became a recursive value. A recursive layout is a tree of one-dimensional stacks, which is flexbox; grid's 2D template fights nesting and over-emphasizes grid. The general primitive is `Frame` (a flex stack), sized by `Slot` and wrapped as a page by `Document`; the three-column layout is a preset built from them. See [Layout](layout.md).
 
 ## The governing rule: general mechanism, opinionated invariants
 
 The layout decisions follow one rule. Every generalization is "one primitive, many presets," never "a configurable subsystem" that eats the small core.
 
-`Frame` is the general mechanism (a recursive flex stack); the nine-region `Shell` is one opinionated preset built on it. `Slot` adds sizing to the mechanism, not chrome. When per-child sizing arrived, the shell's region cells were deliberately *not* dissolved into generic frames: the cells carry chrome (surfaces, borders, scroll), which is styling, not layout, and folding it into `Frame` would turn the primitive into a configurable styling subsystem. So `Frame` stays layout-only and chrome stays a preset concern.
+`Frame` is the general mechanism (a recursive flex stack); `three_column` is a preset, an ordinary function that arranges frames and returns a `Document`, not a type co-equal with `Frame`. `Slot` adds sizing to the mechanism. The package ships layout structure only: the stylesheet sets no color, type, or theming, so a preset may be opinionated about layout while visual style stays the host application's concern. `Frame` stays layout-only; style never enters the package.
 
 The same rule guides the forward work. A component library is a small canonical set, not a framework; a theme exposes only the legitimately-variable axes, holding the design system's invariants (square corners, a single accent color, monospace-first type) fixed. The tension is always opinionated-canonical versus general-composable, and the resolution is always: general mechanism, opinionated invariants.
 
@@ -84,7 +84,7 @@ This is why the demo is in scope and not optional: it is the runtime's exerciser
 
 **Demo adapters are real files.** The demo adapters had been written as Python string blobs, which cannot be linted or served as real JavaScript. They were moved to real `static/*.js` files, and a single memoized asset reader now serves both the renderer and the demo, so packaged assets are read one way.
 
-**The region-name invariant is guarded by a test, not codegen.** The nine region names live in both the Python model and the CSS. Each region needs its own placement class in the stylesheet, so the duplication is intrinsic, and the set is small and stable. A consistency test asserts that every Python region name has a placement class in the stylesheet and that the region-cell classes are exactly those nine regions. Generation would be the right tool for a load-bearing invariant spread across many artifacts; a test is the proportionate response for a small duplication across two files.
+**The shell was demoted from a type to a preset.** `Shell` began as a dataclass co-equal with `Frame`, with its own `render_shell` path and region-classed, token-themed CSS. That made one specific three-column layout look like a core concept, pinned a generic-sounding name to a single arrangement, and let design-system opinions (chrome, tokens, theming) leak into the package. It is now `three_column`, an ordinary function that builds a `Frame` and returns a `Document`; the region names live only in `REGIONS` and the preset, and the stylesheet was cut to structural layout with no color, tokens, or theming. The package is opinionated about layout mechanism, never about visual style.
 
 ## Decisions at a glance
 
@@ -100,4 +100,4 @@ This is why the demo is in scope and not optional: it is the runtime's exerciser
 | Never `if TYPE_CHECKING`; drop ruff `TC` | comply with the linter |
 | Testing: Python suite at full coverage | headless JS test now; layout audits |
 | Demo adapters as real `static/*.js` | Python string blobs |
-| Region invariant guarded by a test | codegen |
+| Shell demoted to a `three_column` preset | a `Shell` type with its own renderer |

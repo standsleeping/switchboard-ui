@@ -1,10 +1,10 @@
 """switchboard-ui: server-rendered HTML pages that host interactive islands.
 
 Render a layout of :class:`Island` mount descriptors to a backend-free HTML
-string. A :class:`Frame` is the general layout primitive; the nine-region
-:class:`Shell` is an example preset, rendered with :func:`render_shell`.
-Each island is a self-contained mini-app that mounts into a pre-sized region and
-talks to others over a declarative event bus.
+string. A :class:`Frame` is the general layout primitive and a :class:`Document`
+is the page; :func:`three_column` is a preset that arranges islands into a
+nine-region three-column page. Each island is a self-contained mini-app that
+mounts into a region and talks to others over a declarative event bus.
 """
 
 import logging
@@ -17,15 +17,14 @@ from switchboard_ui.model import (
     Frame,
     Island,
     Region,
-    Shell,
     Slot,
 )
+from switchboard_ui.presets import three_column
 from switchboard_ui.render import (
     RuntimeMode,
     render_document,
     render_frame,
     render_island,
-    render_shell,
 )
 
 try:
@@ -47,11 +46,10 @@ __all__ = [
     "Island",
     "Region",
     "RuntimeMode",
-    "Shell",
     "Slot",
     "__version__",
     "render_document",
     "render_frame",
     "render_island",
-    "render_shell",
+    "three_column",
 ]

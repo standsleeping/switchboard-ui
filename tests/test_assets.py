@@ -5,7 +5,7 @@ from switchboard_ui.assets import read_static
 
 def test_read_static_returns_asset_text() -> None:
     """A packaged asset is read as text."""
-    assert ".sb-shell" in read_static("shell.css")
+    assert ".sb-frame" in read_static("layout.css")
 
 
 def test_read_static_is_memoized() -> None:
