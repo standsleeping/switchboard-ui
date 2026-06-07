@@ -8,8 +8,6 @@ A `Frame` is a one-dimensional flex stack (a row or a column) whose children are
 
 One mechanism (a flex stack) at every level means there is no separate page-level layout system to learn: the outermost arrangement and the deepest nested one are the same kind of value. The event bus is global, so nesting is a layout concern only; an island anywhere in the tree coordinates with any other over the same bus.
 
-For why the primitive is flexbox rather than CSS grid, see [Design decisions](design-decisions.md).
-
 ## A preset is just an arrangement of frames
 
 A preset is an ordinary function that assembles islands into a frame tree and returns a `Document`. It owns no rendering path and no type of its own; it is sugar over the primitive, so anything a preset builds you could build by hand.

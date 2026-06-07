@@ -1,6 +1,6 @@
 # switchboard-ui
 
-Render server-side HTML pages that host arbitrarily complex, self-contained interactive **islands**, wired together by a declarative event bus. Pure Python, zero runtime dependencies; the output is a string, so any backend (or none) can serve it.
+Render server-side HTML pages that host arbitrarily complex, self-contained interactive **islands**, wired together by a declarative event bus. Built with pure Python and zero runtime dependencies. The output is a string, so any backend can serve it.
 
 ## Installation
 
@@ -10,7 +10,7 @@ uv sync --all-groups
 
 ## Usage
 
-`three_column` is a preset that places islands into a nine-region layout and returns a `Document` you render to HTML.
+The `three_column` preset places islands into a nine-region layout and returns a `Document` you render to HTML.
 
 ```python
 from switchboard_ui import Island, render_document, three_column
@@ -29,7 +29,7 @@ html = render_document(page)  # a complete, self-contained <!doctype html> strin
 
 Each `Island` is a mount point a browser-side adapter fills; islands talk to each other over the event bus via the topics they declare (`publishes` / `subscribes`).
 
-`three_column` is just a preset over the layout primitive: a `Frame` is a recursive flex stack, a `Document` wraps one as a page, and `render_document` renders any layout you build by hand. See [the three-column preset](docs/reference/three-column.md) and [page model](docs/reference/page-model.md).
+The `three_column` preset shows the layout primitives: a `Frame` is a recursive flex stack, a `Document` wraps one as a page, and `render_document` renders any layout you build by hand. See [the three-column preset](docs/reference/three-column.md) and [page model](docs/reference/page-model.md).
 
 ## Documentation
 
@@ -59,7 +59,6 @@ Full documentation lives in [`docs/`](docs/index.md):
 - [Architecture](docs/explanation/architecture.md)
 - [Backend independence](docs/explanation/backend-independence.md)
 - [Layout](docs/explanation/layout.md)
-- [Design decisions](docs/explanation/design-decisions.md)
 
 ## Examples
 

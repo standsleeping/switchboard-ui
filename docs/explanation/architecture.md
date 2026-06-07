@@ -40,4 +40,3 @@ The third consumer is why the topics are declared rather than discovered at runt
 
 - [Backend independence](backend-independence.md): why rendering returns a string.
 - [Layout](layout.md): the frame primitive, and the nine-region three-column layout as an example preset.
-- [Design decisions](design-decisions.md): the choices and alternatives behind all of the above.
