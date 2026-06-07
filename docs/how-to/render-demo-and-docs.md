@@ -44,6 +44,6 @@ Path("demo.html").write_text(html)
 
 `demo_scripts()` returns the two vanilla adapter sources.
 
-To render a documentation site or storybook the same way, build your own pages (by hand or from a preset) and write each rendered string to its own file. The package renders its own output, so a guide, a component gallery, and a sandbox are all just documents rendered to static HTML.
+To render a documentation site or storybook the same way, build your own pages (by hand or from a preset) and write each rendered string to its own file. The package renders its own output, so a guide or a sandbox is just another document rendered to static HTML.
 
 See the [CLI reference](../reference/cli.md) for every flag.

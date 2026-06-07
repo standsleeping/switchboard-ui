@@ -76,7 +76,7 @@ The runtime reads the descriptor attributes the Python renderer emitted:
 
 `data-pub` and `data-sub` are the declared topics. The runtime does not consume them to deliver messages; they are the static-analysis surface, recoverable from the HTML without executing anything.
 
-An element is mounted at most once (tracked in a `WeakSet`). If no adapter is registered for its name yet, it is skipped and mounted by a later `register` call. An island with no adapter (such as pure server-rendered content) simply never mounts and keeps its `initial` HTML.
+An element is mounted at most once (tracked in a `WeakSet`). If no adapter is registered for its name yet, it is skipped and mounted by a later `register` call. An island with no adapter (such as pure server-rendered content) never mounts and keeps its `initial` HTML.
 
 ## Writing adapters
 
