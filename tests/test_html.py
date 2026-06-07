@@ -27,3 +27,17 @@ def test_element_wraps_children() -> None:
 def test_element_defaults_to_no_attrs_no_children() -> None:
     """Omitting attrs and children yields an empty tag."""
     assert element("span") == "<span></span>"
+
+
+def test_empty_element_has_no_inner_whitespace_so_css_empty_can_collapse_it() -> None:
+    """An empty element renders with nothing between its tags.
+
+    layout.css collapses omitted region cells with `.sb-frame:empty { display: none }`,
+    and the CSS `:empty` pseudo-class does not match an element that contains even
+    whitespace. So every empty frame the renderer emits must carry no inner text;
+    this pins that guarantee at its source, `element`, where the children join with
+    no separator.
+    """
+    assert element("div", {"class": "sb-frame sb-frame-column"}) == (
+        '<div class="sb-frame sb-frame-column"></div>'
+    )
