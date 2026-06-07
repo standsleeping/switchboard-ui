@@ -6,6 +6,7 @@ This module is the smallest builder that escapes correctly:
 
 - :func:`escape_text` escapes character data (element content).
 - :func:`escape_attr` escapes a double-quoted attribute value.
+- :func:`classes` joins non-empty class tokens into a class attribute value.
 - :func:`element` assembles a tag from already-rendered child fragments.
 
 Children are treated as raw HTML (the caller has already escaped any leaf text),
@@ -24,6 +25,11 @@ def escape_text(value: str) -> str:
 def escape_attr(value: str) -> str:
     """Escape ``value`` for use inside a double-quoted attribute."""
     return escape(value, quote=True)
+
+
+def classes(*parts: str) -> str:
+    """Join non-empty class tokens into a class attribute value."""
+    return " ".join(p for p in parts if p)
 
 
 def attributes(attrs: Mapping[str, str | None]) -> str:

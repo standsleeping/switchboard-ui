@@ -1,6 +1,6 @@
 """Tests for the HTML builder."""
 
-from switchboard_ui.html import attributes, element, escape_attr, escape_text
+from switchboard_ui.html import attributes, classes, element, escape_attr, escape_text
 
 
 def test_escape_text_escapes_markup_not_quotes() -> None:
@@ -11,6 +11,21 @@ def test_escape_text_escapes_markup_not_quotes() -> None:
 def test_escape_attr_escapes_quotes() -> None:
     """Attribute values additionally escape double quotes."""
     assert escape_attr('he said "hi" <b>') == "he said &quot;hi&quot; &lt;b&gt;"
+
+
+def test_classes_joins_present_tokens() -> None:
+    """Non-empty class tokens join with single spaces."""
+    assert classes("sb-island", "brand") == "sb-island brand"
+
+
+def test_classes_drops_empty_tokens() -> None:
+    """An empty token is filtered, so an absent class adds no stray space."""
+    assert classes("sb-frame", "", "sb-root") == "sb-frame sb-root"
+
+
+def test_classes_of_nothing_is_empty() -> None:
+    """No tokens yields an empty string."""
+    assert classes() == ""
 
 
 def test_attributes_renders_present_and_omits_none() -> None:
