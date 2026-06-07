@@ -3,7 +3,7 @@
 import argparse
 from pathlib import Path
 
-from switchboard_ui import Island, Shell, render_shell
+from switchboard_ui import Island, render_document, three_column
 
 ROOT = Path(__file__).resolve().parent
 DEFAULT_OUT = ROOT / "index.html"
@@ -12,10 +12,9 @@ EXAMPLE_HEAD = '<script type="module" src="/src/main.jsx"></script>'
 
 
 def build_page() -> str:
-    """Render the example shell."""
-    shell = Shell(
-        title="switchboard-ui React example",
-        regions={
+    """Render the example page."""
+    page = three_column(
+        {
             "head-c": (
                 Island(
                     name="react-title",
@@ -40,12 +39,13 @@ def build_page() -> str:
             "foot-c": (
                 Island(
                     name="react-note",
-                    initial="React owns the island; switchboard owns the shell.",
+                    initial="React owns the island; switchboard owns the layout.",
                 ),
             ),
         },
+        title="switchboard-ui React example",
     )
-    return render_shell(shell, extra_head=EXAMPLE_HEAD)
+    return render_document(page, extra_head=EXAMPLE_HEAD)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:

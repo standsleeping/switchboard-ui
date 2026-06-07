@@ -6,7 +6,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
-from switchboard_ui import Island, Shell, render_shell
+from switchboard_ui import Island, render_document, three_column
 
 ROOT = Path(__file__).resolve().parent
 DEFAULT_HOST = "127.0.0.1"
@@ -14,10 +14,9 @@ DEFAULT_PORT = 8001
 
 
 def build_page() -> str:
-    """Render the example shell."""
-    shell = Shell(
-        title="switchboard-ui vanilla example",
-        regions={
+    """Render the example page."""
+    page = three_column(
+        {
             "head-c": (
                 Island(
                     name="vanilla-title",
@@ -46,9 +45,10 @@ def build_page() -> str:
                 ),
             ),
         },
+        title="switchboard-ui vanilla example",
     )
-    return render_shell(
-        shell,
+    return render_document(
+        page,
         extra_scripts=((ROOT / "adapters.js").read_text(encoding="utf-8"),),
     )
 
