@@ -47,6 +47,7 @@ dev = [
 ]
 
 [tool.mypy]
+files = ["src"]
 check_untyped_defs = true
 disallow_any_generics = true
 disallow_any_unimported = true
@@ -81,6 +82,9 @@ enable_error_code = [
 [[tool.mypy.overrides]]
 module = "tests.*"
 ignore_errors = true
+
+[tool.ty.src]
+include = ["src"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
