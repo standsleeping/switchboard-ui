@@ -18,7 +18,7 @@ from collections.abc import Iterable, Sequence
 from typing import Literal
 
 from switchboard_ui.assets import read_static
-from switchboard_ui.html import element, escape_attr, escape_text
+from switchboard_ui.html import classes, element, escape_attr, escape_text
 from switchboard_ui.model import Document, Frame, Island, Slot
 
 RuntimeMode = Literal["inline", "linked"]
@@ -26,15 +26,10 @@ RuntimeMode = Literal["inline", "linked"]
 _COMPACT = (",", ":")
 
 
-def _classes(*parts: str) -> str:
-    """Join non-empty class fragments with spaces."""
-    return " ".join(p for p in parts if p)
-
-
 def _render_island(island: Island, *, style: str | None = None) -> str:
     """Render an island mount-point ``<div>``, optionally with a flex style."""
     attrs: dict[str, str | None] = {
-        "class": _classes("sb-island", island.class_),
+        "class": classes("sb-island", island.class_),
         "style": style,
         "data-island": island.name,
         "data-props": (
@@ -61,7 +56,7 @@ def _render_frame(
     style: str | None = None,
 ) -> str:
     """Render a flex stack: a div whose children lay out along ``direction``."""
-    cls = _classes("sb-frame", f"sb-frame-{direction}", extra_class)
+    cls = classes("sb-frame", f"sb-frame-{direction}", extra_class)
     return element("div", {"class": cls, "style": style}, children)
 
 
@@ -148,7 +143,7 @@ def _render_root(frame: Frame) -> str:
     return _render_frame(
         frame.direction,
         [_render_child(c) for c in frame.children],
-        extra_class=_classes("sb-root", frame.class_),
+        extra_class=classes("sb-root", frame.class_),
     )
 
 
