@@ -23,7 +23,7 @@
       var set = listeners.get(topic);
       if (!set) return;
       // Copy so a handler that (un)subscribes mid-dispatch can't corrupt it.
-      Array.prototype.slice.call(set).forEach(function (fn) {
+      Array.from(set).forEach(function (fn) {
         fn(detail, topic);
       });
     },
