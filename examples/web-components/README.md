@@ -1,8 +1,6 @@
 # Web Components example
 
-This example wraps the switchboard mount contract around custom elements. The
-adapter creates the element, passes in `props` and `bus`, then removes the
-element during teardown.
+This example wraps the switchboard mount contract around custom elements. The adapter creates the element, passes in `props` and `bus`, then removes the element during teardown.
 
 ```bash
 uv run python examples/web-components/server.py
