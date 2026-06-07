@@ -44,6 +44,7 @@ def test_three_column_inline_embeds_assets_and_places_islands() -> None:
     assert find(html, "title")
     assert find(html, "style")  # CSS embedded as an element
     assert any("src" not in s for s in find(html, "script"))  # runtime inline
+    assert "sb-debug-overlay" in html  # debug overlay module inlined too
     assert find(html, "div", **{"data-island": "app"})
 
 
@@ -61,6 +62,7 @@ def test_render_document_linked_references_assets() -> None:
     [link] = find(html, "link", rel="stylesheet")
     assert link["href"] == "/static/layout.css"
     assert find(html, "script", src="/static/switchboard.js")
+    assert find(html, "script", src="/static/switchboard-debug.js")
     assert not find(html, "style")
 
 

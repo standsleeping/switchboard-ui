@@ -7,9 +7,10 @@ type, so it is independent of any backend.
 
 Two delivery modes for the CSS + JS runtime:
 
-- ``"inline"`` embeds both, so the output is one droppable, host-free file.
-- ``"linked"`` references ``layout.css`` / ``switchboard.js`` under ``asset_base``
-  for a real app to serve and cache.
+- ``"inline"`` embeds them, so the output is one droppable, host-free file.
+- ``"linked"`` references ``layout.css``, ``switchboard.js``, and the optional
+  ``switchboard-debug.js`` overlay under ``asset_base`` for a real app to serve
+  and cache.
 """
 
 import json
@@ -110,10 +111,16 @@ def _document(
     """
     if runtime == "inline":
         styles = f"<style>{read_static('layout.css')}</style>"
-        runtime_tag = f"<script>{read_static('switchboard.js')}</script>"
+        runtime_tag = (
+            f"<script>{read_static('switchboard.js')}</script>"
+            f"<script>{read_static('switchboard-debug.js')}</script>"
+        )
     else:
         styles = f'<link rel="stylesheet" href="{escape_attr(asset_base)}layout.css">'
-        runtime_tag = f'<script src="{escape_attr(asset_base)}switchboard.js"></script>'
+        runtime_tag = (
+            f'<script src="{escape_attr(asset_base)}switchboard.js"></script>'
+            f'<script src="{escape_attr(asset_base)}switchboard-debug.js"></script>'
+        )
 
     scripts = "".join(f"<script>{s}</script>" for s in extra_scripts)
 

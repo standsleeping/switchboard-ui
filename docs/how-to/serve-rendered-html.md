@@ -50,17 +50,17 @@ html = render_document(page, runtime="inline")
 html = render_document(page, runtime="linked", asset_base="/static/")
 ```
 
-This emits `<link rel="stylesheet" href="/static/layout.css">` and `<script src="/static/switchboard.js">`. Your server must serve those two files at `asset_base`.
+This emits `<link rel="stylesheet" href="/static/layout.css">`, `<script src="/static/switchboard.js">`, and `<script src="/static/switchboard-debug.js">`. Your server must serve those files at `asset_base`.
 
 Use inline for generated files, emails, and anything opened directly. Use linked when a host serves many pages and should cache the assets across them, or when a strict Content-Security-Policy forbids inline `<style>` and `<script>`.
 
 ## Serve the assets in linked mode
 
-The two files ship as package data under `switchboard_ui/static/`. Locate them with the standard library, then serve that directory.
+The files ship as package data under `switchboard_ui/static/`. Locate them with the standard library, then serve that directory.
 
 ```python
 from importlib.resources import files
-static_dir = files("switchboard_ui") / "static"  # holds layout.css and switchboard.js
+static_dir = files("switchboard_ui") / "static"  # layout.css, switchboard.js, switchboard-debug.js
 ```
 
 Mount it directly (Starlette / FastAPI):

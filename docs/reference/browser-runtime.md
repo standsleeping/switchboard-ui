@@ -36,6 +36,20 @@ window.switchboard.boot()
 
 Scans the document and mounts every registered island. It runs automatically: on `DOMContentLoaded` if the document is still loading, otherwise immediately. Call it manually only after injecting new mount points into the DOM.
 
+### `debug`
+
+```javascript
+window.switchboard.debug()        // toggle the overlay
+window.switchboard.debug(true)    // force on
+window.switchboard.debug(false)   // force off
+```
+
+A dev-only diagnostic that injects an outline overlay over the frame tree: an `outline` on every frame and island (outline, not border, so it adds no size to the boxes it measures), plus an override that un-collapses empty cells so every region shows. Because the package ships zero visual style, this is how you see the structure without DevTools. It returns the resulting on/off state, and turning it off removes the injected `<style>`, leaving no trace.
+
+Loading the page with `?debug` in the URL enables the overlay automatically, so the structure is visible in development without knowing the console call. A shipped URL will not carry the parameter, so production stays clean.
+
+`debug` lives in a sibling module, `switchboard_ui/static/switchboard-debug.js`, which is standalone (it touches only the DOM and `window.switchboard`, never the bus or registry) and augments the global the runtime creates. `render_document` emits it right after the runtime in both delivery modes, so it is always present and dormant until called.
+
 ## The mount contract
 
 ```javascript

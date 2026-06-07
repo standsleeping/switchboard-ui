@@ -1,7 +1,8 @@
 """Read packaged static assets (the CSS/JS shipped under ``static/``).
 
-One reader for both the renderer (layout.css, switchboard.js) and the demo
-(its island adapters), so package data is read one way, memoized once.
+One reader for both the renderer (layout.css, switchboard.js, the optional
+switchboard-debug.js overlay) and the demo (its island adapters), so package
+data is read one way, memoized once.
 """
 
 from functools import cache

@@ -5,6 +5,9 @@
  *   - register: an adapter registry, name -> mount(el, props, bus) -> teardown.
  *   - boot:     scan the DOM for [data-island] mount points and mount each.
  *
+ * The optional `switchboard.debug()` overlay lives in switchboard-debug.js, a
+ * sibling module that augments this global; the core runtime ships no diagnostics.
+ *
  * The mount contract `mount(el, props, bus) => teardown` is the stable seam.
  * Vanilla, Web Component, and React islands are all just adapters that satisfy
  * it; the page and the Python renderer never know which kind an island is.

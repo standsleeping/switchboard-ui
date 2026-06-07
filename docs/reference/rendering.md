@@ -39,9 +39,9 @@ render_document(
 RuntimeMode = Literal["inline", "linked"]
 ```
 
-`"inline"` embeds the stylesheet in a `<style>` and the runtime in a `<script>`, producing a self-contained document.
+`"inline"` embeds the stylesheet in a `<style>` and the runtime (plus the debug overlay) in `<script>` elements, producing a self-contained document.
 
-`"linked"` emits `<link rel="stylesheet" href="{asset_base}layout.css">` and `<script src="{asset_base}switchboard.js">`, which a host must serve at `asset_base`.
+`"linked"` emits `<link rel="stylesheet" href="{asset_base}layout.css">`, `<script src="{asset_base}switchboard.js">`, and `<script src="{asset_base}switchboard-debug.js">`, which a host must serve at `asset_base`.
 
 See [Serve rendered HTML](../how-to/serve-rendered-html.md) for choosing between them and serving the linked assets.
 
