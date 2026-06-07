@@ -1,10 +1,13 @@
 /* switchboard-ui: structural layout CSS for the Frame primitive.
  *
- * This is layout structure only: the flex stacks that make a Frame tree render.
- * It carries no visual style (no theming, no design tokens, no surface fills).
- * Style the islands and regions however your application likes. */
+ * Geometry only: the flex stacks that make a Frame tree render, sizing, and a
+ * viewport-locked root. It carries no visual style (no color, type, theming, or
+ * design tokens) and no box-spacing: space between siblings is `gap` (structural
+ * distribution), never `margin` (banned; see NEVER_MARGIN) and never `padding`
+ * (a box's inset is a density decision the theme owns, not the structure). It
+ * selects only its own `.sb-*` elements, never the host's `body` / `:root`. The
+ * test suite enforces every line of this statically. */
 
-/* A frame is a one-dimensional flex stack; the direction class sets its axis. */
 .sb-frame {
   display: flex;
   min-inline-size: 0;
@@ -22,18 +25,15 @@
   display: none;
 }
 
-/* The root frame fills the viewport, so a full-page layout has height to fill. */
+/* The root frame is locked to the viewport: robust to any host body margin, and
+ * styling none of the host's own elements to get there. */
 .sb-root {
-  block-size: 100dvh;
+  position: fixed;
+  inset: 0;
 }
 
 /* An island fills its cell; its geometry comes from the surrounding frames. */
 .sb-island {
   display: block;
   min-inline-size: 0;
-}
-
-/* The page does not add its own margin around the viewport-filling root. */
-body {
-  margin: 0;
 }

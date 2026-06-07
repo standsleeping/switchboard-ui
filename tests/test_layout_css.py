@@ -1,11 +1,14 @@
 """The packaged stylesheet is structural layout only, with no visual style.
 
-The CSS exists to make a Frame tree render as flex stacks. It controls geometry
-(size, position, flow) and nothing else: no color, no type, no theming, no design
-tokens. Visual style belongs to the host application, not to this package. The
-two checks below enforce that from both sides: property *names* must be geometry
-properties (this whitelist), and property *values* must carry no tokens or
-theming (the blacklist below).
+The CSS controls geometry (size, position, flow) and nothing else. Four static
+guards below keep it honest, so the layout layer cannot: name an appearance
+property, use box-spacing (`margin` / `padding`), smuggle a design token into a
+geometry value, or reach outside its own `.sb-*` elements.
+
+  1. property names are geometry-only (the whitelist), excluding box-spacing;
+  2. `margin` and `padding` are explicitly banned (the delegation note below);
+  3. property values carry no tokens or theming (the blacklist);
+  4. selectors target only `.sb-*`, never the host's `body` / `html` / `:root`.
 """
 
 import re
@@ -13,12 +16,23 @@ import re
 from switchboard_ui.assets import read_static
 
 # The only properties the layout layer may declare: those that determine size,
-# position, and flow. Appearance properties (color, background, border, font,
-# box-shadow, ...) are deliberately absent, so adding one fails the build.
+# position, and flow. Two deliberate exclusions, stricter than "no appearance":
+#
+#   margin  — banned outright (NEVER_MARGIN). Inter-element rhythm belongs to the
+#             parent's `gap`; explicit gaps between regions to a structural
+#             spacer; centering to `place-*` / `justify-*` / `align-*`. Banning it
+#             removes margin collapsing (a top layout-bug source) and the
+#             last-child-override dance, and makes spacing ownership unambiguous.
+#   padding — also excluded (maximum-strict). `gap` is structural distribution; a
+#             box's inset is a visual-density decision the theme owns, not the
+#             structure. The layout layer distributes and sizes; it never insets.
+#
+# Appearance properties (color, background, border, font, box-shadow, ...) are
+# absent for the same reason: adding any of these fails the build.
 _LAYOUT_PROPERTIES = frozenset(
     {
         "display",
-        # flexbox
+        # flexbox (sibling distribution lives here, via `gap`)
         "flex",
         "flex-direction",
         "flex-grow",
@@ -26,6 +40,9 @@ _LAYOUT_PROPERTIES = frozenset(
         "flex-basis",
         "flex-wrap",
         "flex-flow",
+        "gap",
+        "row-gap",
+        "column-gap",
         # grid
         "grid",
         "grid-template",
@@ -39,9 +56,6 @@ _LAYOUT_PROPERTIES = frozenset(
         "grid-column",
         "grid-area",
         # alignment & distribution
-        "gap",
-        "row-gap",
-        "column-gap",
         "align-items",
         "align-self",
         "align-content",
@@ -83,13 +97,6 @@ _LAYOUT_PROPERTIES = frozenset(
         "inset-block",
         "inset-inline",
         "z-index",
-        # box spacing (geometry)
-        "margin",
-        "margin-block",
-        "margin-inline",
-        "padding",
-        "padding-block",
-        "padding-inline",
     }
 )
 
@@ -106,6 +113,18 @@ def _declared_properties(css: str) -> set[str]:
     return props
 
 
+def _selectors(css: str) -> list[str]:
+    """Every selector (comma-separated lists split out), comments stripped."""
+    css = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
+    out: list[str] = []
+    for chunk in re.findall(r"([^{}]+)\{", css):
+        for sel in chunk.split(","):
+            sel = sel.strip()
+            if sel:
+                out.append(sel)
+    return out
+
+
 def test_layout_css_declares_only_layout_properties() -> None:
     """Every property in layout.css is a geometry property, never appearance."""
     declared = _declared_properties(read_static("layout.css"))
@@ -114,6 +133,21 @@ def test_layout_css_declares_only_layout_properties() -> None:
     assert not non_layout, (
         f"layout.css declares non-layout properties: {sorted(non_layout)}"
     )
+
+
+def test_layout_css_bans_margin_and_padding() -> None:
+    """Box-spacing is delegated: rhythm is `gap`, insets are the theme's."""
+    declared = _declared_properties(read_static("layout.css"))
+    spacing = {p for p in declared if p.split("-", 1)[0] in {"margin", "padding"}}
+    assert not spacing, f"layout.css uses banned box-spacing: {sorted(spacing)}"
+
+
+def test_layout_css_selects_only_sb_classes() -> None:
+    """The layer styles only its own .sb-* elements, never the host's body/:root."""
+    foreign = [
+        s for s in _selectors(read_static("layout.css")) if not s.startswith(".sb-")
+    ]
+    assert not foreign, f"layout.css selects non-sb elements: {foreign}"
 
 
 def test_layout_css_is_flex_not_grid() -> None:
