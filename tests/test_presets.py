@@ -29,7 +29,7 @@ def test_three_column_places_an_island_in_the_named_cell() -> None:
     assert isinstance(cell, Frame)
 
     assert cell.children == (island,)
-    assert cell.class_ == "sb-body-c"  # region identity hook for theming
+    assert "sb-body-c" in cell.class_  # region identity hook for theming
 
 
 def test_three_column_rails_are_content_driven_not_fixed() -> None:
@@ -45,3 +45,32 @@ def test_three_column_rails_are_content_driven_not_fixed() -> None:
     for rail in (head, foot):
         assert isinstance(rail, Frame)  # not a Slot: no fixed height guess
         assert rail.class_ == "sb-rail"  # the layer floors it to the contract
+
+
+def _cells(row: Frame) -> list[Frame]:
+    """The cell frames of a row, unwrapping any slot sizing."""
+    out: list[Frame] = []
+    for child in row.children:
+        cell = child.child if isinstance(child, Slot) else child
+        assert isinstance(cell, Frame)
+        out.append(cell)
+    return out
+
+
+def test_three_column_body_cells_own_their_scroll() -> None:
+    """The three body cells are scroll owners (``sb-scroll``); the chrome rail cells clip.
+
+    Scroll ownership is structural: the center and sidebars scroll their own
+    overflow while every frame above them (rows, rails, root) clips by default.
+    """
+    doc = three_column()
+    head, middle, foot = doc.body.children
+    assert isinstance(middle, Slot)
+    body_row = middle.child
+    assert isinstance(body_row, Frame)
+    for cell in _cells(body_row):
+        assert "sb-scroll" in cell.class_
+    for rail in (head, foot):
+        assert isinstance(rail, Frame)
+        for cell in _cells(rail):
+            assert "sb-scroll" not in cell.class_

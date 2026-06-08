@@ -7,14 +7,19 @@
  * (a box's inset is a density decision the theme owns, not the structure). The
  * one theme value it may consume is a Component Geometry obligation the theme
  * publishes as `--sb-fit-*`: a rail floors itself to `--sb-fit-rail-block`
- * rather than guessing a fixed height (the cause of the old spillover). It
- * selects only its own `.sb-*` elements, never the host's `body` / `:root`. The
- * test suite enforces every line of this statically. */
+ * rather than guessing a fixed height (the cause of the old spillover).
+ *
+ * Overflow is a declared policy, never an accident: every frame clips by default
+ * so nothing escapes the viewport-locked root (NO_PAGE_SCROLL), and a region
+ * opts into owning its scroll with `sb-scroll`. It selects only its own `.sb-*`
+ * elements, never the host's `body` / `:root`. The test suite enforces every
+ * line of this statically. */
 
 .sb-frame {
   display: flex;
   min-inline-size: 0;
   min-block-size: 0;
+  overflow: hidden; /* clip by default; a region opts into scroll via sb-scroll */
 }
 .sb-frame-row {
   flex-direction: row;
@@ -26,6 +31,20 @@
 /* An empty frame (a region cell with no islands) takes no space. */
 .sb-frame:empty {
   display: none;
+}
+
+/* A scroll owner: the one region in a containment chain that scrolls, while
+ * every frame above it clips (SCROLL_CONTAINMENT, NATIVE_SCROLLBAR). Defined
+ * after `.sb-frame` so it wins the equal-specificity tie and overrides the
+ * default clip. The preset hands this to the body cells. */
+.sb-scroll {
+  overflow: auto;
+}
+
+/* A clip role: contains overflow at this box's own edge. A frame already clips
+ * via `.sb-frame`; this is for a declared island escape that clips its content. */
+.sb-clip {
+  overflow: hidden;
 }
 
 /* A rail (a head/foot row) is content-driven with a floor: it grants at least

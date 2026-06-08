@@ -175,3 +175,26 @@ def test_layout_css_admits_only_contract_tokens() -> None:
         f"layout.css references non-contract tokens {non_contract}; "
         "structure may consume only --sb-fit-* obligations"
     )
+
+
+def _rule_body(css: str, selector: str) -> str:
+    """The declaration body of the rule whose selector is exactly ``selector``."""
+    css = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
+    match = re.search(re.escape(selector) + r"\s*\{([^{}]*)\}", css)
+    return match.group(1) if match else ""
+
+
+def test_layout_css_declares_an_overflow_policy_for_every_frame() -> None:
+    """Overflow is a declared policy, not an accident: frames clip, scroll is opt-in.
+
+    The base frame clips by default (so nothing escapes the viewport-locked root),
+    and a region owns its scroll only by opting into ``sb-scroll``. Together these
+    give every frame an explicit policy with no silently-visible overflow.
+    """
+    css = read_static("layout.css")
+    assert "overflow" in _rule_body(css, ".sb-frame"), (
+        "the base .sb-frame must declare an overflow policy (clip by default)"
+    )
+    assert "auto" in _rule_body(css, ".sb-scroll"), (
+        "the .sb-scroll role must opt a region into overflow: auto"
+    )

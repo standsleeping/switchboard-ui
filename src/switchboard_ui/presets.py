@@ -23,13 +23,23 @@ _LEFT_WIDTH = "220px"
 _RIGHT_WIDTH = "200px"
 
 
-def _cell(region: Region, placed: Mapping[Region, Sequence[Island]]) -> Frame:
+def _cell(
+    region: Region,
+    placed: Mapping[Region, Sequence[Island]],
+    *,
+    scroll: bool = False,
+) -> Frame:
     """A region cell: a column stack of its islands, hooked by an ``sb-<region>``
-    class (a theming hook the packaged CSS leaves unpainted)."""
+    class (a theming hook the packaged CSS leaves unpainted).
+
+    ``scroll`` marks the cell as a scroll owner (``sb-scroll``): it scrolls its
+    own overflow while every frame above it clips (see ``static/layout.css``).
+    """
+    cls = f"sb-{region} sb-scroll" if scroll else f"sb-{region}"
     return Frame(
         direction="column",
         children=tuple(placed.get(region, ())),
-        class_=f"sb-{region}",
+        class_=cls,
     )
 
 
@@ -40,18 +50,21 @@ def _row(
     placed: Mapping[Region, Sequence[Island]],
     *,
     class_: str = "",
+    scroll: bool = False,
 ) -> Frame:
     """One row: fixed-width side cells around a flexible center cell.
 
     ``class_`` marks the row's structural role; the head and foot rows pass
     ``sb-rail`` so the layer floors them to the contract (see ``layout.css``).
+    ``scroll`` makes the row's cells scroll owners; the body row passes it so the
+    center and sidebars scroll while the chrome rails clip.
     """
     return Frame(
         direction="row",
         children=(
-            Slot(_cell(left, placed), basis=_LEFT_WIDTH),
-            Slot(_cell(center, placed)),
-            Slot(_cell(right, placed), basis=_RIGHT_WIDTH),
+            Slot(_cell(left, placed, scroll=scroll), basis=_LEFT_WIDTH),
+            Slot(_cell(center, placed, scroll=scroll)),
+            Slot(_cell(right, placed, scroll=scroll), basis=_RIGHT_WIDTH),
         ),
         class_=class_,
     )
@@ -69,15 +82,16 @@ def three_column(
     (fixed-width sides around a flexible center). Islands are placed by region
     name (``head-l`` through ``foot-r``); an omitted region renders as an empty
     cell that collapses. Each cell carries an ``sb-<region>`` class as a theming
-    hook. The result is an ordinary ``Document`` you render with
-    :func:`switchboard_ui.render_document`.
+    hook. The three body cells are scroll owners (``sb-scroll``): they scroll
+    their own overflow while the root and chrome rails clip. The result is an
+    ordinary ``Document`` you render with :func:`switchboard_ui.render_document`.
     """
     placed = regions or {}
     body = Frame(
         direction="column",
         children=(
             _row("head-l", "head-c", "head-r", placed, class_="sb-rail"),
-            Slot(_row("body-l", "body-c", "body-r", placed)),
+            Slot(_row("body-l", "body-c", "body-r", placed, scroll=True)),
             _row("foot-l", "foot-c", "foot-r", placed, class_="sb-rail"),
         ),
     )
