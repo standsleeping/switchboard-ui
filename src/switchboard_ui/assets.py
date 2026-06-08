@@ -1,8 +1,11 @@
-"""Read packaged static assets (the CSS/JS shipped under ``static/``).
+"""Read packaged static assets (the CSS/JS shipped under a ``static/`` dir).
 
-One reader for both the renderer (layout.css, switchboard.js, the optional
-switchboard-debug.js overlay) and the demo (its island adapters), so package
-data is read one way, memoized once.
+One memoized reader for every packaged ``static/`` directory: the mechanism's
+own (layout.css, switchboard.js, the switchboard-debug.js overlay, the demo
+adapters) via :func:`read_static`, and any sibling subpackage's (the theme's
+``static/<name>.css``) via :func:`read_asset` with that subpackage's name. The
+reader takes a package *name* and never imports a subpackage, so it can serve
+the theme layer without the mechanism ever depending on it.
 """
 
 from functools import cache
@@ -10,6 +13,11 @@ from importlib.resources import files
 
 
 @cache
+def read_asset(package: str, name: str) -> str:
+    """Read ``static/<name>`` under ``package`` as text (read once per pair)."""
+    return (files(package) / "static" / name).read_text(encoding="utf-8")
+
+
 def read_static(name: str) -> str:
-    """Read a packaged asset under ``static/`` as text (read once per name)."""
-    return (files("switchboard_ui") / "static" / name).read_text(encoding="utf-8")
+    """Read a packaged asset under ``switchboard_ui/static/`` as text."""
+    return read_asset("switchboard_ui", name)
