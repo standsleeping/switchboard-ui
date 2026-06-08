@@ -1,0 +1,84 @@
+/* switchboard-ui default theme: the opt-in paint layer.
+ *
+ * Structure is the mechanism's (layout.css); this file is style. It paints the
+ * mechanism's hooks (color, type, borders, light/dark theming) and is otherwise
+ * free to tweak by sight against the showcase. One rule it must keep, the mirror
+ * of layout.css's padding ban: padding goes only on a control (the button below),
+ * never on a frame, mount point, or region cell, so nothing overflows its cell;
+ * test_theme_css.py is the backstop. The palette and the theme's own metrics flow
+ * from one --sb-* block, themed for both schemes with light-dark().
+ *
+ * The theme also publishes the Component Geometry Contract: --sb-fit-* tokens are
+ * obligations projected from the theme's causes (padding, font, border) onto the
+ * outer boxes structure sizes. Structure consumes those obligations and never the
+ * causes ("share the projection, not the ingredients"); test_contract.py enforces
+ * the one-way flow. A neutral baseline, not an opinionated skin. */
+
+:root {
+  /* Drives the native scrollbar and form chrome to match in both schemes. */
+  color-scheme: light dark;
+
+  --sb-bg: light-dark(#ffffff, #16181d);
+  --sb-fg: light-dark(#1b1d22, #e6e8ec);
+  --sb-muted: light-dark(#6b7280, #9aa1ad);
+  --sb-border: light-dark(#e3e5e9, #2b2f37);
+  --sb-accent: light-dark(#5b4bd6, #9d8bff);
+  --sb-accent-fg: light-dark(#ffffff, #16181d);
+
+  --sb-font: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+
+  /* Causes: the theme's own metrics, named so the contract below projects from
+   * tokens rather than magic numbers. These stay private to the theme; structure
+   * never reads them. */
+  --sb-font-size: 0.9375rem;
+  --sb-line-height: 1.5;
+  --sb-border-width: 1px;
+  --sb-inset: 0.75rem;
+
+  /* Contract (--sb-fit-*): the only theme values structure may consume. Each is a
+   * control's outer extent, projected from the causes above. --sb-fit-rail-block
+   * is what a rail must grant so a themed control fits; structure floors its rails
+   * to it instead of guessing a fixed height. */
+  --sb-fit-control-block: calc(var(--sb-font-size) * var(--sb-line-height) + 2 * var(--sb-inset) + 2 * var(--sb-border-width));
+  --sb-fit-control-inline: 6rem;
+  --sb-fit-rail-block: var(--sb-fit-control-block);
+}
+
+/* The viewport surface: the mechanism's root frame fills it (position: fixed;
+ * inset: 0), so the surface paint belongs here, not on body. */
+.sb-root {
+  background: var(--sb-bg);
+  color: var(--sb-fg);
+  font-family: var(--sb-font);
+  font-size: var(--sb-font-size);
+  line-height: var(--sb-line-height);
+}
+
+/* The fixed head and foot rails read as chrome, separated by a hairline. */
+.sb-head-l,
+.sb-head-c,
+.sb-head-r {
+  border-bottom: var(--sb-border-width) solid var(--sb-border);
+}
+.sb-foot-l,
+.sb-foot-c,
+.sb-foot-r {
+  border-top: var(--sb-border-width) solid var(--sb-border);
+}
+
+/* The single accent: the only color that signals "interactive". Square inset
+ * plus a min-width floor for short labels, never asymmetric padding. The floor is
+ * the published control-inline obligation, so a slot can reserve the same width. */
+button {
+  font: inherit;
+  color: var(--sb-accent-fg);
+  background: var(--sb-accent);
+  border: var(--sb-border-width) solid var(--sb-accent);
+  padding: var(--sb-inset);
+  min-width: var(--sb-fit-control-inline);
+  cursor: pointer;
+}
+button:focus-visible {
+  outline: 2px solid var(--sb-accent);
+  outline-offset: 2px;
+}
