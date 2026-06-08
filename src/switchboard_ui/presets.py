@@ -5,17 +5,20 @@ tree and returns a :class:`Document`. It holds no styling and no special
 rendering path; it is sugar over the model, so anything a preset builds you could
 build by hand. ``three_column`` is the nine-region arrangement the demo uses.
 
-The preset is opinionated about *layout* (three columns, fixed side rails, a
-flexible center) but never about visual *style*: the sizes below are plain CSS
-lengths, not design tokens, and nothing here sets color, type, or theming.
+The preset is opinionated about *layout* (three columns, fixed-width side rails,
+a flexible center) but never about visual *style*: nothing here sets color, type,
+or theming. The side widths are plain structural lengths (how wide the nav is, a
+layout choice). The rail *height* is not a structural guess: the head and foot
+rows carry ``sb-rail``, which floors them to the theme's ``--sb-fit-rail-block``
+obligation and lets content drive above it (see ``static/layout.css``).
 """
 
 from collections.abc import Mapping, Sequence
 
 from switchboard_ui.model import Document, Frame, Island, Region, Slot
 
-# Layout sizes for the three-column arrangement: plain lengths, not design tokens.
-_RAIL_HEIGHT = "2.5rem"
+# Side-rail widths: plain structural lengths (a layout choice, above the control
+# obligation a sufficiency test verifies), not design tokens.
 _LEFT_WIDTH = "220px"
 _RIGHT_WIDTH = "200px"
 
@@ -35,8 +38,14 @@ def _row(
     center: Region,
     right: Region,
     placed: Mapping[Region, Sequence[Island]],
+    *,
+    class_: str = "",
 ) -> Frame:
-    """One row: fixed-width side cells around a flexible center cell."""
+    """One row: fixed-width side cells around a flexible center cell.
+
+    ``class_`` marks the row's structural role; the head and foot rows pass
+    ``sb-rail`` so the layer floors them to the contract (see ``layout.css``).
+    """
     return Frame(
         direction="row",
         children=(
@@ -44,6 +53,7 @@ def _row(
             Slot(_cell(center, placed)),
             Slot(_cell(right, placed), basis=_RIGHT_WIDTH),
         ),
+        class_=class_,
     )
 
 
@@ -54,20 +64,21 @@ def three_column(
 ) -> Document:
     """Build the nine-region three-column arrangement as a :class:`Document`.
 
-    A column of three rows (a fixed-height top and bottom around a flexible
-    middle), each a row of three cells (fixed-width sides around a flexible
-    center). Islands are placed by region name (``head-l`` through ``foot-r``);
-    an omitted region renders as an empty cell that collapses. Each cell carries
-    an ``sb-<region>`` class as a theming hook. The result is an ordinary
-    ``Document`` you render with :func:`switchboard_ui.render_document`.
+    A column of three rows (a content-driven top and bottom, each floored to the
+    theme's rail obligation, around a flexible middle), each a row of three cells
+    (fixed-width sides around a flexible center). Islands are placed by region
+    name (``head-l`` through ``foot-r``); an omitted region renders as an empty
+    cell that collapses. Each cell carries an ``sb-<region>`` class as a theming
+    hook. The result is an ordinary ``Document`` you render with
+    :func:`switchboard_ui.render_document`.
     """
     placed = regions or {}
     body = Frame(
         direction="column",
         children=(
-            Slot(_row("head-l", "head-c", "head-r", placed), basis=_RAIL_HEIGHT),
+            _row("head-l", "head-c", "head-r", placed, class_="sb-rail"),
             Slot(_row("body-l", "body-c", "body-r", placed)),
-            Slot(_row("foot-l", "foot-c", "foot-r", placed), basis=_RAIL_HEIGHT),
+            _row("foot-l", "foot-c", "foot-r", placed, class_="sb-rail"),
         ),
     )
     return Document(body=body, title=title)

@@ -30,3 +30,18 @@ def test_three_column_places_an_island_in_the_named_cell() -> None:
 
     assert cell.children == (island,)
     assert cell.class_ == "sb-body-c"  # region identity hook for theming
+
+
+def test_three_column_rails_are_content_driven_not_fixed() -> None:
+    """The head and foot rows are bare ``sb-rail`` frames, floored by the contract.
+
+    They are deliberately *not* fixed-basis ``Slot``s: the layer floors them to
+    ``--sb-fit-rail-block`` (the theme's obligation) and lets content drive above
+    it. Only the middle row is a flexible ``Slot``.
+    """
+    doc = three_column()
+    head, middle, foot = doc.body.children
+    assert isinstance(middle, Slot)  # the flexible center row
+    for rail in (head, foot):
+        assert isinstance(rail, Frame)  # not a Slot: no fixed height guess
+        assert rail.class_ == "sb-rail"  # the layer floors it to the contract

@@ -1,10 +1,13 @@
 /* switchboard-ui: structural layout CSS for the Frame primitive.
  *
  * Geometry only: the flex stacks that make a Frame tree render, sizing, and a
- * viewport-locked root. It carries no visual style (no color, type, theming, or
- * design tokens) and no box-spacing: space between siblings is `gap` (structural
+ * viewport-locked root. It carries no paint (no color, type, or light/dark
+ * theming) and no box-spacing: space between siblings is `gap` (structural
  * distribution), never `margin` (banned; see NEVER_MARGIN) and never `padding`
- * (a box's inset is a density decision the theme owns, not the structure). It
+ * (a box's inset is a density decision the theme owns, not the structure). The
+ * one theme value it may consume is a Component Geometry obligation the theme
+ * publishes as `--sb-fit-*`: a rail floors itself to `--sb-fit-rail-block`
+ * rather than guessing a fixed height (the cause of the old spillover). It
  * selects only its own `.sb-*` elements, never the host's `body` / `:root`. The
  * test suite enforces every line of this statically. */
 
@@ -23,6 +26,16 @@
 /* An empty frame (a region cell with no islands) takes no space. */
 .sb-frame:empty {
   display: none;
+}
+
+/* A rail (a head/foot row) is content-driven with a floor: it grants at least
+ * the obligation the theme publishes (`--sb-fit-rail-block`), and grows past it
+ * if its content is taller. `flex: 0 0 auto` keeps the flexible body from either
+ * crushing the rail or letting it claim slack; the floor is the only fixed
+ * promise, and it is the theme's number, not a structural guess. */
+.sb-rail {
+  flex: 0 0 auto;
+  min-block-size: var(--sb-fit-rail-block);
 }
 
 /* The root frame is locked to the viewport: robust to any host body margin, and
