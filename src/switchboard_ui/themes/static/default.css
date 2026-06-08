@@ -44,6 +44,20 @@
   --sb-fit-rail-block: var(--sb-fit-control-block);
 }
 
+/* Density is a first-class mode (philosophy §14), selected with data-density on
+ * the document element and flowing entirely through the cause tokens. It must sit
+ * on :root, the element that declares the contract: reassigning a cause there
+ * reprojects every --sb-fit-* obligation automatically (the calc re-substitutes
+ * the cascaded cause on the same element), so a compact rail floors lower because
+ * the control it must fit is smaller. Set on a descendant instead, the obligation
+ * would already be baked from :root's causes and inherit unchanged. Compact sets
+ * only tokens, never concrete geometry (test_density.py); orthogonal to
+ * light-dark(). */
+:root[data-density="compact"] {
+  --sb-font-size: 0.875rem;
+  --sb-inset: 0.5rem;
+}
+
 /* The viewport surface: the mechanism's root frame fills it (position: fixed;
  * inset: 0), so the surface paint belongs here, not on body. */
 .sb-root {
@@ -78,7 +92,9 @@ button {
   min-width: var(--sb-fit-control-inline);
   cursor: pointer;
 }
+/* The ring draws inside the box (negative offset) so a clipping or scrolling
+ * ancestor never clips it; no layout space is reserved or shifted. */
 button:focus-visible {
   outline: 2px solid var(--sb-accent);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
