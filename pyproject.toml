@@ -131,4 +131,4 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["switchboard_ui"]
+known-first-party = ["showcase", "switchboard_ui"]
