@@ -40,6 +40,30 @@ REGIONS: tuple[Region, ...] = get_args(Region)
 
 
 @dataclass(frozen=True)
+class SpatialEscape:
+    """A declared exception to an island's governed mount point (philosophy §17).
+
+    An island is governed by default: a mount point whose content the surrounding
+    frames size and the cell clips. When an island's content must do more than the
+    governed contract allows, it declares the exception here, so the escape is
+    explicit and inspectable (rendered as ``data-escape``) rather than a silent
+    overflow. Every exception declares its authority.
+
+    Attributes:
+        overflow: How the island handles its own overflow. ``"clip"`` contains it,
+            ``"scroll"`` makes the island its own scroll container, ``"visible"``
+            lets content bleed past the island's box (the cell still clips at its
+            own edge).
+        paint_outset: How far paint (shadow, ring, badge) may escape the box, as a
+            CSS length or token; ``""`` declares none. Documented for structure to
+            honor; it reserves no space on its own.
+    """
+
+    overflow: Literal["clip", "scroll", "visible"] = "clip"
+    paint_outset: str = ""
+
+
+@dataclass(frozen=True)
 class Island:
     """A declarative mount point for a self-contained interactive island.
 
@@ -52,6 +76,9 @@ class Island:
             adapter mounts. Treated as trusted raw HTML.
         class_: Extra CSS class(es) for the mount-point ``<div>``, a theming
             hook the packaged CSS leaves unpainted. Appended after ``sb-island``.
+        escape: A declared :class:`SpatialEscape` when the island's content must
+            step outside the governed mount point (own its scroll, bleed paint).
+            ``None`` (the default) keeps the island fully governed.
     """
 
     name: str
@@ -60,6 +87,7 @@ class Island:
     subscribes: tuple[str, ...] = ()
     initial: str = ""
     class_: str = ""
+    escape: "SpatialEscape | None" = None
 
     def __post_init__(self) -> None:
         """Validate that props serialize to JSON at the authoring boundary.

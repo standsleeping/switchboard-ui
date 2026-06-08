@@ -26,10 +26,25 @@ RuntimeMode = Literal["inline", "linked"]
 _COMPACT = (",", ":")
 
 
+# An escape's overflow policy maps to the structural role class that honors it.
+# "visible" needs no class (it is the island's default) but is still declared.
+_ESCAPE_OVERFLOW_CLASS = {"clip": "sb-clip", "scroll": "sb-scroll", "visible": ""}
+
+
 def _render_island(island: Island, *, style: str | None = None) -> str:
-    """Render an island mount-point ``<div>``, optionally with a flex style."""
+    """Render an island mount-point ``<div>``, optionally with a flex style.
+
+    A governed island is a bare mount point. A declared :class:`SpatialEscape`
+    adds the role class that honors its overflow and records the exception in
+    ``data-escape`` / ``data-paint-outset``, so the escape is explicit and
+    inspectable rather than a silent overflow.
+    """
+    escape = island.escape
+    overflow_class = (
+        _ESCAPE_OVERFLOW_CLASS[escape.overflow] if escape is not None else ""
+    )
     attrs: dict[str, str | None] = {
-        "class": classes("sb-island", island.class_),
+        "class": classes("sb-island", overflow_class, island.class_),
         "style": style,
         "data-island": island.name,
         "data-props": (
@@ -39,6 +54,10 @@ def _render_island(island: Island, *, style: str | None = None) -> str:
         ),
         "data-pub": ",".join(island.publishes) if island.publishes else None,
         "data-sub": ",".join(island.subscribes) if island.subscribes else None,
+        "data-escape": escape.overflow if escape is not None else None,
+        "data-paint-outset": (
+            escape.paint_outset if escape is not None and escape.paint_outset else None
+        ),
     }
     return element("div", attrs, [island.initial])
 
