@@ -158,8 +158,20 @@ def test_layout_css_is_flex_not_grid() -> None:
     assert "grid-template-areas" not in css
 
 
-def test_layout_css_carries_no_design_tokens_or_theming() -> None:
-    """The stylesheet holds layout structure only: no tokens, no theming."""
+def test_layout_css_admits_only_contract_tokens() -> None:
+    """Structure may consume contract obligations (--sb-fit-*), no other token, never theming.
+
+    The three-way split: the layout layer stays free of paint tokens and of
+    light/dark theming (those are *causes*, the theme's to own), but it may
+    consume the projected *obligations* the theme publishes as ``--sb-fit-*``
+    (a rail floors itself to ``--sb-fit-rail-block`` rather than guessing a
+    fixed height). ``test_contract.py`` enforces that the flow is one-way.
+    """
     css = read_static("layout.css")
-    assert "var(--" not in css  # no design tokens
-    assert "light-dark(" not in css  # no light/dark theming
+    assert "light-dark(" not in css  # theming is a cause, never consumed by structure
+    referenced = re.findall(r"var\(\s*(--[\w-]+)", css)
+    non_contract = sorted({t for t in referenced if not t.startswith("--sb-fit-")})
+    assert not non_contract, (
+        f"layout.css references non-contract tokens {non_contract}; "
+        "structure may consume only --sb-fit-* obligations"
+    )
