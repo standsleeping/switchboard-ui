@@ -24,8 +24,16 @@ from switchboard_ui.assets import read_asset
 # because its paint overrides the base `button` rule by specificity.
 # `.sb-color-input-text` is the hex field, a control whose inset is the theme's.
 # `.sb-popover-panel` is a floating content surface that insets its own content.
+# `th` / `td` are table cells, whose inset is the cell's own (the canonical case).
 _PADDABLE_SUBJECTS = frozenset(
-    {"button", ".sb-segmented-option", ".sb-color-input-text", ".sb-popover-panel"}
+    {
+        "button",
+        ".sb-segmented-option",
+        ".sb-color-input-text",
+        ".sb-popover-panel",
+        "th",
+        "td",
+    }
 )
 
 
