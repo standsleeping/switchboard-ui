@@ -102,6 +102,16 @@ def _color(role: str, light: str, dark: str) -> Token:
     return Token(Category.COLOR, role, ValueType.COLOR, Themed(light, dark))
 
 
+def _len(category: Category, role: str, value: str) -> Token:
+    """A scheme-invariant length token."""
+    return Token(category, role, ValueType.LENGTH, Fixed(value))
+
+
+def _num(role: str, value: str) -> Token:
+    """A unitless number token (weights, line-height) in the font category."""
+    return Token(Category.FONT, role, ValueType.NUMBER, Fixed(value))
+
+
 REGISTRY: tuple[Token, ...] = (
     # Color: scheme-varying, authored per -light / -dark arm.
     _color("bg", "#ffffff", "#16181d"),
@@ -114,19 +124,54 @@ REGISTRY: tuple[Token, ...] = (
     _color("accent-fg", "#ffffff", "#16181d"),
     _color("danger", "#c2334b", "#ff6b81"),
     _color("danger-fg", "#ffffff", "#16181d"),
-    # Type.
+    # Type. A UI family + a prose family, a small size scale, weights, line-height,
+    # and tracking. Recursive's variable-font axes are a builder extension, not core.
     Token(
         Category.FONT,
         "family",
         ValueType.FONT_FAMILY,
         Fixed('ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace'),
     ),
-    Token(Category.FONT, "size-base", ValueType.LENGTH, Fixed("0.9375rem")),
-    Token(Category.FONT, "line-height", ValueType.NUMBER, Fixed("1.5")),
-    # Space. The control inset, a semantic token the density modes reassign.
-    Token(Category.SPACE, "inset", ValueType.LENGTH, Fixed("0.75rem")),
-    # Border width.
-    Token(Category.BORDER_WIDTH, "thin", ValueType.LENGTH, Fixed("1px")),
+    Token(
+        Category.FONT,
+        "family-prose",
+        ValueType.FONT_FAMILY,
+        Fixed("ui-sans-serif, system-ui, sans-serif"),
+    ),
+    _len(Category.FONT, "size-sm", "0.8125rem"),
+    _len(Category.FONT, "size-base", "0.9375rem"),
+    _len(Category.FONT, "size-lg", "1.125rem"),
+    _num("weight-normal", "400"),
+    _num("weight-medium", "500"),
+    _num("weight-bold", "700"),
+    _num("line-height", "1.5"),
+    _len(Category.FONT, "tracking", "0"),
+    _len(Category.FONT, "tracking-wide", "0.04em"),
+    # Space: a step scale plus the control inset (a semantic token the density modes
+    # reassign, distinct from the scale so density does not move every md use).
+    _len(Category.SPACE, "2xs", "0.125rem"),
+    _len(Category.SPACE, "xs", "0.25rem"),
+    _len(Category.SPACE, "sm", "0.5rem"),
+    _len(Category.SPACE, "md", "0.75rem"),
+    _len(Category.SPACE, "lg", "1rem"),
+    _len(Category.SPACE, "xl", "1.5rem"),
+    _len(Category.SPACE, "inset", "0.75rem"),
+    # Radius: base is 0 (square default, the common token); steps for opt-in rounding.
+    _len(Category.RADIUS, "base", "0"),
+    _len(Category.RADIUS, "sm", "0.125rem"),
+    _len(Category.RADIUS, "lg", "0.375rem"),
+    # Border width. Border color is --sb-color-border.
+    _len(Category.BORDER_WIDTH, "thin", "1px"),
+    _len(Category.BORDER_WIDTH, "accent", "2px"),
+    # Shadow: none by default (the look has no shadows); shadow-sm is the themed step
+    # a host opts into (its color varies by scheme, so it gets arms).
+    Token(Category.SHADOW, "base", ValueType.SHADOW, Fixed("none")),
+    Token(
+        Category.SHADOW,
+        "sm",
+        ValueType.SHADOW,
+        Themed("0 1px 2px rgb(0 0 0 / 0.08)", "0 1px 2px rgb(0 0 0 / 0.45)"),
+    ),
     # Component Geometry Contract: obligations projected from the causes above; the
     # only theme values structure consumes (test_contract.py).
     Token(
@@ -160,6 +205,10 @@ MODES: tuple[Mode, ...] = (
     Mode(
         "compact",
         (("--sb-font-size-base", "0.875rem"), ("--sb-space-inset", "0.5rem")),
+    ),
+    Mode(
+        "spacious",
+        (("--sb-font-size-base", "1rem"), ("--sb-space-inset", "1rem")),
     ),
 )
 
@@ -242,15 +291,20 @@ def _render_value(token: Token) -> str:
 
 
 def _render_root() -> str:
-    """The ``:root`` block: color-scheme plus every token, grouped by category."""
+    """The ``:root`` block: color-scheme plus every token, grouped by category.
+
+    Categories are grouped from the registry in declaration order (which matches the
+    enum order), so the section order follows the data and an unpopulated category
+    simply never appears.
+    """
+    groups: dict[Category, list[Token]] = {}
+    for token in REGISTRY:
+        groups.setdefault(token.category, []).append(token)
     blocks = [
         "  /* Drives the native scrollbar and form chrome to match in both schemes. */",
         "  color-scheme: light dark;",
     ]
-    for category in Category:
-        tokens = [t for t in REGISTRY if t.category is category]
-        if not tokens:
-            continue
+    for category, tokens in groups.items():
         joiner = "\n\n" if any(isinstance(t.value, Themed) for t in tokens) else "\n"
         blocks.append("")
         blocks.append(f"  /* {_SECTION[category]} */")

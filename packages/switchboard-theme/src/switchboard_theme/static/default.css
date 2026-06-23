@@ -53,14 +53,41 @@
 
   /* Type. */
   --sb-font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  --sb-font-family-prose: ui-sans-serif, system-ui, sans-serif;
+  --sb-font-size-sm: 0.8125rem;
   --sb-font-size-base: 0.9375rem;
+  --sb-font-size-lg: 1.125rem;
+  --sb-font-weight-normal: 400;
+  --sb-font-weight-medium: 500;
+  --sb-font-weight-bold: 700;
   --sb-font-line-height: 1.5;
+  --sb-font-tracking: 0;
+  --sb-font-tracking-wide: 0.04em;
 
   /* Space. */
+  --sb-space-2xs: 0.125rem;
+  --sb-space-xs: 0.25rem;
+  --sb-space-sm: 0.5rem;
+  --sb-space-md: 0.75rem;
+  --sb-space-lg: 1rem;
+  --sb-space-xl: 1.5rem;
   --sb-space-inset: 0.75rem;
+
+  /* Radius. */
+  --sb-radius-base: 0;
+  --sb-radius-sm: 0.125rem;
+  --sb-radius-lg: 0.375rem;
 
   /* Border width. */
   --sb-border-width-thin: 1px;
+  --sb-border-width-accent: 2px;
+
+  /* Shadow. */
+  --sb-shadow-base: none;
+
+  --sb-shadow-sm-light: 0 1px 2px rgb(0 0 0 / 0.08);
+  --sb-shadow-sm-dark: 0 1px 2px rgb(0 0 0 / 0.45);
+  --sb-shadow-sm: light-dark(var(--sb-shadow-sm-light), var(--sb-shadow-sm-dark));
 
   /* Contract: projected from the causes above; the only values structure consumes. */
   --sb-fit-control-block: calc(var(--sb-font-size-base) * var(--sb-font-line-height) + 2 * var(--sb-space-inset) + 2 * var(--sb-border-width-thin));
@@ -73,6 +100,13 @@
 :root[data-density="compact"] {
   --sb-font-size-base: 0.875rem;
   --sb-space-inset: 0.5rem;
+}
+
+/* Density mode "spacious": reassigns cause tokens; the --sb-fit-*
+ * contract reprojects automatically (test_density.py). */
+:root[data-density="spacious"] {
+  --sb-font-size-base: 1rem;
+  --sb-space-inset: 1rem;
 }
 
 /* The viewport surface: the mechanism's root frame fills it (position: fixed;
