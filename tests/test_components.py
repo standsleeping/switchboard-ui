@@ -17,7 +17,14 @@ from importlib.resources import files
 
 import pytest
 
-from switchboard_ui.components import segmented, segmented_scripts, segmented_styles
+from switchboard_ui.components import (
+    color_input,
+    color_input_scripts,
+    color_input_styles,
+    segmented,
+    segmented_scripts,
+    segmented_styles,
+)
 from switchboard_ui.model import Island
 from tests.htmlprobe import find
 from tests.test_layout_css import _LAYOUT_PROPERTIES, _declared_properties, _selectors
@@ -113,6 +120,56 @@ def test_segmented_scripts_returns_the_keyboard_radio_adapter() -> None:
 def test_segmented_styles_returns_the_structural_css() -> None:
     """The structural CSS ships and targets the component's hooks."""
     assert ".sb-segmented" in segmented_styles()
+
+
+def test_color_input_builds_a_color_input_island() -> None:
+    """The factory names the color-input adapter and publishes the chosen topic."""
+    island = color_input(topic="token:accent", value="#5b4bd6", label="Accent")
+    assert isinstance(island, Island)
+    assert island.name == "color-input"
+    assert island.publishes == ("token:accent",)
+    assert island.props == {"topic": "token:accent"}
+
+
+def test_color_input_server_renders_the_swatch_and_field() -> None:
+    """The swatch shows the value and the named hex field holds it at first paint."""
+    island = color_input(topic="token:accent", value="#5b4bd6", label="Accent")
+    (swatch,) = find(island.initial, "span", **{"class": "sb-color-input-swatch"})
+    assert "background:#5b4bd6" in swatch["style"]
+    (field,) = find(island.initial, "input", **{"class": "sb-color-input-text"})
+    assert field["value"] == "#5b4bd6"
+    assert field["aria-label"] == "Accent"
+    assert field["aria-invalid"] == "false"
+
+
+def test_color_input_rejects_a_non_hex_value() -> None:
+    """A value that is not a six-digit hex fails where the call is written."""
+    with pytest.raises(ValueError, match="six-digit hex"):
+        color_input(topic="token:accent", value="rebeccapurple", label="Accent")
+
+
+def test_color_input_rejects_a_short_hex_value() -> None:
+    """A three-digit hex is rejected: the v0 field accepts only ``#rrggbb``."""
+    with pytest.raises(ValueError, match="six-digit hex"):
+        color_input(topic="token:accent", value="#abc", label="Accent")
+
+
+def test_color_input_rejects_a_blank_label() -> None:
+    """The field needs a name; a blank label fails where the call is written."""
+    with pytest.raises(ValueError, match="non-empty label"):
+        color_input(topic="token:accent", value="#5b4bd6", label="")
+
+
+def test_color_input_scripts_returns_the_adapter() -> None:
+    """The adapter ships, registers under the color-input name, and validates hex."""
+    (adapter,) = color_input_scripts()
+    assert 'register("color-input"' in adapter
+    assert "aria-invalid" in adapter
+
+
+def test_color_input_styles_returns_the_structural_css() -> None:
+    """The structural CSS ships and targets the component's hooks."""
+    assert ".sb-color-input" in color_input_styles()
 
 
 def _component_sheets() -> list[tuple[str, str]]:

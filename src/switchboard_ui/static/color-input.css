@@ -1,0 +1,22 @@
+/* switchboard-ui: structural CSS for the color input.
+ *
+ * Geometry only, the same contract as layout.css: the swatch and the hex field
+ * sit in a row, and the swatch is a square sized to the control-block obligation
+ * (`--sb-fit-control-block`) — the same height a standard control resolves to, so
+ * the swatch and the field stand the same height by construction, no magic
+ * number. `box-sizing: border-box` keeps the swatch's own border inside that
+ * height so it matches the field exactly. It carries no paint and no box-spacing
+ * — the gap, the swatch border, and the field's colour, inset, caret, and focus
+ * ring are all the theme's, keyed to these same .sb-* hooks. The guard in
+ * tests/test_components.py holds this file to the geometry-only contract. */
+
+.sb-color-input {
+  display: inline-flex;
+  align-items: center;
+}
+.sb-color-input-swatch {
+  flex: none;
+  box-sizing: border-box;
+  inline-size: var(--sb-fit-control-block);
+  block-size: var(--sb-fit-control-block);
+}

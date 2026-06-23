@@ -27,10 +27,11 @@ and selected label), ``--sb-color-accent`` (the underline), ``--sb-color-subtle`
 (the separators), ``--sb-border-width-accent`` (the underline width).
 """
 
+import re
 from collections.abc import Sequence
 
 from switchboard_ui.assets import read_static
-from switchboard_ui.html import element, escape_text
+from switchboard_ui.html import attributes, element, escape_text
 from switchboard_ui.model import Island
 
 _ADAPTER = "segmented"
@@ -113,3 +114,65 @@ def segmented_scripts() -> tuple[str, ...]:
 def segmented_styles() -> str:
     """The segmented structural CSS, for the host to inline in ``extra_head``."""
     return read_static("segmented.css")
+
+
+# A six-digit hex colour (``#rrggbb``); the palette the theme-builder edits is all
+# six-digit, so the v0 field accepts exactly that.
+_HEX = re.compile(r"#[0-9a-fA-F]{6}\Z")
+
+
+def color_input(*, topic: str, value: str, label: str) -> Island:
+    """A themed colour input: a swatch plus a hex field that publishes ``value``.
+
+    A tokenised replacement for the native ``<input type="color">`` (whose picker
+    popover is UA-painted and cannot be themed). ``value`` is the initial colour
+    as a six-digit hex (``#rrggbb``); ``label`` is the field's accessible name.
+    Editing the field to a valid hex repaints the swatch and publishes the colour
+    on ``topic``. Raises :class:`ValueError` at the authoring boundary if ``value``
+    is not a six-digit hex or ``label`` is blank, so a bad call fails where it is
+    written, not at render or in the browser.
+    """
+    if not _HEX.match(value):
+        msg = f"color_input value {value!r} is not a six-digit hex colour (#rrggbb)"
+        raise ValueError(msg)
+    if not label:
+        raise ValueError("color_input requires a non-empty label (the field's name)")
+    swatch = element(
+        "span",
+        {
+            "class": "sb-color-input-swatch",
+            "aria-hidden": "true",
+            "style": f"background:{value}",
+        },
+    )
+    field = (
+        "<input"
+        + attributes(
+            {
+                "class": "sb-color-input-text",
+                "type": "text",
+                "value": value,
+                "size": "8",
+                "maxlength": "7",
+                "spellcheck": "false",
+                "autocomplete": "off",
+                "aria-label": label,
+                "aria-invalid": "false",
+            }
+        )
+        + ">"
+    )
+    initial = element("div", {"class": "sb-color-input"}, [swatch, field])
+    return Island(
+        name="color-input", props={"topic": topic}, publishes=(topic,), initial=initial
+    )
+
+
+def color_input_scripts() -> tuple[str, ...]:
+    """The color-input adapter, for the host to pass to ``extra_scripts``."""
+    return (read_static("color-input.js"),)
+
+
+def color_input_styles() -> str:
+    """The color-input structural CSS, for the host to inline in ``extra_head``."""
+    return read_static("color-input.css")
