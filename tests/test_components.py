@@ -27,12 +27,16 @@ from switchboard_ui.components import (
     popover,
     popover_scripts,
     popover_styles,
+    preview,
+    preview_styles,
     segmented,
     segmented_scripts,
     segmented_styles,
     slider,
     slider_scripts,
     slider_styles,
+    theme_state,
+    theme_state_scripts,
 )
 from switchboard_ui.model import Island
 from tests.htmlprobe import find
@@ -321,6 +325,81 @@ def test_slider_scripts_returns_the_adapter() -> None:
 def test_slider_styles_returns_the_structural_css() -> None:
     """The structural CSS ships and targets the component's hooks."""
     assert ".sb-slider" in slider_styles()
+
+
+def test_preview_builds_a_scoped_sample_surface() -> None:
+    """The preview is a static island wrapping a sample in a named scope wrapper."""
+    island = preview(scope_id="preview-1")
+    assert isinstance(island, Island)
+    assert island.name == "preview"
+    assert island.publishes == ()
+    assert island.subscribes == ()
+    (scope,) = find(island.initial, "div", **{"data-sb-scope": "preview-1"})
+    assert "sb-preview-scope" in scope["class"]
+
+
+def test_preview_renders_a_token_exercising_sample() -> None:
+    """The sample includes the surfaces whose token adjacencies the preview shows."""
+    html = preview(scope_id="preview-1").initial
+    assert find(html, "button")
+    assert find(html, "table", **{"class": "sb-preview-table"})
+    (swatch,) = find(html, "span", **{"class": "sb-preview-swatch"})
+    assert "var(--sb-color-accent)" in swatch["style"]
+
+
+def test_preview_pins_the_scheme_when_given() -> None:
+    """A ``scheme`` stamps the scheme class so the pane can pin one colour scheme."""
+    (scope,) = find(
+        preview(scope_id="p", scheme="dark").initial, "div", **{"data-sb-scope": "p"}
+    )
+    assert "sb-preview-dark" in scope["class"]
+    (plain,) = find(preview(scope_id="p").initial, "div", **{"data-sb-scope": "p"})
+    assert "sb-preview-light" not in plain["class"]
+    assert "sb-preview-dark" not in plain["class"]
+
+
+def test_preview_rejects_a_blank_scope_id() -> None:
+    """The wrapper needs an id for a theme-state island to target; reject a blank."""
+    with pytest.raises(ValueError, match="non-empty scope_id"):
+        preview(scope_id="")
+
+
+def test_preview_styles_returns_the_structural_css() -> None:
+    """The structural CSS ships and targets the component's hooks."""
+    assert ".sb-preview" in preview_styles()
+
+
+def test_theme_state_subscribes_to_its_bound_topics() -> None:
+    """The apply-edit island subscribes to each bound topic and carries the map."""
+    island = theme_state(
+        scope='[data-sb-scope="preview-1"]',
+        bindings={"token:accent": "--sb-color-accent"},
+    )
+    assert island.name == "theme-state"
+    assert island.subscribes == ("token:accent",)
+    assert island.props == {
+        "scope": '[data-sb-scope="preview-1"]',
+        "bindings": {"token:accent": "--sb-color-accent"},
+    }
+
+
+def test_theme_state_rejects_a_blank_scope() -> None:
+    """Without a scope there is nothing to write onto; reject a blank."""
+    with pytest.raises(ValueError, match="non-empty scope"):
+        theme_state(scope="", bindings={"token:accent": "--sb-color-accent"})
+
+
+def test_theme_state_rejects_empty_bindings() -> None:
+    """With no bindings the island would do nothing; reject it at the boundary."""
+    with pytest.raises(ValueError, match="at least one binding"):
+        theme_state(scope="[data-sb-scope]", bindings={})
+
+
+def test_theme_state_scripts_returns_the_adapter() -> None:
+    """The adapter ships, registers under the theme-state name, and writes properties."""
+    (adapter,) = theme_state_scripts()
+    assert 'register("theme-state"' in adapter
+    assert "setProperty" in adapter
 
 
 def _popover(**overrides: object) -> Island:

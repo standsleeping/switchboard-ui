@@ -1,0 +1,30 @@
+/* switchboard-ui: structural CSS for the live preview pane.
+ *
+ * Geometry only, the same contract as layout.css. A column holding a scope
+ * wrapper (the element a theme-state island writes token overrides onto) and the
+ * sample surface inside it. The pane owns no scroll of its own — the region it
+ * sits in does — so it composes inside the center content area without nesting
+ * scroll containers. The swatch is a control-block square; everything paints from
+ * the (scope-overridable) tokens, so the whole sample repaints when a token
+ * changes. The surface colour, separators, gap, and table chrome are the
+ * theme's, keyed to these same .sb-* hooks. */
+
+.sb-preview {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
+}
+.sb-preview-scope {
+  display: flex;
+  flex-direction: column;
+}
+.sb-preview-sample {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.sb-preview-swatch {
+  box-sizing: border-box;
+  inline-size: var(--sb-fit-control-block);
+  block-size: var(--sb-fit-control-block);
+}

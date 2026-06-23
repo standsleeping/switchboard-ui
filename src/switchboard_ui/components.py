@@ -28,7 +28,7 @@ and selected label), ``--sb-color-accent`` (the underline), ``--sb-color-subtle`
 """
 
 import re
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Literal
 
 from switchboard_ui.assets import read_static
@@ -447,3 +447,109 @@ def slider_scripts() -> tuple[str, ...]:
 def slider_styles() -> str:
     """The slider structural CSS, for the host to inline in ``extra_head``."""
     return read_static("slider.css")
+
+
+def _preview_sample() -> str:
+    """A representative sample of surfaces, to exercise the token adjacencies live."""
+    heading = element("p", {"class": "sb-preview-heading"}, [escape_text("Heading")])
+    prose = element(
+        "p",
+        {"class": "sb-preview-prose"},
+        [escape_text("Body text in the prose family, sized and coloured by tokens.")],
+    )
+    button = element("button", {"type": "button"}, [escape_text("Primary")])
+    swatch = element(
+        "span",
+        {
+            "class": "sb-preview-swatch",
+            "aria-hidden": "true",
+            "style": "background:var(--sb-color-accent)",
+        },
+    )
+    header = element(
+        "tr",
+        {},
+        [
+            element("th", {}, [escape_text("Token")]),
+            element("th", {}, [escape_text("Role")]),
+        ],
+    )
+    body = [
+        element(
+            "tr",
+            {},
+            [
+                element("td", {}, [escape_text(name)]),
+                element("td", {}, [escape_text(role)]),
+            ],
+        )
+        for name, role in (("accent", "interactive"), ("fg", "text"))
+    ]
+    table = element(
+        "table",
+        {"class": "sb-preview-table"},
+        [element("thead", {}, [header]), element("tbody", {}, body)],
+    )
+    return element(
+        "div", {"class": "sb-preview-sample"}, [heading, prose, button, swatch, table]
+    )
+
+
+def preview(*, scope_id: str, scheme: Literal["light", "dark"] | None = None) -> Island:
+    """A live preview surface: a sample of components that repaints as tokens change.
+
+    Renders a representative sample inside a scope wrapper carrying ``scope_id``
+    (as ``data-sb-scope``); a sibling :func:`theme_state` island writes token
+    overrides onto that wrapper, and everything inside repaints because it reads
+    ``var(--sb-*)``. ``scheme`` pins the pane to one colour scheme (a side-by-side
+    light/dark builder renders two). The preview is a static display surface — no
+    adapter — so it is also a plain gallery specimen. Raises :class:`ValueError`
+    at the authoring boundary if ``scope_id`` is blank.
+    """
+    if not scope_id:
+        raise ValueError("preview requires a non-empty scope_id")
+    scope = element(
+        "div",
+        {
+            "class": classes(
+                "sb-preview-scope", f"sb-preview-{scheme}" if scheme else ""
+            ),
+            "data-sb-scope": scope_id,
+        },
+        [_preview_sample()],
+    )
+    return Island(
+        name="preview", initial=element("div", {"class": "sb-preview"}, [scope])
+    )
+
+
+def preview_styles() -> str:
+    """The preview structural CSS, for the host to inline in ``extra_head``."""
+    return read_static("preview.css")
+
+
+def theme_state(*, scope: str, bindings: Mapping[str, str]) -> Island:
+    """The apply-edit island: write bound token edits onto a scoped element.
+
+    ``scope`` is a CSS selector for the override target(s) (e.g. a preview's
+    ``[data-sb-scope]`` wrapper); ``bindings`` maps a bus topic to a scheme-varying
+    colour token (``{"token:accent": "--sb-color-accent"}``). When a bound topic
+    publishes a value, the adapter writes it onto every scoped element as the
+    token's two arms (``-light`` / ``-dark``), so the scoped subtree repaints. The
+    island has no markup of its own. Raises :class:`ValueError` at the authoring
+    boundary if ``scope`` is blank or ``bindings`` is empty.
+    """
+    if not scope:
+        raise ValueError("theme_state requires a non-empty scope selector")
+    if not bindings:
+        raise ValueError("theme_state requires at least one binding")
+    return Island(
+        name="theme-state",
+        props={"scope": scope, "bindings": dict(bindings)},
+        subscribes=tuple(bindings),
+    )
+
+
+def theme_state_scripts() -> tuple[str, ...]:
+    """The theme-state adapter, for the host to pass to ``extra_scripts``."""
+    return (read_static("theme-state.js"),)
