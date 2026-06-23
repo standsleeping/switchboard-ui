@@ -1,0 +1,18 @@
+/* switchboard-ui: structural CSS for the segmented toggle.
+ *
+ * Geometry only, the same contract as layout.css: it lays the options out in a
+ * row and centres them on the cross axis, and nothing more. It carries no paint
+ * and no box-spacing — the gap between options, the label colour, the inset, and
+ * the selected underline are all the theme's, keyed to these same .sb-* hooks.
+ * The guard in tests/test_components.py holds this file to the geometry-only,
+ * token-free, .sb-*-only contract, exactly as test_layout_css.py holds the
+ * layout spine. */
+
+.sb-segmented {
+  display: flex;
+  align-items: center;
+}
+.sb-segmented-option {
+  display: inline-flex;
+  align-items: center;
+}
