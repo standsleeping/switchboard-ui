@@ -28,7 +28,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import switchboard_theme
-from showcase.build import build_showcase, showcase_scripts
+from showcase.build import build_showcase, showcase_scripts, showcase_styles
 from switchboard_ui import render_document
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -68,10 +68,15 @@ _RELOAD_CLIENT = """
 
 
 def render_page() -> str:
-    """Render the showcase page: themed, with the live-reload client attached."""
+    """Render the showcase page: themed, with the live-reload client attached.
+
+    ``extra_head`` carries the theme's paint and the components' structural CSS
+    (paint after structure, so the cascade resolves correctly); ``extra_scripts``
+    carries the island adapters and the live-reload client.
+    """
     return render_document(
         build_showcase(),
-        extra_head=switchboard_theme.head("default"),
+        extra_head=showcase_styles() + switchboard_theme.head("default"),
         extra_scripts=(*showcase_scripts(), _RELOAD_CLIENT),
     )
 
