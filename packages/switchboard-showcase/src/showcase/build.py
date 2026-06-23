@@ -4,7 +4,8 @@ Mirrors the package's own ``demo.py`` build / ``cli.py`` serve split: this modul
 returns what to render; :mod:`showcase.server` serves and hot-reloads it. Phase 1
 grows the component gallery here — each island and preset rendered on a
 self-rendered page, the forcing function the theme and components are shaped
-against. Its inhabitants so far: the segmented toggle and the color input.
+against. Its inhabitants so far: the segmented toggle, a popover, and the colour
+picker (which composes the popover).
 
 A component ships three parts; the host wires each. :func:`build_showcase` places
 the islands, :func:`showcase_scripts` carries the adapters (for ``extra_scripts``),
@@ -14,9 +15,9 @@ the theme). That is the same opt-in a real host performs.
 
 from switchboard_ui import Document, Island
 from switchboard_ui.components import (
-    color_input,
-    color_input_scripts,
-    color_input_styles,
+    color_picker,
+    color_picker_scripts,
+    color_picker_styles,
     popover,
     popover_scripts,
     popover_styles,
@@ -55,18 +56,20 @@ def build_showcase() -> Document:
                 panel_id="demo-popover",
             ),
         ),
-        "body-r": (color_input(topic="token:accent", value="#5b4bd6", label="Accent"),),
+        "body-r": (
+            color_picker(topic="token:accent", value="#5b4bd6", label="Accent"),
+        ),
         "foot-c": (Island(name="status", initial="component gallery"),),
     }
     return three_column(regions, title="switchboard-ui showcase")
 
 
 def showcase_scripts() -> tuple[str, ...]:
-    """The island adapters the showcase page registers."""
-    return segmented_scripts() + color_input_scripts() + popover_scripts()
+    """The island adapters the showcase page registers (the picker pairs the popover)."""
+    return segmented_scripts() + popover_scripts() + color_picker_scripts()
 
 
 def showcase_styles() -> str:
     """The components' structural CSS, wrapped for ``extra_head`` injection."""
-    sheets = "\n".join((segmented_styles(), color_input_styles(), popover_styles()))
+    sheets = "\n".join((segmented_styles(), popover_styles(), color_picker_styles()))
     return f"<style>{sheets}</style>"
