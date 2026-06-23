@@ -6,7 +6,9 @@
  * of layout.css's padding ban: padding goes only on a control (the button below),
  * never on a frame, mount point, or region cell, so nothing overflows its cell;
  * test_theme_css.py is the backstop. The palette and the theme's own metrics flow
- * from one --sb-* block, themed for both schemes with light-dark().
+ * from one --sb-* block; scheme-varying colors are authored as -light / -dark arm
+ * tokens composed with light-dark(), so the builder edits an arm (a single value)
+ * and never the dual light-dark() value (see the arm note below, test_tokens.py).
  *
  * The theme also publishes the Component Geometry Contract: --sb-fit-* tokens are
  * obligations projected from the theme's causes (padding, font, border) onto the
@@ -18,12 +20,34 @@
   /* Drives the native scrollbar and form chrome to match in both schemes. */
   color-scheme: light dark;
 
-  --sb-bg: light-dark(#ffffff, #16181d);
-  --sb-fg: light-dark(#1b1d22, #e6e8ec);
-  --sb-muted: light-dark(#6b7280, #9aa1ad);
-  --sb-border: light-dark(#e3e5e9, #2b2f37);
-  --sb-accent: light-dark(#5b4bd6, #9d8bff);
-  --sb-accent-fg: light-dark(#ffffff, #16181d);
+  /* Scheme-varying colors are authored per arm (-light / -dark) and composed into
+   * the public token with light-dark(). Consumers read only the composed token
+   * (var(--sb-bg)); the builder edits an arm (setProperty('--sb-bg-dark', ...))
+   * and the composed token reprojects, so light-dark()'s dual value is never
+   * patched in place and both panes of a light/dark preview update at once. */
+  --sb-bg-light: #ffffff;
+  --sb-bg-dark: #16181d;
+  --sb-bg: light-dark(var(--sb-bg-light), var(--sb-bg-dark));
+
+  --sb-fg-light: #1b1d22;
+  --sb-fg-dark: #e6e8ec;
+  --sb-fg: light-dark(var(--sb-fg-light), var(--sb-fg-dark));
+
+  --sb-muted-light: #6b7280;
+  --sb-muted-dark: #9aa1ad;
+  --sb-muted: light-dark(var(--sb-muted-light), var(--sb-muted-dark));
+
+  --sb-border-light: #e3e5e9;
+  --sb-border-dark: #2b2f37;
+  --sb-border: light-dark(var(--sb-border-light), var(--sb-border-dark));
+
+  --sb-accent-light: #5b4bd6;
+  --sb-accent-dark: #9d8bff;
+  --sb-accent: light-dark(var(--sb-accent-light), var(--sb-accent-dark));
+
+  --sb-accent-fg-light: #ffffff;
+  --sb-accent-fg-dark: #16181d;
+  --sb-accent-fg: light-dark(var(--sb-accent-fg-light), var(--sb-accent-fg-dark));
 
   --sb-font: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
 
