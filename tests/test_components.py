@@ -21,6 +21,9 @@ from switchboard_ui.components import (
     color_input,
     color_input_scripts,
     color_input_styles,
+    color_picker,
+    color_picker_scripts,
+    color_picker_styles,
     popover,
     popover_scripts,
     popover_styles,
@@ -173,6 +176,65 @@ def test_color_input_scripts_returns_the_adapter() -> None:
 def test_color_input_styles_returns_the_structural_css() -> None:
     """The structural CSS ships and targets the component's hooks."""
     assert ".sb-color-input" in color_input_styles()
+
+
+def test_color_picker_builds_a_color_picker_island() -> None:
+    """The factory names the color-picker adapter and publishes the chosen topic."""
+    island = color_picker(topic="token:accent", value="#5b4bd6", label="Accent")
+    assert isinstance(island, Island)
+    assert island.name == "color-picker"
+    assert island.publishes == ("token:accent",)
+    assert island.props == {"topic": "token:accent"}
+
+
+def test_color_picker_renders_swatch_spectrum_and_field() -> None:
+    """The chip trigger holds the live colour; the spectrum and hex field are present."""
+    html = color_picker(topic="token:accent", value="#5b4bd6", label="Accent").initial
+    swatch = [
+        b
+        for b in find(html, "button")
+        if "sb-color-picker-swatch" in b.get("class", "")
+    ]
+    assert len(swatch) == 1
+    assert "background:#5b4bd6" in swatch[0]["style"]
+    assert swatch[0]["aria-label"] == "Accent"
+    sliders = {s["class"]: s for s in find(html, "div", role="slider")}
+    assert "sb-color-picker-area" in sliders
+    assert sliders["sb-color-picker-hue"]["aria-valuemin"] == "0"
+    assert sliders["sb-color-picker-hue"]["aria-valuemax"] == "360"
+    (field,) = find(html, "input", **{"class": "sb-color-input-text"})
+    assert field["value"] == "#5b4bd6"
+
+
+def test_color_picker_shares_the_hex_field_with_the_color_input() -> None:
+    """Both colour controls render the identical hex field (one shared authoring)."""
+    field = '<input class="sb-color-input-text" type="text" value="#5b4bd6"'
+    assert field in color_input(topic="t", value="#5b4bd6", label="Accent").initial
+    assert field in color_picker(topic="t", value="#5b4bd6", label="Accent").initial
+
+
+def test_color_picker_rejects_a_non_hex_value() -> None:
+    """A non-hex value fails at the authoring boundary, not at render."""
+    with pytest.raises(ValueError, match="six-digit hex"):
+        color_picker(topic="t", value="nope", label="Accent")
+
+
+def test_color_picker_rejects_a_blank_label() -> None:
+    """The control needs a name; a blank label fails where the call is written."""
+    with pytest.raises(ValueError, match="non-empty label"):
+        color_picker(topic="t", value="#5b4bd6", label="")
+
+
+def test_color_picker_scripts_returns_the_adapter() -> None:
+    """The picker ships its own adapter; the popover adapter is paired separately."""
+    (adapter,) = color_picker_scripts()
+    assert 'register("color-picker"' in adapter
+    assert "hsvToRgb" in adapter
+
+
+def test_color_picker_styles_returns_the_structural_css() -> None:
+    """The structural CSS ships and targets the component's hooks."""
+    assert ".sb-color-picker" in color_picker_styles()
 
 
 def _popover(**overrides: object) -> Island:

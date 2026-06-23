@@ -32,8 +32,9 @@ from collections.abc import Sequence
 from typing import Literal
 
 from switchboard_ui.assets import read_static
-from switchboard_ui.html import attributes, element, escape_text
+from switchboard_ui.html import attributes, classes, element, escape_text
 from switchboard_ui.model import Island
+from switchboard_ui.render import render_island
 
 _ADAPTER = "segmented"
 
@@ -122,6 +123,27 @@ def segmented_styles() -> str:
 _HEX = re.compile(r"#[0-9a-fA-F]{6}\Z")
 
 
+def _hex_field(value: str, label: str) -> str:
+    """The hex ``<input>`` shared by the color input and the color picker."""
+    return (
+        "<input"
+        + attributes(
+            {
+                "class": "sb-color-input-text",
+                "type": "text",
+                "value": value,
+                "size": "8",
+                "maxlength": "7",
+                "spellcheck": "false",
+                "autocomplete": "off",
+                "aria-label": label,
+                "aria-invalid": "false",
+            }
+        )
+        + ">"
+    )
+
+
 def color_input(*, topic: str, value: str, label: str) -> Island:
     """A themed colour input: a swatch plus a hex field that publishes ``value``.
 
@@ -146,24 +168,9 @@ def color_input(*, topic: str, value: str, label: str) -> Island:
             "style": f"background:{value}",
         },
     )
-    field = (
-        "<input"
-        + attributes(
-            {
-                "class": "sb-color-input-text",
-                "type": "text",
-                "value": value,
-                "size": "8",
-                "maxlength": "7",
-                "spellcheck": "false",
-                "autocomplete": "off",
-                "aria-label": label,
-                "aria-invalid": "false",
-            }
-        )
-        + ">"
+    initial = element(
+        "div", {"class": "sb-color-input"}, [swatch, _hex_field(value, label)]
     )
-    initial = element("div", {"class": "sb-color-input"}, [swatch, field])
     return Island(
         name="color-input", props={"topic": topic}, publishes=(topic,), initial=initial
     )
@@ -195,6 +202,9 @@ def popover(
     panel_id: str,
     haspopup: HasPopup = "dialog",
     panel_role: str = "group",
+    trigger_class: str = "",
+    trigger_label: str | None = None,
+    trigger_style: str = "",
     open_topic: str | None = None,
 ) -> Island:
     """A reusable popover: a trigger that reveals a floating panel anchored to it.
@@ -206,27 +216,34 @@ def popover(
     panel is a native ``[popover]``: the UA renders it in the top layer (so it
     escapes ancestor clipping) and gives light-dismiss and Esc for free; the
     adapter adds focus management, positioning, and an optional ``open_topic``
-    bus echo of ``{"open": bool}``. Raises :class:`ValueError` at the authoring
-    boundary if ``label`` is blank, ``panel_id`` is not a valid HTML id, or
-    ``trigger`` / ``panel`` is empty.
+    bus echo of ``{"open": bool}``.
+
+    ``trigger_class`` adds classes to the trigger button (e.g. to style it as a
+    chip), and ``trigger_label`` gives the trigger its own accessible name — which
+    a content-less chip trigger needs, and which lets ``trigger`` be empty. Raises
+    :class:`ValueError` at the authoring boundary if ``label`` is blank,
+    ``panel_id`` is not a valid HTML id, ``panel`` is empty, or ``trigger`` is
+    empty without a ``trigger_label``.
     """
     if not label:
         raise ValueError("popover requires a non-empty label (the panel's name)")
     if not _ID.match(panel_id):
         raise ValueError(f"popover panel_id {panel_id!r} is not a valid HTML id")
-    if not trigger:
-        raise ValueError("popover requires trigger content")
+    if not trigger and not trigger_label:
+        raise ValueError("popover requires trigger content or a trigger_label")
     if not panel:
         raise ValueError("popover requires panel content")
     trigger_el = element(
         "button",
         {
-            "class": "sb-popover-trigger",
+            "class": classes("sb-popover-trigger", trigger_class),
             "type": "button",
             "popovertarget": panel_id,
             "aria-haspopup": haspopup,
             "aria-controls": panel_id,
             "aria-expanded": "false",
+            "aria-label": trigger_label,
+            "style": trigger_style or None,
         },
         [trigger],
     )
@@ -258,3 +275,98 @@ def popover_scripts() -> tuple[str, ...]:
 def popover_styles() -> str:
     """The popover structural CSS, for the host to inline in ``extra_head``."""
     return read_static("popover.css")
+
+
+def _picker_panel(label: str) -> str:
+    """The picker's popover panel: a saturation/value area over a hue slider.
+
+    Both surfaces are ``role="slider"`` so pointer and keyboard both drive them;
+    their handle positions and spectrum gradients are the adapter's (the spectrum
+    is functional data-viz set inline, the one sanctioned exception to the
+    token-only rule). The hex field carries the precise value and is the
+    accessible backbone; the spectrum is the visual affordance.
+    """
+    area = element(
+        "div",
+        {
+            "class": "sb-color-picker-area",
+            "role": "slider",
+            "tabindex": "0",
+            "aria-roledescription": "saturation and brightness",
+            "aria-label": f"{label} saturation and brightness",
+            "aria-valuetext": "saturation, brightness",
+        },
+        [
+            element(
+                "span", {"class": "sb-color-picker-area-handle", "aria-hidden": "true"}
+            )
+        ],
+    )
+    hue = element(
+        "div",
+        {
+            "class": "sb-color-picker-hue",
+            "role": "slider",
+            "tabindex": "0",
+            "aria-label": f"{label} hue",
+            "aria-orientation": "horizontal",
+            "aria-valuemin": "0",
+            "aria-valuemax": "360",
+            "aria-valuenow": "0",
+            "aria-valuetext": "hue",
+        },
+        [
+            element(
+                "span", {"class": "sb-color-picker-hue-thumb", "aria-hidden": "true"}
+            )
+        ],
+    )
+    return element("div", {"class": "sb-color-picker-controls"}, [area, hue])
+
+
+def color_picker(*, topic: str, value: str, label: str) -> Island:
+    """A visual colour picker: a swatch that opens a spectrum popover, plus a hex field.
+
+    Augments :func:`color_input`: the swatch becomes a popover trigger that
+    reveals a saturation/value area and a hue slider; the inline hex field stays
+    as the precise, fully-accessible control. The swatch, the spectrum, and the
+    field stay in sync and all publish the chosen ``#rrggbb`` on ``topic``.
+    ``value`` is the initial colour (six-digit hex) and ``label`` names the
+    control. Raises :class:`ValueError` at the authoring boundary if ``value`` is
+    not a six-digit hex or ``label`` is blank.
+    """
+    if not _HEX.match(value):
+        msg = f"color_picker value {value!r} is not a six-digit hex colour (#rrggbb)"
+        raise ValueError(msg)
+    if not label:
+        raise ValueError("color_picker requires a non-empty label (the control's name)")
+    panel_id = "sb-cp-" + re.sub(r"[^A-Za-z0-9_-]", "-", topic)
+    trigger = popover(
+        trigger="",
+        panel=_picker_panel(label),
+        label=label,
+        panel_id=panel_id,
+        trigger_class="sb-color-picker-swatch",
+        trigger_label=label,
+        trigger_style=f"background:{value}",
+    )
+    initial = element(
+        "div",
+        {"class": "sb-color-picker"},
+        [render_island(trigger), _hex_field(value, label)],
+    )
+    return Island(
+        name="color-picker", props={"topic": topic}, publishes=(topic,), initial=initial
+    )
+
+
+def color_picker_scripts() -> tuple[str, ...]:
+    """The color-picker adapter. The picker composes the popover, so a host also
+    includes :func:`popover_scripts` (the two adapters, wired like two islands)."""
+    return (read_static("color-picker.js"),)
+
+
+def color_picker_styles() -> str:
+    """The color-picker structural CSS. Pair with :func:`popover_styles` (the
+    picker composes the popover), the way the adapters are paired."""
+    return read_static("color-picker.css")

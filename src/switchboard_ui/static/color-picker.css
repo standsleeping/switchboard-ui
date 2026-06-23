@@ -1,0 +1,49 @@
+/* switchboard-ui: structural CSS for the colour picker.
+ *
+ * Geometry only, the same contract as layout.css. The swatch-trigger is a
+ * control-block square chip; the popover panel stacks a square saturation/value
+ * area over a slim hue track. The handles are absolutely positioned within their
+ * surfaces; the adapter sets their `left`/`top` inline (runtime data, pre-offset
+ * by half the handle so no `transform` is needed). All sizes are `--sb-fit-*`
+ * obligations, so there are no magic numbers; the spectrum gradients, swatch
+ * colour, gap, and borders are the theme's (or, for the spectrum, adapter-set
+ * data-viz). `touch-action` is set inline by the adapter beside the pointer
+ * wiring. */
+
+.sb-color-picker {
+  display: inline-flex;
+  align-items: center;
+}
+.sb-color-picker-swatch {
+  flex: none;
+  box-sizing: border-box;
+  inline-size: var(--sb-fit-control-block);
+  block-size: var(--sb-fit-control-block);
+  min-width: 0;
+}
+.sb-color-picker-controls {
+  display: flex;
+  flex-direction: column;
+}
+.sb-color-picker-area {
+  position: relative;
+  inline-size: var(--sb-fit-color-area);
+  aspect-ratio: 1;
+}
+.sb-color-picker-area-handle {
+  position: absolute;
+  box-sizing: border-box;
+  inline-size: var(--sb-fit-color-handle);
+  block-size: var(--sb-fit-color-handle);
+}
+.sb-color-picker-hue {
+  position: relative;
+  inline-size: var(--sb-fit-color-area);
+  block-size: var(--sb-fit-color-hue);
+}
+.sb-color-picker-hue-thumb {
+  position: absolute;
+  box-sizing: border-box;
+  inline-size: var(--sb-fit-color-handle);
+  block-size: var(--sb-fit-color-hue);
+}
