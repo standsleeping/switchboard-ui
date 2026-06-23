@@ -24,6 +24,9 @@ from switchboard_ui.components import (
     segmented,
     segmented_scripts,
     segmented_styles,
+    slider,
+    slider_scripts,
+    slider_styles,
 )
 from switchboard_ui.model import Region
 from switchboard_ui.presets import three_column
@@ -55,6 +58,14 @@ def build_showcase() -> Document:
                 label="Settings",
                 panel_id="demo-popover",
             ),
+            slider(
+                topic="weight:changed",
+                min=200,
+                max=900,
+                step=10,
+                value=400,
+                label="Weight",
+            ),
         ),
         "body-r": (
             color_picker(topic="token:accent", value="#5b4bd6", label="Accent"),
@@ -66,10 +77,17 @@ def build_showcase() -> Document:
 
 def showcase_scripts() -> tuple[str, ...]:
     """The island adapters the showcase page registers (the picker pairs the popover)."""
-    return segmented_scripts() + popover_scripts() + color_picker_scripts()
+    return (
+        segmented_scripts()
+        + popover_scripts()
+        + color_picker_scripts()
+        + slider_scripts()
+    )
 
 
 def showcase_styles() -> str:
     """The components' structural CSS, wrapped for ``extra_head`` injection."""
-    sheets = "\n".join((segmented_styles(), popover_styles(), color_picker_styles()))
+    sheets = "\n".join(
+        (segmented_styles(), popover_styles(), color_picker_styles(), slider_styles())
+    )
     return f"<style>{sheets}</style>"
