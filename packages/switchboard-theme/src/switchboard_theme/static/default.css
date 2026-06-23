@@ -1,34 +1,23 @@
-/* switchboard-ui default theme: the opt-in paint layer.
+/* switchboard-ui default theme -- GENERATED from tokens.py; do not edit here.
  *
- * Structure is the mechanism's (layout.css); this file is style. It paints the
- * mechanism's hooks (color, type, borders, light/dark theming) and is otherwise
- * free to tweak by sight against the showcase. One rule it must keep, the mirror
- * of layout.css's padding ban: padding goes only on a control (the button below),
- * never on a frame, mount point, or region cell, so nothing overflows its cell;
- * test_theme_css.py is the backstop. Tokens are namespaced by category
- * (--sb-color-*, --sb-font-*, --sb-space-*, --sb-radius-*, --sb-border-width-*,
- * --sb-shadow-*); scheme-varying colors are authored as -light / -dark arm tokens
- * composed with light-dark(), so the builder edits an arm (a single value) and
- * never the dual light-dark() value (see token-namespace.md, test_tokens.py).
- *
- * The theme also publishes the Component Geometry Contract: --sb-fit-* tokens are
- * obligations projected from the theme's causes (padding, font, border) onto the
- * outer boxes structure sizes. Structure consumes those obligations and never the
- * causes ("share the projection, not the ingredients"); test_contract.py enforces
- * the one-way flow. An overridable default, not a fixed house style. */
+ * Rendered from the typed token registry in tokens.py (the source of truth). Edit
+ * tokens there and regenerate; test_generated.py fails the build if this file drifts.
+ * The theme paints the mechanism's hooks with --sb-* tokens; scheme-varying colors
+ * use the -light / -dark arm model so the builder edits each scheme value
+ * (test_tokens.py). */
 
 :root {
   /* Drives the native scrollbar and form chrome to match in both schemes. */
   color-scheme: light dark;
 
-  /* Scheme-varying colors are authored per arm (-light / -dark) and composed into
-   * the public token with light-dark(). Consumers read only the composed token
-   * (var(--sb-color-bg)); the builder edits an arm and the composed token
-   * reprojects, so light-dark()'s dual value is never patched in place and both
-   * panes of a light/dark preview update at once. */
+  /* Color: scheme-varying, authored per -light / -dark arm (test_tokens.py). */
   --sb-color-bg-light: #ffffff;
   --sb-color-bg-dark: #16181d;
   --sb-color-bg: light-dark(var(--sb-color-bg-light), var(--sb-color-bg-dark));
+
+  --sb-color-bg-raised-light: #f6f7f9;
+  --sb-color-bg-raised-dark: #1c1f27;
+  --sb-color-bg-raised: light-dark(var(--sb-color-bg-raised-light), var(--sb-color-bg-raised-dark));
 
   --sb-color-fg-light: #1b1d22;
   --sb-color-fg-dark: #e6e8ec;
@@ -37,6 +26,10 @@
   --sb-color-muted-light: #6b7280;
   --sb-color-muted-dark: #9aa1ad;
   --sb-color-muted: light-dark(var(--sb-color-muted-light), var(--sb-color-muted-dark));
+
+  --sb-color-subtle-light: #9ca3af;
+  --sb-color-subtle-dark: #6b7280;
+  --sb-color-subtle: light-dark(var(--sb-color-subtle-light), var(--sb-color-subtle-dark));
 
   --sb-color-border-light: #e3e5e9;
   --sb-color-border-dark: #2b2f37;
@@ -50,34 +43,33 @@
   --sb-color-accent-fg-dark: #16181d;
   --sb-color-accent-fg: light-dark(var(--sb-color-accent-fg-light), var(--sb-color-accent-fg-dark));
 
-  --sb-font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  --sb-color-danger-light: #c2334b;
+  --sb-color-danger-dark: #ff6b81;
+  --sb-color-danger: light-dark(var(--sb-color-danger-light), var(--sb-color-danger-dark));
 
-  /* Causes: the theme's own metrics, named so the contract below projects from
-   * tokens rather than magic numbers. These stay private to the theme; structure
-   * never reads them. */
+  --sb-color-danger-fg-light: #ffffff;
+  --sb-color-danger-fg-dark: #16181d;
+  --sb-color-danger-fg: light-dark(var(--sb-color-danger-fg-light), var(--sb-color-danger-fg-dark));
+
+  /* Type. */
+  --sb-font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
   --sb-font-size-base: 0.9375rem;
   --sb-font-line-height: 1.5;
-  --sb-border-width-thin: 1px;
+
+  /* Space. */
   --sb-space-inset: 0.75rem;
 
-  /* Contract (--sb-fit-*): the only theme values structure may consume. Each is a
-   * control's outer extent, projected from the causes above. --sb-fit-rail-block
-   * is what a rail must grant so a themed control fits; structure floors its rails
-   * to it instead of guessing a fixed height. */
+  /* Border width. */
+  --sb-border-width-thin: 1px;
+
+  /* Contract: projected from the causes above; the only values structure consumes. */
   --sb-fit-control-block: calc(var(--sb-font-size-base) * var(--sb-font-line-height) + 2 * var(--sb-space-inset) + 2 * var(--sb-border-width-thin));
   --sb-fit-control-inline: 6rem;
   --sb-fit-rail-block: var(--sb-fit-control-block);
 }
 
-/* Density is a first-class mode (philosophy §14), selected with data-density on
- * the document element and flowing entirely through the cause tokens. It must sit
- * on :root, the element that declares the contract: reassigning a cause there
- * reprojects every --sb-fit-* obligation automatically (the calc re-substitutes
- * the cascaded cause on the same element), so a compact rail floors lower because
- * the control it must fit is smaller. Set on a descendant instead, the obligation
- * would already be baked from :root's causes and inherit unchanged. Compact sets
- * only tokens, never concrete geometry (test_density.py); orthogonal to
- * light-dark(). */
+/* Density mode "compact": reassigns cause tokens; the --sb-fit-*
+ * contract reprojects automatically (test_density.py). */
 :root[data-density="compact"] {
   --sb-font-size-base: 0.875rem;
   --sb-space-inset: 0.5rem;
@@ -105,9 +97,10 @@
   border-top: var(--sb-border-width-thin) solid var(--sb-color-border);
 }
 
-/* The single accent: the only color that signals "interactive". Square inset
- * plus a min-width floor for short labels, never asymmetric padding. The floor is
- * the published control-inline obligation, so a slot can reserve the same width. */
+/* The single accent signals "interactive". Square inset plus a min-width floor for
+ * short labels (the published control-inline obligation), never asymmetric padding.
+ * The ring draws inside the box (negative offset) so a clipping ancestor can't clip
+ * it. */
 button {
   font: inherit;
   color: var(--sb-color-accent-fg);
@@ -117,8 +110,6 @@ button {
   min-width: var(--sb-fit-control-inline);
   cursor: pointer;
 }
-/* The ring draws inside the box (negative offset) so a clipping or scrolling
- * ancestor never clips it; no layout space is reserved or shifted. */
 button:focus-visible {
   outline: 2px solid var(--sb-color-accent);
   outline-offset: -2px;
