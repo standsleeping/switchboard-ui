@@ -19,7 +19,8 @@ in both schemes) is run by hand against the showcase; the numbers here match it.
 import ast
 import re
 
-from switchboard_ui import render_document, themes
+import switchboard_theme as themes
+from switchboard_ui import render_document
 from switchboard_ui.assets import read_asset
 from switchboard_ui.model import REGIONS, Island, Region
 from switchboard_ui.presets import _LEFT_WIDTH, _RIGHT_WIDTH, three_column
@@ -106,7 +107,7 @@ def test_a_control_fits_every_rail_and_side_slot() -> None:
     This is the projection check: structure grants at least what the theme's
     control obligation requires, so a conforming control never overflows its slot.
     """
-    defs = _definitions(read_asset("switchboard_ui.themes", "default.css"))
+    defs = _definitions(read_asset("switchboard_theme", "default.css"))
     control_block = _resolve("--sb-fit-control-block", defs, frozenset())
     rail_block = _resolve("--sb-fit-rail-block", defs, frozenset())
     control_inline = _resolve("--sb-fit-control-inline", defs, frozenset())

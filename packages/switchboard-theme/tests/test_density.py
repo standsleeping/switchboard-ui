@@ -10,7 +10,7 @@ may set custom properties (``--sb-*``) and nothing else.
 
 import re
 
-from switchboard_ui import themes
+import switchboard_theme as themes
 from switchboard_ui.assets import read_asset
 
 
@@ -33,8 +33,7 @@ def _properties(body: str) -> list[str]:
 def _theme_sheets() -> list[tuple[str, str]]:
     """``(name, css)`` for every shipped theme."""
     return [
-        (name, read_asset("switchboard_ui.themes", f"{name}.css"))
-        for name in themes.THEMES
+        (name, read_asset("switchboard_theme", f"{name}.css")) for name in themes.THEMES
     ]
 
 

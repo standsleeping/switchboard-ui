@@ -198,3 +198,23 @@ def test_layout_css_declares_an_overflow_policy_for_every_frame() -> None:
     assert "auto" in _rule_body(css, ".sb-scroll"), (
         "the .sb-scroll role must opt a region into overflow: auto"
     )
+
+
+def test_structure_has_no_magic_number_lengths() -> None:
+    """layout.css carries no bare absolute length: every dimension is a token, keyword, 0, or %.
+
+    Philosophy §16: a structural dimension must be an owned number. The only
+    lengths that may appear are inside a ``var(--sb-fit-*)`` obligation (owned by
+    the theme's projection) or the trivial ``0``; a bare ``40px`` is the rail-height
+    mistake the contract layer fixed. The complementary theme guard ("the theme
+    never positions or transforms") lives in the theme's ``test_forbidden.py``.
+    """
+    css = re.sub(r"/\*.*?\*/", "", read_static("layout.css"), flags=re.DOTALL)
+    css = re.sub(r"var\([^)]*\)", "", css)  # token contents are owned, not magic
+    bodies = " ".join(re.findall(r"\{([^{}]*)\}", css))
+    lengths = re.findall(r"(\d*\.?\d+)(px|rem|em|cm|mm|pt|pc|in)\b", bodies)
+    magic = sorted({f"{n}{unit}" for n, unit in lengths if float(n) != 0})
+    assert not magic, (
+        f"layout.css has bare absolute lengths {magic}; a structural dimension must be a "
+        "token, keyword, 0, or %, never an un-owned number (use a --sb-fit-* obligation)"
+    )

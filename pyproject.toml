@@ -5,6 +5,12 @@ build-backend = "uv_build"
 [tool.uv.build-backend]
 module-name = "switchboard_ui"
 
+# This package (switchboard-ui, the mechanism) is the workspace root and ships
+# zero style. The opt-in theme and the dogfood showcase are separate members
+# under packages/; installing switchboard-ui alone pulls no CSS.
+[tool.uv.workspace]
+members = ["packages/*"]
+
 [project]
 name = "switchboard-ui"
 version = "0.1.0"
@@ -84,7 +90,7 @@ module = "tests.*"
 ignore_errors = true
 
 [tool.ty.src]
-include = ["src"]
+include = ["src", "packages/switchboard-theme/src"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
@@ -111,7 +117,7 @@ exclude_also = [
 
 [tool.ruff]
 line-length = 88
-src = ["src", "tests"]
+src = ["src", "tests", "packages/switchboard-theme/src", "packages/switchboard-showcase/src"]
 
 [tool.ruff.lint]
 select = [
@@ -131,4 +137,4 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["showcase", "switchboard_ui"]
+known-first-party = ["showcase", "switchboard_theme", "switchboard_ui"]

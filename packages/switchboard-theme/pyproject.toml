@@ -1,0 +1,54 @@
+[build-system]
+requires = ["uv_build>=0.11,<0.12"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "switchboard_theme"
+
+[project]
+name = "switchboard-theme"
+version = "0.1.0"
+description = "Opt-in visual theme for switchboard-ui: paints the mechanism's hooks via a --sb-* token namespace."
+readme = "README.md"
+requires-python = ">=3.14"
+license = "MIT"
+authors = [
+    { name = "standsleeping", email = "standsleeping@gmail.com" },
+]
+keywords = []
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Libraries",
+    "Typing :: Typed",
+]
+dependencies = ["switchboard-ui"]
+
+[project.urls]
+Homepage = "https://github.com/standsleeping/switchboard-ui"
+Repository = "https://github.com/standsleeping/switchboard-ui"
+Issues = "https://github.com/standsleeping/switchboard-ui/issues"
+
+[tool.uv.sources]
+switchboard-ui = { workspace = true }
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=switchboard_theme",
+    "--cov-report=term-missing",
+    "--cov-fail-under=100",
+]
+xfail_strict = true
+
+[tool.coverage.run]
+source = ["switchboard_theme"]
+branch = true

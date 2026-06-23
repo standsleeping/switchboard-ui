@@ -14,7 +14,7 @@ rule, the same way ``test_layout_css.py`` backstops the structural layer.
 
 import re
 
-from switchboard_ui import themes
+import switchboard_theme as themes
 from switchboard_ui.assets import read_asset
 
 # The only selectors padding may target: controls, where padding is the hit
@@ -53,8 +53,7 @@ def _subject(selector: str) -> str:
 def _theme_sheets() -> list[tuple[str, str]]:
     """``(name, css)`` for every shipped theme."""
     return [
-        (name, read_asset("switchboard_ui.themes", f"{name}.css"))
-        for name in themes.THEMES
+        (name, read_asset("switchboard_theme", f"{name}.css")) for name in themes.THEMES
     ]
 
 

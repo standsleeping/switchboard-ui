@@ -2,7 +2,8 @@
 
 import pytest
 
-from switchboard_ui import render_document, themes, three_column
+import switchboard_theme as themes
+from switchboard_ui import render_document, three_column
 
 
 def test_head_returns_a_style_block_carrying_the_tokens() -> None:

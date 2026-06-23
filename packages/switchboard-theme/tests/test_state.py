@@ -11,7 +11,7 @@ paint outset). These are theme guards, siblings to ``test_theme_css.py``.
 
 import re
 
-from switchboard_ui import themes
+import switchboard_theme as themes
 from switchboard_ui.assets import read_asset
 
 # Selector fragments that mark a rule as state-dependent. ``:focus`` also catches
@@ -83,8 +83,7 @@ def _declarations(body: str) -> list[tuple[str, str]]:
 def _theme_sheets() -> list[tuple[str, str]]:
     """``(name, css)`` for every shipped theme."""
     return [
-        (name, read_asset("switchboard_ui.themes", f"{name}.css"))
-        for name in themes.THEMES
+        (name, read_asset("switchboard_theme", f"{name}.css")) for name in themes.THEMES
     ]
 
 
