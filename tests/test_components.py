@@ -21,6 +21,9 @@ from switchboard_ui.components import (
     color_input,
     color_input_scripts,
     color_input_styles,
+    popover,
+    popover_scripts,
+    popover_styles,
     segmented,
     segmented_scripts,
     segmented_styles,
@@ -170,6 +173,84 @@ def test_color_input_scripts_returns_the_adapter() -> None:
 def test_color_input_styles_returns_the_structural_css() -> None:
     """The structural CSS ships and targets the component's hooks."""
     assert ".sb-color-input" in color_input_styles()
+
+
+def _popover(**overrides: object) -> Island:
+    """A popover island over standard trigger/panel/id, with optional overrides."""
+    kwargs: dict[str, object] = {
+        "trigger": "<span>open</span>",
+        "panel": "<p>contents</p>",
+        "label": "Settings",
+        "panel_id": "settings-pop",
+    }
+    kwargs.update(overrides)
+    return popover(**kwargs)  # type: ignore[arg-type]
+
+
+def test_popover_builds_a_popover_island() -> None:
+    """The factory names the popover adapter; open_topic drives what it publishes."""
+    quiet = _popover()
+    assert isinstance(quiet, Island)
+    assert quiet.name == "popover"
+    assert quiet.publishes == ()
+    assert quiet.props == {}
+    loud = _popover(open_topic="picker:open")
+    assert loud.publishes == ("picker:open",)
+    assert loud.props == {"topic": "picker:open"}
+
+
+def test_popover_wires_the_trigger_to_the_panel() -> None:
+    """The trigger's popovertarget/aria-controls match the panel id; both are present."""
+    island = _popover()
+    (trigger,) = find(island.initial, "button", **{"class": "sb-popover-trigger"})
+    assert trigger["popovertarget"] == "settings-pop"
+    assert trigger["aria-controls"] == "settings-pop"
+    assert trigger["aria-expanded"] == "false"
+    assert trigger["aria-haspopup"] == "dialog"
+    (panel,) = find(island.initial, "div", **{"class": "sb-popover-panel"})
+    assert panel["id"] == "settings-pop"
+    assert panel["popover"] == "auto"
+    assert panel["aria-label"] == "Settings"
+
+
+def test_popover_embeds_the_supplied_fragments() -> None:
+    """The caller's trigger and panel HTML are embedded verbatim."""
+    island = _popover(trigger="<span>pick</span>", panel="<p>body</p>")
+    assert "<span>pick</span>" in island.initial
+    assert "<p>body</p>" in island.initial
+
+
+def test_popover_rejects_a_blank_label() -> None:
+    """The panel needs a name; a blank label fails where the call is written."""
+    with pytest.raises(ValueError, match="non-empty label"):
+        _popover(label="")
+
+
+def test_popover_rejects_an_invalid_panel_id() -> None:
+    """A malformed id would break the trigger/panel wiring; reject it up front."""
+    with pytest.raises(ValueError, match="valid HTML id"):
+        _popover(panel_id="2 bad id")
+
+
+def test_popover_rejects_empty_trigger_or_panel() -> None:
+    """An empty trigger or panel is meaningless; reject both at the boundary."""
+    with pytest.raises(ValueError, match="trigger content"):
+        _popover(trigger="")
+    with pytest.raises(ValueError, match="panel content"):
+        _popover(panel="")
+
+
+def test_popover_scripts_returns_the_adapter() -> None:
+    """The adapter ships, registers under the popover name, and syncs open state."""
+    (adapter,) = popover_scripts()
+    assert 'register("popover"' in adapter
+    assert "toggle" in adapter
+    assert "aria-expanded" in adapter
+
+
+def test_popover_styles_returns_the_structural_css() -> None:
+    """The structural CSS ships and targets the component's hooks."""
+    assert ".sb-popover" in popover_styles()
 
 
 def _component_sheets() -> list[tuple[str, str]]:

@@ -1,0 +1,20 @@
+/* switchboard-ui: structural CSS for the popover.
+ *
+ * Geometry only, the same contract as layout.css. The trigger is an inline-flex
+ * box; the panel sizes to its content and scrolls if it would exceed the
+ * viewport. The panel is a native `[popover]`: when shown the UA promotes it to
+ * the browser TOP LAYER, so it escapes every ancestor's `overflow: hidden`
+ * clipping with NO z-index and no stacking-context juggling. Its on-screen
+ * position is set inline by the adapter (runtime data, like the colour swatch's
+ * background) from the trigger's rect, which is why no `position` appears here or
+ * in the theme — the no-`position`-in-theme guard holds for free. */
+
+.sb-popover {
+  display: inline-flex;
+}
+.sb-popover-panel {
+  inline-size: max-content;
+  max-inline-size: 100vw;
+  max-block-size: 100dvb;
+  overflow: auto;
+}

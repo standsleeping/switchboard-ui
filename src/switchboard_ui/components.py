@@ -29,6 +29,7 @@ and selected label), ``--sb-color-accent`` (the underline), ``--sb-color-subtle`
 
 import re
 from collections.abc import Sequence
+from typing import Literal
 
 from switchboard_ui.assets import read_static
 from switchboard_ui.html import attributes, element, escape_text
@@ -176,3 +177,84 @@ def color_input_scripts() -> tuple[str, ...]:
 def color_input_styles() -> str:
     """The color-input structural CSS, for the host to inline in ``extra_head``."""
     return read_static("color-input.css")
+
+
+# A valid HTML id: the panel id links the trigger to the panel via popovertarget
+# and aria-controls, so a malformed value silently breaks the wiring.
+_ID = re.compile(r"[A-Za-z][\w:.-]*\Z")
+
+HasPopup = Literal["dialog", "menu", "listbox", "grid", "tree", "true"]
+"""The `aria-haspopup` kind the trigger advertises (what the panel contains)."""
+
+
+def popover(
+    *,
+    trigger: str,
+    panel: str,
+    label: str,
+    panel_id: str,
+    haspopup: HasPopup = "dialog",
+    panel_role: str = "group",
+    open_topic: str | None = None,
+) -> Island:
+    """A reusable popover: a trigger that reveals a floating panel anchored to it.
+
+    A generic overlay primitive — supply the ``trigger`` content (e.g. a swatch)
+    and the ``panel`` content (e.g. a picker) as raw-HTML fragments; ``label`` is
+    the panel's accessible name and ``panel_id`` links the two (it lands in the
+    panel ``id`` and the trigger's ``popovertarget`` / ``aria-controls``). The
+    panel is a native ``[popover]``: the UA renders it in the top layer (so it
+    escapes ancestor clipping) and gives light-dismiss and Esc for free; the
+    adapter adds focus management, positioning, and an optional ``open_topic``
+    bus echo of ``{"open": bool}``. Raises :class:`ValueError` at the authoring
+    boundary if ``label`` is blank, ``panel_id`` is not a valid HTML id, or
+    ``trigger`` / ``panel`` is empty.
+    """
+    if not label:
+        raise ValueError("popover requires a non-empty label (the panel's name)")
+    if not _ID.match(panel_id):
+        raise ValueError(f"popover panel_id {panel_id!r} is not a valid HTML id")
+    if not trigger:
+        raise ValueError("popover requires trigger content")
+    if not panel:
+        raise ValueError("popover requires panel content")
+    trigger_el = element(
+        "button",
+        {
+            "class": "sb-popover-trigger",
+            "type": "button",
+            "popovertarget": panel_id,
+            "aria-haspopup": haspopup,
+            "aria-controls": panel_id,
+            "aria-expanded": "false",
+        },
+        [trigger],
+    )
+    panel_el = element(
+        "div",
+        {
+            "class": "sb-popover-panel",
+            "id": panel_id,
+            "popover": "auto",
+            "role": panel_role,
+            "aria-label": label,
+        },
+        [panel],
+    )
+    initial = element("div", {"class": "sb-popover"}, [trigger_el, panel_el])
+    return Island(
+        name="popover",
+        props={"topic": open_topic} if open_topic else {},
+        publishes=(open_topic,) if open_topic else (),
+        initial=initial,
+    )
+
+
+def popover_scripts() -> tuple[str, ...]:
+    """The popover adapter, for the host to pass to ``extra_scripts``."""
+    return (read_static("popover.js"),)
+
+
+def popover_styles() -> str:
+    """The popover structural CSS, for the host to inline in ``extra_head``."""
+    return read_static("popover.css")
