@@ -51,6 +51,10 @@
   --sb-color-danger-fg-dark: #16181d;
   --sb-color-danger-fg: light-dark(var(--sb-color-danger-fg-light), var(--sb-color-danger-fg-dark));
 
+  --sb-color-popover-scrim-light: rgb(0 0 0 / 0);
+  --sb-color-popover-scrim-dark: rgb(0 0 0 / 0);
+  --sb-color-popover-scrim: light-dark(var(--sb-color-popover-scrim-light), var(--sb-color-popover-scrim-dark));
+
   /* Type. */
   --sb-font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
   --sb-font-family-prose: ui-sans-serif, system-ui, sans-serif;
@@ -215,4 +219,21 @@ button:focus-visible {
 }
 .sb-color-input-text[aria-invalid="true"] {
   border-color: var(--sb-color-danger);
+}
+
+/* Popover: a non-modal floating panel rendered in the top layer. Flat by the
+ * house default — a raised surface, a hairline border for separation (no
+ * shadow), square corners. The trigger carries no special paint (it inherits the
+ * embedded control's look). No position/transform: the adapter positions the
+ * panel inline, the UA top-layers it. */
+.sb-popover-panel {
+  background: var(--sb-color-bg-raised);
+  color: var(--sb-color-fg);
+  border: var(--sb-border-width-thin) solid var(--sb-color-border);
+  border-radius: var(--sb-radius-base);
+  box-shadow: var(--sb-shadow-base);
+  padding: var(--sb-space-inset);
+}
+.sb-popover-panel::backdrop {
+  background: var(--sb-color-popover-scrim);
 }

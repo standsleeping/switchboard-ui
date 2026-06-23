@@ -23,8 +23,9 @@ from switchboard_ui.assets import read_asset
 # `.sb-segmented-option` is a control (a tab button); the class is its subject
 # because its paint overrides the base `button` rule by specificity.
 # `.sb-color-input-text` is the hex field, a control whose inset is the theme's.
+# `.sb-popover-panel` is a floating content surface that insets its own content.
 _PADDABLE_SUBJECTS = frozenset(
-    {"button", ".sb-segmented-option", ".sb-color-input-text"}
+    {"button", ".sb-segmented-option", ".sb-color-input-text", ".sb-popover-panel"}
 )
 
 

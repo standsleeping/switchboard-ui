@@ -124,6 +124,10 @@ REGISTRY: tuple[Token, ...] = (
     _color("accent-fg", "#ffffff", "#16181d"),
     _color("danger", "#c2334b", "#ff6b81"),
     _color("danger-fg", "#ffffff", "#16181d"),
+    # The popover backdrop. Transparent by default (a non-modal popover does not
+    # dim the page); arms so a host can opt into a faint scrim per scheme without
+    # leaking the UA ::backdrop colour (no-UA-default).
+    _color("popover-scrim", "rgb(0 0 0 / 0)", "rgb(0 0 0 / 0)"),
     # Type. A UI family + a prose family, a small size scale, weights, line-height,
     # and tracking. Recursive's variable-font axes are a builder extension, not core.
     Token(
@@ -339,6 +343,23 @@ button:focus-visible {
 }
 .sb-color-input-text[aria-invalid="true"] {
   border-color: var(--sb-color-danger);
+}
+
+/* Popover: a non-modal floating panel rendered in the top layer. Flat by the
+ * house default — a raised surface, a hairline border for separation (no
+ * shadow), square corners. The trigger carries no special paint (it inherits the
+ * embedded control's look). No position/transform: the adapter positions the
+ * panel inline, the UA top-layers it. */
+.sb-popover-panel {
+  background: var(--sb-color-bg-raised);
+  color: var(--sb-color-fg);
+  border: var(--sb-border-width-thin) solid var(--sb-color-border);
+  border-radius: var(--sb-radius-base);
+  box-shadow: var(--sb-shadow-base);
+  padding: var(--sb-space-inset);
+}
+.sb-popover-panel::backdrop {
+  background: var(--sb-color-popover-scrim);
 }"""
 
 
