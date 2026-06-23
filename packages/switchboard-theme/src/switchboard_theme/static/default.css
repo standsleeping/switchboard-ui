@@ -55,6 +55,10 @@
   --sb-color-popover-scrim-dark: rgb(0 0 0 / 0);
   --sb-color-popover-scrim: light-dark(var(--sb-color-popover-scrim-light), var(--sb-color-popover-scrim-dark));
 
+  --sb-color-handle-ring-light: #ffffff;
+  --sb-color-handle-ring-dark: #f6f7f9;
+  --sb-color-handle-ring: light-dark(var(--sb-color-handle-ring-light), var(--sb-color-handle-ring-dark));
+
   /* Type. */
   --sb-font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
   --sb-font-family-prose: ui-sans-serif, system-ui, sans-serif;
@@ -97,6 +101,9 @@
   --sb-fit-control-block: calc(var(--sb-font-size-base) * var(--sb-font-line-height) + 2 * var(--sb-space-inset) + 2 * var(--sb-border-width-thin));
   --sb-fit-control-inline: 6rem;
   --sb-fit-rail-block: var(--sb-fit-control-block);
+  --sb-fit-color-area: 12rem;
+  --sb-fit-color-hue: var(--sb-fit-control-block);
+  --sb-fit-color-handle: 0.75rem;
 }
 
 /* Density mode "compact": reassigns cause tokens; the --sb-fit-*
@@ -236,4 +243,31 @@ button:focus-visible {
 }
 .sb-popover-panel::backdrop {
   background: var(--sb-color-popover-scrim);
+}
+
+/* Color picker: the swatch is a chip trigger (the base button paint, re-bordered
+ * to a hairline; its colour is the live value set inline). The spectrum surfaces
+ * carry a hairline frame and an inset focus ring; their gradients are adapter-set
+ * data-viz, not theme paint. The handle/thumb carry a near-white ring that reads
+ * over any spectrum colour. */
+.sb-color-picker-swatch {
+  border-color: var(--sb-color-border);
+}
+.sb-color-picker-controls {
+  gap: var(--sb-space-sm);
+}
+.sb-color-picker-area,
+.sb-color-picker-hue {
+  border: var(--sb-border-width-thin) solid var(--sb-color-border);
+  border-radius: var(--sb-radius-base);
+}
+.sb-color-picker-area:focus-visible,
+.sb-color-picker-hue:focus-visible {
+  outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
+  outline-offset: -2px;
+}
+.sb-color-picker-area-handle,
+.sb-color-picker-hue-thumb {
+  border: var(--sb-border-width-accent) solid var(--sb-color-handle-ring);
+  border-radius: var(--sb-radius-base);
 }

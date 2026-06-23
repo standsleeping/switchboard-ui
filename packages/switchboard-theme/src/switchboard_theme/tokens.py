@@ -128,6 +128,10 @@ REGISTRY: tuple[Token, ...] = (
     # dim the page); arms so a host can opt into a faint scrim per scheme without
     # leaking the UA ::backdrop colour (no-UA-default).
     _color("popover-scrim", "rgb(0 0 0 / 0)", "rgb(0 0 0 / 0)"),
+    # The colour-picker handle ring. Near-white so the drag handle stays visible
+    # over any spectrum colour beneath it, in either scheme (TOKEN_PAIR_CONTRAST
+    # against an unknown ground).
+    _color("handle-ring", "#ffffff", "#f6f7f9"),
     # Type. A UI family + a prose family, a small size scale, weights, line-height,
     # and tracking. Recursive's variable-font axes are a builder extension, not core.
     Token(
@@ -194,6 +198,17 @@ REGISTRY: tuple[Token, ...] = (
         ValueType.LENGTH,
         Derived("var(--sb-fit-control-block)"),
     ),
+    # Colour-picker geometry: the square saturation/value surface, its slim hue
+    # track (one control-block tall, so it reads as a control row and reprojects
+    # under density), and the drag handle.
+    Token(Category.FIT, "color-area", ValueType.LENGTH, Fixed("12rem")),
+    Token(
+        Category.FIT,
+        "color-hue",
+        ValueType.LENGTH,
+        Derived("var(--sb-fit-control-block)"),
+    ),
+    Token(Category.FIT, "color-handle", ValueType.LENGTH, Fixed("0.75rem")),
 )
 
 
@@ -360,6 +375,33 @@ button:focus-visible {
 }
 .sb-popover-panel::backdrop {
   background: var(--sb-color-popover-scrim);
+}
+
+/* Color picker: the swatch is a chip trigger (the base button paint, re-bordered
+ * to a hairline; its colour is the live value set inline). The spectrum surfaces
+ * carry a hairline frame and an inset focus ring; their gradients are adapter-set
+ * data-viz, not theme paint. The handle/thumb carry a near-white ring that reads
+ * over any spectrum colour. */
+.sb-color-picker-swatch {
+  border-color: var(--sb-color-border);
+}
+.sb-color-picker-controls {
+  gap: var(--sb-space-sm);
+}
+.sb-color-picker-area,
+.sb-color-picker-hue {
+  border: var(--sb-border-width-thin) solid var(--sb-color-border);
+  border-radius: var(--sb-radius-base);
+}
+.sb-color-picker-area:focus-visible,
+.sb-color-picker-hue:focus-visible {
+  outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
+  outline-offset: -2px;
+}
+.sb-color-picker-area-handle,
+.sb-color-picker-hue-thumb {
+  border: var(--sb-border-width-accent) solid var(--sb-color-handle-ring);
+  border-radius: var(--sb-radius-base);
 }"""
 
 
