@@ -28,8 +28,10 @@ jobs:
       # No explicit Python setup: `uv sync` provisions the interpreter from
       # .python-version / requires-python. Add a `strategy.matrix` here when
       # the template needs to test against more than one Python version.
+      # `--all-packages` installs every workspace member (core, theme, showcase),
+      # not just the root, so the theme gate and the showcase have what they need.
       - name: Sync dependencies (locked)
-        run: uv sync --locked --all-groups
+        run: uv sync --locked --all-groups --all-packages
 
       # Same target developers run locally, so green here means green there.
       - name: Run checks (lint, format, types, tests)

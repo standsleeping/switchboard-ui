@@ -20,14 +20,17 @@ format-check:
 format:
     uv run ruff format .
 
-# Type-check the package with mypy (the authoritative gate).
+# Type-check the workspace with mypy (the authoritative gate): core + theme src.
 typecheck:
-    uv run mypy src
+    uv run mypy src packages/switchboard-theme/src
 
 # Type-check with ty (Astral's pre-1.0 checker; supplementary to mypy).
 typecheck-ty:
-    uv run ty check src
+    uv run ty check src packages/switchboard-theme/src
 
-# Run the test suite.
+# Run the test suite: the core gate, then the theme gate (each its own coverage).
+# `--directory` roots pytest in the member so it reads that member's config and
+# collects only its tests (the two `tests` packages must not be collected together).
 test:
     uv run pytest
+    uv run --directory packages/switchboard-theme pytest
