@@ -11,7 +11,7 @@ def test_head_returns_a_style_block_carrying_the_tokens() -> None:
     out = themes.head("default")
     assert out.startswith("<style>")
     assert out.endswith("</style>")
-    assert "--sb-bg" in out
+    assert "--sb-color-bg" in out
     assert "color-scheme: light dark" in out
 
 
@@ -36,4 +36,4 @@ def test_a_theme_enters_a_page_through_extra_head() -> None:
     """A themed page carries the theme's tokens in its head."""
     html = render_document(three_column(title="t"), extra_head=themes.head("default"))
     assert "<style>" in html
-    assert "--sb-accent" in html
+    assert "--sb-color-accent" in html
