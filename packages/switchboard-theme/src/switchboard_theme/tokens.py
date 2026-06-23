@@ -264,12 +264,13 @@ button {
   color: var(--sb-color-accent-fg);
   background: var(--sb-color-accent);
   border: var(--sb-border-width-thin) solid var(--sb-color-accent);
+  border-radius: var(--sb-radius-base);
   padding: var(--sb-space-inset);
   min-width: var(--sb-fit-control-inline);
   cursor: pointer;
 }
 button:focus-visible {
-  outline: 2px solid var(--sb-color-accent);
+  outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
   outline-offset: -2px;
 }"""
 
