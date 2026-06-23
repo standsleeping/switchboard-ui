@@ -272,6 +272,34 @@ button {
 button:focus-visible {
   outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
   outline-offset: -2px;
+}
+
+/* Segmented toggle: a small-set selector. Mono tabs over a transparent ground;
+ * the selected tab carries the accent underline. The class beats the base
+ * `button` paint by specificity, so an option is not an accent button. Every
+ * option reserves the underline as a transparent accent-width block-end border,
+ * recoloured only when selected, so moving the selection never shifts layout
+ * (PEER_EDGE_RESERVATION, state-stable geometry: the width is on the base rule,
+ * the selected rule only recolours). */
+.sb-segmented {
+  gap: var(--sb-space-sm);
+}
+.sb-segmented-option {
+  font: inherit;
+  min-width: 0;
+  color: var(--sb-color-muted);
+  background: none;
+  border: none;
+  border-block-end: var(--sb-border-width-accent) solid transparent;
+  padding: var(--sb-space-sm);
+  cursor: pointer;
+}
+.sb-segmented-option[aria-checked="true"] {
+  color: var(--sb-color-fg);
+  border-block-end-color: var(--sb-color-accent);
+}
+.sb-segmented-sep {
+  color: var(--sb-color-subtle);
 }"""
 
 
