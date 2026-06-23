@@ -21,12 +21,16 @@ from switchboard_ui.components import (
     popover,
     popover_scripts,
     popover_styles,
+    preview,
+    preview_styles,
     segmented,
     segmented_scripts,
     segmented_styles,
     slider,
     slider_scripts,
     slider_styles,
+    theme_state,
+    theme_state_scripts,
 )
 from switchboard_ui.model import Region
 from switchboard_ui.presets import three_column
@@ -46,6 +50,13 @@ def build_showcase() -> Document:
                 ),
                 value="overview",
                 label="View",
+            ),
+            preview(scope_id="preview-1"),
+            # Binds the colour picker's topic to the preview's accent token, so
+            # editing the colour live-restyles the preview (and only the preview).
+            theme_state(
+                scope='[data-sb-scope="preview-1"]',
+                bindings={"token:accent": "--sb-color-accent"},
             ),
         ),
         "body-l": (
@@ -82,12 +93,19 @@ def showcase_scripts() -> tuple[str, ...]:
         + popover_scripts()
         + color_picker_scripts()
         + slider_scripts()
+        + theme_state_scripts()
     )
 
 
 def showcase_styles() -> str:
     """The components' structural CSS, wrapped for ``extra_head`` injection."""
     sheets = "\n".join(
-        (segmented_styles(), popover_styles(), color_picker_styles(), slider_styles())
+        (
+            segmented_styles(),
+            popover_styles(),
+            color_picker_styles(),
+            slider_styles(),
+            preview_styles(),
+        )
     )
     return f"<style>{sheets}</style>"
