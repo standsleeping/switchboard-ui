@@ -27,11 +27,16 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
+import switchboard_theme
 from showcase.build import build_showcase, showcase_scripts
-from switchboard_ui import render_document, themes
+from switchboard_ui import render_document
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-WATCH_DIRS = (REPO_ROOT / "src" / "switchboard_ui", REPO_ROOT / "showcase")
+REPO_ROOT = Path(__file__).resolve().parents[4]
+WATCH_DIRS = (
+    REPO_ROOT / "src" / "switchboard_ui",
+    REPO_ROOT / "packages" / "switchboard-theme" / "src" / "switchboard_theme",
+    REPO_ROOT / "packages" / "switchboard-showcase" / "src" / "showcase",
+)
 WATCH_SUFFIXES = (".py", ".css", ".js")
 
 DEFAULT_HOST = "127.0.0.1"
@@ -66,7 +71,7 @@ def render_page() -> str:
     """Render the showcase page: themed, with the live-reload client attached."""
     return render_document(
         build_showcase(),
-        extra_head=themes.head("default"),
+        extra_head=switchboard_theme.head("default"),
         extra_scripts=(*showcase_scripts(), _RELOAD_CLIENT),
     )
 

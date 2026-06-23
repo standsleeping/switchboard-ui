@@ -1,0 +1,26 @@
+[build-system]
+requires = ["uv_build>=0.11,<0.12"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "showcase"
+
+[project]
+name = "switchboard-showcase"
+version = "0.1.0"
+description = "switchboard-ui's own dogfood showcase site and hot-reloading dev server (not published)."
+requires-python = ">=3.14"
+license = "MIT"
+authors = [
+    { name = "standsleeping", email = "standsleeping@gmail.com" },
+]
+# Never published: this is the repo-local dev surface, not a distribution.
+classifiers = ["Private :: Do Not Upload"]
+dependencies = [
+    "switchboard-ui",
+    "switchboard-theme",
+]
+
+[tool.uv.sources]
+switchboard-ui = { workspace = true }
+switchboard-theme = { workspace = true }
