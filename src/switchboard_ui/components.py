@@ -370,3 +370,80 @@ def color_picker_styles() -> str:
     """The color-picker structural CSS. Pair with :func:`popover_styles` (the
     picker composes the popover), the way the adapters are paired."""
     return read_static("color-picker.css")
+
+
+def _num(x: float) -> str:
+    """Render a slider bound without a spurious trailing ``.0`` (``200``, not ``200.0``)."""
+    return str(int(x)) if float(x).is_integer() else str(x)
+
+
+def slider(
+    *,
+    topic: str,
+    min: float,
+    max: float,
+    value: float,
+    label: str,
+    step: float = 1,
+    readout: bool = True,
+) -> Island:
+    """A slider: drag a numeric value in ``[min, max]``, publishing it on ``topic``.
+
+    A native range, restyled to the house look. ``value`` is the initial value
+    (in range), ``step`` the increment, ``label`` the control's accessible name;
+    ``readout`` shows the live value beside the track. Dragging publishes the
+    value as a number — an ``int`` when ``min``/``max``/``step``/``value`` are all
+    whole, else a ``float`` (decided here and carried as the ``integer`` prop).
+    Raises :class:`ValueError` at the authoring boundary if ``min >= max``,
+    ``step <= 0``, ``value`` is out of range, or ``label`` is blank.
+    """
+    if min >= max:
+        raise ValueError(f"slider requires min < max, got min={min!r}, max={max!r}")
+    if step <= 0:
+        raise ValueError(f"slider step must be positive, got {step!r}")
+    if not min <= value <= max:
+        raise ValueError(f"slider value {value!r} is not in [{_num(min)}, {_num(max)}]")
+    if not label:
+        raise ValueError("slider requires a non-empty label (the control's name)")
+    integer = all(float(x).is_integer() for x in (min, max, step, value))
+    field = (
+        "<input"
+        + attributes(
+            {
+                "class": "sb-slider-input",
+                "type": "range",
+                "min": _num(min),
+                "max": _num(max),
+                "step": _num(step),
+                "value": _num(value),
+                "aria-label": label,
+            }
+        )
+        + ">"
+    )
+    children = [field]
+    if readout:
+        children.append(
+            element(
+                "span",
+                {"class": "sb-slider-value", "aria-hidden": "true"},
+                [escape_text(_num(value))],
+            )
+        )
+    initial = element("div", {"class": "sb-slider"}, children)
+    return Island(
+        name="slider",
+        props={"topic": topic, "integer": integer},
+        publishes=(topic,),
+        initial=initial,
+    )
+
+
+def slider_scripts() -> tuple[str, ...]:
+    """The slider adapter, for the host to pass to ``extra_scripts``."""
+    return (read_static("slider.js"),)
+
+
+def slider_styles() -> str:
+    """The slider structural CSS, for the host to inline in ``extra_head``."""
+    return read_static("slider.css")

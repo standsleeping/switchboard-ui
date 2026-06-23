@@ -30,6 +30,9 @@ from switchboard_ui.components import (
     segmented,
     segmented_scripts,
     segmented_styles,
+    slider,
+    slider_scripts,
+    slider_styles,
 )
 from switchboard_ui.model import Island
 from tests.htmlprobe import find
@@ -235,6 +238,89 @@ def test_color_picker_scripts_returns_the_adapter() -> None:
 def test_color_picker_styles_returns_the_structural_css() -> None:
     """The structural CSS ships and targets the component's hooks."""
     assert ".sb-color-picker" in color_picker_styles()
+
+
+def test_slider_builds_a_slider_island() -> None:
+    """The factory names the slider adapter and publishes the chosen topic."""
+    island = slider(
+        topic="weight:changed", min=200, max=900, step=10, value=400, label="Weight"
+    )
+    assert isinstance(island, Island)
+    assert island.name == "slider"
+    assert island.publishes == ("weight:changed",)
+    assert island.props == {"topic": "weight:changed", "integer": True}
+
+
+def test_slider_server_renders_a_named_range_at_value() -> None:
+    """The range carries its bounds, step, value, and accessible name at first paint."""
+    island = slider(
+        topic="weight:changed", min=200, max=900, step=10, value=400, label="Weight"
+    )
+    (field,) = find(island.initial, "input", **{"class": "sb-slider-input"})
+    assert field["type"] == "range"
+    assert field["min"] == "200"
+    assert field["max"] == "900"
+    assert field["step"] == "10"
+    assert field["value"] == "400"
+    assert field["aria-label"] == "Weight"
+
+
+def test_slider_shows_a_decorative_readout_by_default() -> None:
+    """The readout mirrors the value and is hidden from assistive tech (the range speaks)."""
+    island = slider(topic="t", min=0, max=10, value=4, label="N")
+    (readout,) = find(island.initial, "span", **{"class": "sb-slider-value"})
+    assert readout["aria-hidden"] == "true"
+    assert "4" in island.initial
+
+
+def test_slider_omits_the_readout_when_not_requested() -> None:
+    """With ``readout=False`` no readout span renders."""
+    island = slider(topic="t", min=0, max=10, value=4, label="N", readout=False)
+    assert find(island.initial, "span", **{"class": "sb-slider-value"}) == []
+
+
+def test_slider_flags_float_bounds_as_non_integer() -> None:
+    """A fractional step marks the value stream as float, not int (carried in props)."""
+    island = slider(topic="t", min=0, max=1, step=0.1, value=0.5, label="N")
+    assert island.props["integer"] is False
+    (field,) = find(island.initial, "input", **{"class": "sb-slider-input"})
+    assert field["step"] == "0.1"
+
+
+def test_slider_rejects_min_not_below_max() -> None:
+    """A non-increasing range fails where the call is written."""
+    with pytest.raises(ValueError, match="min < max"):
+        slider(topic="t", min=10, max=10, value=10, label="N")
+
+
+def test_slider_rejects_a_non_positive_step() -> None:
+    """A step of zero or less fails at the authoring boundary."""
+    with pytest.raises(ValueError, match="step must be positive"):
+        slider(topic="t", min=0, max=10, step=0, value=4, label="N")
+
+
+def test_slider_rejects_a_value_out_of_range() -> None:
+    """A value outside the bounds fails where the call is written."""
+    with pytest.raises(ValueError, match="not in"):
+        slider(topic="t", min=0, max=10, value=11, label="N")
+
+
+def test_slider_rejects_a_blank_label() -> None:
+    """The control needs a name; a blank label fails at the authoring boundary."""
+    with pytest.raises(ValueError, match="non-empty label"):
+        slider(topic="t", min=0, max=10, value=4, label="")
+
+
+def test_slider_scripts_returns_the_adapter() -> None:
+    """The adapter ships, registers under the slider name, and publishes on input."""
+    (adapter,) = slider_scripts()
+    assert 'register("slider"' in adapter
+    assert "input" in adapter
+
+
+def test_slider_styles_returns_the_structural_css() -> None:
+    """The structural CSS ships and targets the component's hooks."""
+    assert ".sb-slider" in slider_styles()
 
 
 def _popover(**overrides: object) -> Island:
