@@ -209,6 +209,9 @@ REGISTRY: tuple[Token, ...] = (
         Derived("var(--sb-fit-control-block)"),
     ),
     Token(Category.FIT, "color-handle", ValueType.LENGTH, Fixed("0.75rem")),
+    # Slider geometry: the thumb is a square this tall, and the input is the same
+    # height so the thumb centres with no margin (banned) or transform (forbidden).
+    Token(Category.FIT, "slider-thumb", ValueType.LENGTH, Fixed("0.875rem")),
 )
 
 
@@ -402,6 +405,58 @@ button:focus-visible {
 .sb-color-picker-hue-thumb {
   border: var(--sb-border-width-accent) solid var(--sb-color-handle-ring);
   border-radius: var(--sb-radius-base);
+}
+
+/* Slider: a native range, fully restyled off the UA accent (no-UA-default). The
+ * track groove is a thin centred line drawn on the input's own background; the
+ * track pseudo is transparent at full height, so the square accent thumb — itself
+ * the full input height — centres with no margin (banned) and no transform
+ * (forbidden). `appearance: none` strips the UA chrome. */
+.sb-slider {
+  gap: var(--sb-space-sm);
+}
+.sb-slider-input {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background: linear-gradient(
+    to bottom,
+    transparent calc(50% - var(--sb-border-width-thin)),
+    var(--sb-color-border) calc(50% - var(--sb-border-width-thin)),
+    var(--sb-color-border) calc(50% + var(--sb-border-width-thin)),
+    transparent calc(50% + var(--sb-border-width-thin))
+  );
+}
+.sb-slider-input::-webkit-slider-runnable-track {
+  block-size: 100%;
+  background: none;
+}
+.sb-slider-input::-moz-range-track {
+  block-size: 100%;
+  background: none;
+}
+.sb-slider-input::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  inline-size: var(--sb-fit-slider-thumb);
+  block-size: var(--sb-fit-slider-thumb);
+  background: var(--sb-color-accent);
+  border-radius: var(--sb-radius-base);
+}
+.sb-slider-input::-moz-range-thumb {
+  inline-size: var(--sb-fit-slider-thumb);
+  block-size: var(--sb-fit-slider-thumb);
+  background: var(--sb-color-accent);
+  border: none;
+  border-radius: var(--sb-radius-base);
+}
+.sb-slider-input:focus-visible {
+  outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
+  outline-offset: -2px;
+}
+.sb-slider-value {
+  font: inherit;
+  color: var(--sb-color-muted);
 }"""
 
 
