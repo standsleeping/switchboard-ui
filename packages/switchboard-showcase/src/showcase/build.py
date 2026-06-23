@@ -17,6 +17,9 @@ from switchboard_ui.components import (
     color_input,
     color_input_scripts,
     color_input_styles,
+    popover,
+    popover_scripts,
+    popover_styles,
     segmented,
     segmented_scripts,
     segmented_styles,
@@ -41,6 +44,17 @@ def build_showcase() -> Document:
                 label="View",
             ),
         ),
+        "body-l": (
+            popover(
+                trigger="Settings",
+                panel=(
+                    "<p>A popover panel in the top layer.</p>"
+                    '<button type="button">Action</button>'
+                ),
+                label="Settings",
+                panel_id="demo-popover",
+            ),
+        ),
         "body-r": (color_input(topic="token:accent", value="#5b4bd6", label="Accent"),),
         "foot-c": (Island(name="status", initial="component gallery"),),
     }
@@ -49,10 +63,10 @@ def build_showcase() -> Document:
 
 def showcase_scripts() -> tuple[str, ...]:
     """The island adapters the showcase page registers."""
-    return segmented_scripts() + color_input_scripts()
+    return segmented_scripts() + color_input_scripts() + popover_scripts()
 
 
 def showcase_styles() -> str:
     """The components' structural CSS, wrapped for ``extra_head`` injection."""
-    sheets = "\n".join((segmented_styles(), color_input_styles()))
+    sheets = "\n".join((segmented_styles(), color_input_styles(), popover_styles()))
     return f"<style>{sheets}</style>"
