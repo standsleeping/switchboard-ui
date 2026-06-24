@@ -1,15 +1,20 @@
 """Build the showcase document(s) through the public API.
 
 Mirrors the package's own ``demo.py`` build / ``cli.py`` serve split: this module
-returns what to render; :mod:`showcase.server` serves and hot-reloads it. Phase 1
-grows the component gallery here — each island and preset rendered on a
-self-rendered page, the forcing function the theme and components are shaped
-against. Its inhabitants so far: the segmented toggle, a popover, and the colour
-picker (which composes the popover).
+returns what to render; :mod:`showcase.server` serves and hot-reloads it. It builds
+two pages:
 
-A component ships three parts; the host wires each. :func:`build_showcase` places
-the islands, :func:`showcase_scripts` carries the adapters (for ``extra_scripts``),
-and :func:`showcase_styles` carries the structural CSS (for ``extra_head``, beside
+- :func:`build_showcase` — the component gallery: each island and preset rendered
+  on a self-rendered page, the forcing function the theme and components are shaped
+  against (the segmented toggle, popover, colour picker, slider, value field, and a
+  live preview).
+- :func:`build_theme_builder` — the capstone dogfood: a control panel generated
+  from the theme's token registry beside a live light/dark preview, with a
+  ``tokens.css`` export. Editing a control repaints the preview through the bus.
+
+A component ships three parts; the host wires each. The ``build_*`` functions place
+the islands, the ``*_scripts`` functions carry the adapters (for ``extra_scripts``),
+and the ``*_styles`` functions carry the structural CSS (for ``extra_head``, beside
 the theme). That is the same opt-in a real host performs.
 """
 
