@@ -17,9 +17,20 @@ import re
 import switchboard_theme as themes
 from switchboard_ui.assets import read_asset
 
-# The tiled layout cells — they share edges with siblings. `.sb-root` (the outer
-# frame) and `.sb-island` (a mount point, not a tiled region) are not cells.
-_TILED = re.compile(r"^\.sb-(?:head|body|foot)-[lcr]$|^\.sb-(?:frame|rail)$")
+# Tiled cells and row containers share edges. `.sb-root` (the outer frame) and
+# `.sb-island` (a mount point, not a tiled region) are deliberately absent.
+_REGION_HOOKS = frozenset(
+    f"sb-{row}-{column}"
+    for row in ("head", "body", "foot")
+    for column in ("l", "c", "r")
+)
+_TILED_HOOKS = _REGION_HOOKS | {
+    "sb-frame",
+    "sb-rail",
+    "sb-head-row",
+    "sb-body-row",
+    "sb-foot-row",
+}
 
 
 def _rules(css: str) -> list[tuple[str, str]]:
@@ -38,15 +49,28 @@ def _declarations(body: str) -> list[tuple[str, str]]:
     return out
 
 
-def _subject(selector: str) -> str:
-    """The rightmost compound selector, stripped of pseudos and attributes."""
+def _subject_classes(selector: str) -> set[str]:
+    """Class names in the rightmost compound selector."""
     last = re.split(r"\s*[>+~]\s*|\s+", selector.strip())[-1]
-    return re.split(r"::|:|\[", last)[0]
+    return set(re.findall(r"\.([_a-zA-Z][\w-]*)", last))
 
 
 def _targets_a_tiled_hook(selectors: str) -> bool:
     """Whether any selector in the list targets a tiled region cell."""
-    return any(_TILED.match(_subject(s)) for s in selectors.split(","))
+    for selector in selectors.split(","):
+        classes = _subject_classes(selector)
+        if "sb-root" not in classes and classes & _TILED_HOOKS:
+            return True
+    return False
+
+
+def _declarations_for_hook(css: str, hook: str) -> list[tuple[str, str]]:
+    """Declarations whose subject carries ``hook``."""
+    out: list[tuple[str, str]] = []
+    for selectors, body in _rules(css):
+        if any(hook in _subject_classes(s) for s in selectors.split(",")):
+            out.extend(_declarations(body))
+    return out
 
 
 def _is_all_sides_ring(box_shadow: str) -> bool:
@@ -75,10 +99,54 @@ def test_tiled_hooks_carry_no_all_sides_border() -> None:
             if not _targets_a_tiled_hook(selectors):
                 continue
             properties = {p for p, _ in _declarations(body)}
-            offenders = properties & {"border", "border-width"}
+            offenders = properties & {"border", "border-width", "border-style"}
             assert not offenders, (
                 f"theme {name!r} puts an all-sides {sorted(offenders)} on a tiled hook "
                 f"({selectors.strip()!r}); draw seams per edge so each is single-owned"
+            )
+
+
+def test_root_remains_exempt_when_selector_is_compound() -> None:
+    """The perimeter owner is not mistaken for a tiled frame."""
+    assert not _targets_a_tiled_hook(".sb-frame.sb-root")
+    assert _targets_a_tiled_hook(".app-shell > .sb-frame.sb-head-row")
+
+
+def test_horizontal_seams_are_owned_by_rows_not_cell_fragments() -> None:
+    """Each horizontal seam is one continuous logical border on its row."""
+    expected = "var(--sb-border-width-thin) solid var(--sb-color-border)"
+    for name, css in _theme_sheets():
+        head = _declarations_for_hook(css, "sb-head-row")
+        body = _declarations_for_hook(css, "sb-body-row")
+        foot = _declarations_for_hook(css, "sb-foot-row")
+
+        assert ("border-block-end", expected) in head, (
+            f"theme {name!r} does not give the head/body seam to .sb-head-row"
+        )
+        assert ("border-block-start", expected) in foot, (
+            f"theme {name!r} does not give the body/foot seam to .sb-foot-row"
+        )
+
+        assert not {p for p, _ in head} & {"border-block", "border-block-start"}
+        assert not {p for p, _ in body} & {
+            "border-block",
+            "border-block-start",
+            "border-block-end",
+        }
+        assert not {p for p, _ in foot} & {"border-block", "border-block-end"}
+
+        for hook in _REGION_HOOKS:
+            properties = {p for p, _ in _declarations_for_hook(css, hook)}
+            fragments = properties & {
+                "border-block",
+                "border-block-start",
+                "border-block-end",
+                "border-top",
+                "border-bottom",
+            }
+            assert not fragments, (
+                f"theme {name!r} fragments a horizontal row seam across .{hook}: "
+                f"{sorted(fragments)}"
             )
 
 
