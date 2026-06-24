@@ -44,6 +44,7 @@ Understanding-oriented background on why the package is shaped the way it is.
 | [Architecture](explanation/architecture.md) | Islands, the event bus, and the one-descriptor-three-consumers spine. |
 | [Backend independence](explanation/backend-independence.md) | Why the output is a string, and what that buys. |
 | [Layout](explanation/layout.md) | The frame primitive, and the three-column layout as an example preset. |
+| [Seams](explanation/seams.md) | How borders between tiled regions are drawn so each line has a single owner. |
 
 ## Where to start
 

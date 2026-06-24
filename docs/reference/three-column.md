@@ -29,7 +29,7 @@ html = render_document(page)
   fixed    flexible  fixed
 ```
 
-The preset builds an outer **column** of three rows: a fixed-height top and bottom around a flexible middle. Each row is a **row** of three cells: fixed-width sides around a flexible center. Islands are placed by region name (`head-l` through `foot-r`), the keys the `regions` argument accepts, drawn from [`REGIONS`](page-model.md#region-and-regions). An omitted region is an empty cell that collapses.
+The preset builds an outer **column** of three rows: a fixed-height top and bottom around a flexible middle. Each row is a **row** of three cells: fixed-width sides around a flexible center. Islands are placed by region name (`head-l` through `foot-r`), the keys the `regions` argument accepts, drawn from [`REGIONS`](page-model.md#region-and-regions). An omitted region is an empty cell that collapses. The lines between regions are *seams*; see [Seams](../explanation/seams.md) for how each is drawn exactly once.
 
 | Parameter | Type | Default | Effect |
 |---|---|---|---|

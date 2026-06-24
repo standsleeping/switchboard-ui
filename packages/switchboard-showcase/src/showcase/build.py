@@ -39,6 +39,12 @@ from switchboard_ui.presets import three_column
 def build_showcase() -> Document:
     """The showcase page. Phase 1: the component gallery, growing one control at a time."""
     regions: dict[Region, tuple[Island, ...]] = {
+        # The four corners are otherwise empty; label them so every region of the
+        # three_column grid renders (an empty region collapses by design).
+        "head-l": (Island(name="region", initial="head-l"),),
+        "head-r": (Island(name="region", initial="head-r"),),
+        "foot-l": (Island(name="region", initial="foot-l"),),
+        "foot-r": (Island(name="region", initial="foot-r"),),
         "head-c": (Island(name="brand", initial="switchboard-ui"),),
         "body-c": (
             segmented(
@@ -97,8 +103,28 @@ def showcase_scripts() -> tuple[str, ...]:
     )
 
 
+# A showcase-only visualization (paint, not structure): outline the nine
+# three_column regions so the layout grid reads as a 3x3. Kept out of the default
+# theme, which stays flat (rail hairlines only). Every seam is a border with a
+# single owner: the root owns the perimeter, the centre
+# column owns both internal column seams (its inline-start and inline-end borders;
+# the side columns draw neither), and the two row seams are the theme's own rail
+# hairlines. `box-sizing: border-box` keeps the fixed root inside the viewport.
+# See docs/explanation/seams.md for the full approach.
+_GRID_DEMO = """
+.sb-root {
+  box-sizing: border-box;
+  border: var(--sb-border-width-thin) solid var(--sb-color-border);
+}
+.sb-head-c, .sb-body-c, .sb-foot-c {
+  border-inline-start: var(--sb-border-width-thin) solid var(--sb-color-border);
+  border-inline-end: var(--sb-border-width-thin) solid var(--sb-color-border);
+}
+"""
+
+
 def showcase_styles() -> str:
-    """The components' structural CSS, wrapped for ``extra_head`` injection."""
+    """The components' structural CSS plus the grid visualization, for ``extra_head``."""
     sheets = "\n".join(
         (
             segmented_styles(),
@@ -108,4 +134,4 @@ def showcase_styles() -> str:
             preview_styles(),
         )
     )
-    return f"<style>{sheets}</style>"
+    return f"<style>{sheets}</style><style>{_GRID_DEMO}</style>"

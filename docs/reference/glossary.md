@@ -13,6 +13,7 @@
 | Document | A full page: a root layout frame plus a title; renders to a complete HTML document. |
 | Preset | A function that assembles islands into a `Frame` and returns a `Document`; `three_column` is the bundled one. |
 | Region | One of the nine placement names the three-column preset accepts (`head`/`body`/`foot` by `l`/`c`/`r`). |
+| Seam | The border line between two tiled regions; drawn exactly once, by a single owner. See [Seams](../explanation/seams.md). |
 | Registry | The runtime's name-to-adapter map; dispatch is an explicit registry, not inheritance. |
 | Inline / linked | The two modes for delivering the CSS and runtime (embedded in the document, or referenced by URL). |
 | Hydration | Filling a server-rendered page with interactive islands after load, into boxes that already hold their final geometry. |
