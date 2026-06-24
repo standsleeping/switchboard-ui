@@ -355,15 +355,21 @@ button:focus-visible {
 
 /* Live preview pane: a sample surface separated from the editing chrome by a
  * hairline. `color-scheme` on the scheme variants pins a pane to one arm (a
- * side-by-side light/dark preview). Everything reads tokens, so a scoped token
- * edit repaints the whole sample. The table is the canonical display surface:
- * collapsed hairline cells with a raised header row. */
+ * side-by-side light/dark preview). The scope re-establishes the full token
+ * context — colour and the type base (family / size / line-height) — rather than
+ * inheriting computed values from the root, so a scoped edit to *any* of those
+ * tokens reprojects inside the pane (the live theme builder depends on this). The
+ * table is the canonical display surface: collapsed hairline cells with a raised
+ * header row. */
 .sb-preview {
   border-inline-start: var(--sb-border-width-thin) solid var(--sb-color-border);
 }
 .sb-preview-scope {
   background: var(--sb-color-bg);
   color: var(--sb-color-fg);
+  font-family: var(--sb-font-family);
+  font-size: var(--sb-font-size-base);
+  line-height: var(--sb-font-line-height);
 }
 .sb-preview-light {
   color-scheme: light;

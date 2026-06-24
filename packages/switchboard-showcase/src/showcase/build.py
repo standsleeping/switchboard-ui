@@ -13,10 +13,18 @@ and :func:`showcase_styles` carries the structural CSS (for ``extra_head``, besi
 the theme). That is the same opt-in a real host performs.
 """
 
+import re
+from typing import Literal
+
+from switchboard_theme import REGISTRY, Category, Fixed, Themed, Token, ValueType
 from switchboard_ui import Document, Island
 from switchboard_ui.components import (
     ArmBinding,
+    Binding,
     ValueBinding,
+    color_input,
+    color_input_scripts,
+    color_input_styles,
     color_picker,
     color_picker_scripts,
     color_picker_styles,
@@ -37,7 +45,8 @@ from switchboard_ui.components import (
     value_field_scripts,
     value_field_styles,
 )
-from switchboard_ui.model import Region
+from switchboard_ui.html import escape_text
+from switchboard_ui.model import Frame, Region, Slot
 from switchboard_ui.presets import three_column
 
 
@@ -157,3 +166,214 @@ def showcase_styles() -> str:
         )
     )
     return f"<style>{sheets}</style><style>{_GRID_DEMO}</style>"
+
+
+# --- the theme builder -------------------------------------------------------
+#
+# The capstone dogfood: an SBUI page that edits the theme's own token registry
+# live. It iterates switchboard_theme's REGISTRY to generate one control per
+# editable token, grouped by category, and binds each to a shared preview scope
+# through a single theme_state island. A scheme-varying colour is edited per arm
+# (two controls, two ArmBindings) against a side-by-side light/dark preview; a
+# scheme-invariant token is edited directly (one control, one ValueBinding). The
+# Component Geometry contract (the `fit` category) is structural, not taste, so it
+# is not exposed. The whole control surface is generated from the typed registry,
+# so a new token appears in the builder the moment it lands in tokens.py.
+
+_BUILDER_SCOPE = "builder-preview"
+_HEX = re.compile(r"#[0-9a-fA-F]{6}\Z")
+
+
+def _humanize(text: str) -> str:
+    """A token role or category as a label: ``bg-raised`` -> ``Bg Raised``."""
+    return text.replace("-", " ").title()
+
+
+def _static(name: str, text: str, class_: str) -> Island:
+    """A label-only island: it renders its text and never mounts (no adapter)."""
+    return Island(name=name, initial=escape_text(text), class_=class_)
+
+
+def _control(*, type_: ValueType, value: str, topic: str, label: str) -> Island:
+    """The editor for one token value: a swatch + hex colour input for a hex
+    colour, else the general value field (lengths, numbers, families, the rgba
+    scrim that is a colour but not a hex)."""
+    if type_ is ValueType.COLOR and _HEX.match(value):
+        return color_input(topic=topic, value=value, label=label)
+    return value_field(topic=topic, value=value, label=label)
+
+
+def _token_row(token: Token) -> tuple[Frame, list[Binding]]:
+    """One control row for a token, plus the binding(s) that apply its edits.
+
+    A ``Themed`` token gets two controls (light / dark arm) on two topics and two
+    arm bindings; a ``Fixed`` token gets one control and one value binding. The
+    ``fit`` contract (the only ``Derived`` values) is filtered out before here.
+    """
+    label = _humanize(token.role)
+    match token.value:
+        case Themed(light=light, dark=dark):
+            light_topic = f"{token.name}@light"
+            dark_topic = f"{token.name}@dark"
+            controls: tuple[Island, ...] = (
+                _control(
+                    type_=token.type,
+                    value=light,
+                    topic=light_topic,
+                    label=f"{label} (light)",
+                ),
+                _control(
+                    type_=token.type,
+                    value=dark,
+                    topic=dark_topic,
+                    label=f"{label} (dark)",
+                ),
+            )
+            bindings: list[Binding] = [
+                ArmBinding(topic=light_topic, token=token.name, arm="light"),
+                ArmBinding(topic=dark_topic, token=token.name, arm="dark"),
+            ]
+        case Fixed(value=value):
+            controls = (
+                _control(type_=token.type, value=value, topic=token.name, label=label),
+            )
+            bindings = [ValueBinding(topic=token.name, token=token.name)]
+        case _:  # Derived: only the `fit` contract, excluded before this call.
+            raise ValueError(f"{token.name} is derived and not editable")
+    row = Frame(
+        direction="row",
+        children=(
+            Slot(_static("builder-label", label, "sb-builder-label"), basis="11rem"),
+            *controls,
+        ),
+        class_="sb-builder-row",
+    )
+    return row, bindings
+
+
+def _builder_controls() -> tuple[Frame, list[Binding]]:
+    """The controls column: every editable token, grouped by category, plus the
+    full binding list the one theme_state island applies to the preview scope."""
+    children: list[Island | Frame | Slot] = []
+    bindings: list[Binding] = []
+    seen: set[Category] = set()
+    for token in REGISTRY:
+        if token.category is Category.FIT:
+            continue
+        if token.category not in seen:
+            seen.add(token.category)
+            children.append(
+                _static(
+                    "builder-section",
+                    _humanize(token.category.value),
+                    "sb-builder-section",
+                )
+            )
+        row, row_bindings = _token_row(token)
+        children.append(row)
+        bindings.extend(row_bindings)
+    column = Frame(
+        direction="column",
+        children=tuple(children),
+        class_="sb-builder-controls sb-scroll",
+    )
+    return column, bindings
+
+
+def _builder_pane(scheme: Literal["light", "dark"], label: str) -> Frame:
+    """One preview pane pinned to a colour scheme, sharing the builder scope so a
+    scoped edit repaints it (the arm matching its scheme; both for a value edit)."""
+    return Frame(
+        direction="column",
+        children=(
+            _static("builder-pane-label", label, "sb-builder-pane-label"),
+            preview(scope_id=_BUILDER_SCOPE, scheme=scheme),
+        ),
+        class_="sb-builder-pane sb-scroll",
+    )
+
+
+def build_theme_builder() -> Document:
+    """The theme builder page: a generated control panel beside a live light/dark
+    preview, all wired to the registry's tokens through one theme_state island."""
+    controls, bindings = _builder_controls()
+    state = theme_state(
+        scope=f'[data-sb-scope="{_BUILDER_SCOPE}"]', bindings=tuple(bindings)
+    )
+    preview_col = Frame(
+        direction="row",
+        children=(
+            Slot(_builder_pane("light", "Light")),
+            Slot(_builder_pane("dark", "Dark")),
+        ),
+        class_="sb-builder-preview",
+    )
+    header = Frame(
+        direction="row",
+        children=(_static("brand", "theme builder", "sb-builder-brand"),),
+        class_="sb-rail sb-builder-header",
+    )
+    main = Frame(
+        direction="row",
+        children=(Slot(controls, basis="34rem"), Slot(preview_col)),
+        class_="sb-builder-main",
+    )
+    body = Frame(direction="column", children=(header, Slot(main), state))
+    return Document(body=body, title="switchboard-ui theme builder")
+
+
+def theme_builder_scripts() -> tuple[str, ...]:
+    """The adapters the builder registers: the colour input, the value field, and
+    the theme-state island that applies every edit to the preview scope."""
+    return color_input_scripts() + value_field_scripts() + theme_state_scripts()
+
+
+# The builder's own page layout (host CSS, not the core's structure or the theme's
+# paint): gaps, insets, and the section/label chrome for the control panel and the
+# preview panes. It reads the theme's --sb-* tokens because the theme is loaded.
+_BUILDER_CSS = """
+.sb-builder-header {
+  align-items: center;
+  padding: var(--sb-space-inset);
+  font-weight: var(--sb-font-weight-bold);
+}
+.sb-builder-controls {
+  gap: var(--sb-space-md);
+  padding: var(--sb-space-lg);
+  border-inline-end: var(--sb-border-width-thin) solid var(--sb-color-border);
+}
+/* A row keeps its natural height: it is an .sb-frame (min-block-size: 0), so
+ * without this it would flex-shrink to nothing in the fixed-height scroll column
+ * and clip its own controls. flex: 0 0 auto makes the column overflow and scroll
+ * instead. */
+.sb-builder-row {
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--sb-space-md);
+}
+.sb-builder-section {
+  flex: 0 0 auto;
+  color: var(--sb-color-muted);
+  font-weight: var(--sb-font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--sb-font-tracking-wide);
+}
+.sb-builder-label {
+  color: var(--sb-color-fg);
+}
+.sb-builder-pane {
+  gap: var(--sb-space-sm);
+  padding: var(--sb-space-md);
+}
+.sb-builder-pane-label {
+  color: var(--sb-color-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--sb-font-tracking-wide);
+}
+"""
+
+
+def theme_builder_styles() -> str:
+    """The builder's component CSS plus its own page layout, for ``extra_head``."""
+    sheets = "\n".join((color_input_styles(), value_field_styles(), preview_styles()))
+    return f"<style>{sheets}</style><style>{_BUILDER_CSS}</style>"

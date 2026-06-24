@@ -18,5 +18,29 @@ uses through ``extra_scripts``; the host wires a theme into a page itself:
 """
 
 from switchboard_theme.api import THEMES, head
+from switchboard_theme.tokens import (
+    MODES,
+    REGISTRY,
+    Category,
+    Derived,
+    Fixed,
+    Themed,
+    Token,
+    ValueType,
+)
 
-__all__ = ["THEMES", "head"]
+# The typed registry is the theme-builder's surface: it iterates REGISTRY to
+# generate one control per editable token, grouped by Category, choosing the
+# control by ValueType and the binding by value kind (Themed arms vs Fixed).
+__all__ = [
+    "MODES",
+    "REGISTRY",
+    "THEMES",
+    "Category",
+    "Derived",
+    "Fixed",
+    "Themed",
+    "Token",
+    "ValueType",
+    "head",
+]

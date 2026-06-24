@@ -28,8 +28,15 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import switchboard_theme
-from showcase.build import build_showcase, showcase_scripts, showcase_styles
-from switchboard_ui import render_document
+from showcase.build import (
+    build_showcase,
+    build_theme_builder,
+    showcase_scripts,
+    showcase_styles,
+    theme_builder_scripts,
+    theme_builder_styles,
+)
+from switchboard_ui import Document, render_document
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 WATCH_DIRS = (
@@ -67,17 +74,29 @@ _RELOAD_CLIENT = """
 """
 
 
-def render_page() -> str:
-    """Render the showcase page: themed, with the live-reload client attached.
+def _render(document: Document, styles: str, scripts: tuple[str, ...]) -> str:
+    """Render a document themed, with the live-reload client attached.
 
-    ``extra_head`` carries the theme's paint and the components' structural CSS
-    (paint after structure, so the cascade resolves correctly); ``extra_scripts``
+    ``extra_head`` carries the components' structural CSS then the theme's paint
+    (structure before paint, so the cascade resolves correctly); ``extra_scripts``
     carries the island adapters and the live-reload client.
     """
     return render_document(
-        build_showcase(),
-        extra_head=showcase_styles() + switchboard_theme.head("default"),
-        extra_scripts=(*showcase_scripts(), _RELOAD_CLIENT),
+        document,
+        extra_head=styles + switchboard_theme.head("default"),
+        extra_scripts=(*scripts, _RELOAD_CLIENT),
+    )
+
+
+def render_page() -> str:
+    """Render the showcase gallery page."""
+    return _render(build_showcase(), showcase_styles(), showcase_scripts())
+
+
+def render_builder_page() -> str:
+    """Render the theme-builder page (the capstone dogfood)."""
+    return _render(
+        build_theme_builder(), theme_builder_styles(), theme_builder_scripts()
     )
 
 
@@ -85,17 +104,19 @@ class Handler(BaseHTTPRequestHandler):
     """Serve the rendered showcase page and the live-reload event stream."""
 
     def do_GET(self) -> None:
-        """Route the page, the live-reload stream, and 404 everything else."""
+        """Route the gallery, the builder, the live-reload stream, else 404."""
         path = urlparse(self.path).path
         if path == LIVERELOAD_PATH:
             self._serve_livereload()
         elif path in {"/", "/index.html"}:
-            self._serve_page()
+            self._serve_html(render_page())
+        elif path == "/builder":
+            self._serve_html(render_builder_page())
         else:
             self.send_error(HTTPStatus.NOT_FOUND)
 
-    def _serve_page(self) -> None:
-        body = render_page().encode()
+    def _serve_html(self, html: str) -> None:
+        body = html.encode()
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
