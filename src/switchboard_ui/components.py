@@ -450,6 +450,50 @@ def slider_styles() -> str:
     return read_static("slider.css")
 
 
+def value_field(*, topic: str, value: str, label: str) -> Island:
+    """A labelled text field that publishes its value on ``topic``.
+
+    The general single-line editor for a scheme-invariant token whose value is a
+    CSS string: a length (``0.75rem``), a number (``400``), a font family, a
+    shadow. ``value`` is the initial text, ``label`` the field's accessible name.
+    Editing it publishes the raw string on ``topic`` — a :func:`theme_state`
+    :class:`ValueBinding` writes that string straight onto the bound token, so the
+    preview repaints. Unlike :func:`color_input` it validates nothing: any string
+    is a candidate CSS value and the live preview is the feedback. Raises
+    :class:`ValueError` at the authoring boundary if ``label`` is blank.
+    """
+    if not label:
+        raise ValueError("value_field requires a non-empty label (the field's name)")
+    field = (
+        "<input"
+        + attributes(
+            {
+                "class": "sb-value-field-text",
+                "type": "text",
+                "value": value,
+                "spellcheck": "false",
+                "autocomplete": "off",
+                "aria-label": label,
+            }
+        )
+        + ">"
+    )
+    initial = element("div", {"class": "sb-value-field"}, [field])
+    return Island(
+        name="value-field", props={"topic": topic}, publishes=(topic,), initial=initial
+    )
+
+
+def value_field_scripts() -> tuple[str, ...]:
+    """The value-field adapter, for the host to pass to ``extra_scripts``."""
+    return (read_static("value-field.js"),)
+
+
+def value_field_styles() -> str:
+    """The value-field structural CSS, for the host to inline in ``extra_head``."""
+    return read_static("value-field.css")
+
+
 def _preview_sample() -> str:
     """A representative sample of surfaces, to exercise the token adjacencies live."""
     heading = element("p", {"class": "sb-preview-heading"}, [escape_text("Heading")])

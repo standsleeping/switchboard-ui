@@ -23,6 +23,7 @@ from switchboard_ui.assets import read_asset
 # `.sb-segmented-option` is a control (a tab button); the class is its subject
 # because its paint overrides the base `button` rule by specificity.
 # `.sb-color-input-text` is the hex field, a control whose inset is the theme's.
+# `.sb-value-field-text` is the general value field, the same kind of control.
 # `.sb-popover-panel` is a floating content surface that insets its own content.
 # `th` / `td` are table cells, whose inset is the cell's own (the canonical case).
 _PADDABLE_SUBJECTS = frozenset(
@@ -30,6 +31,7 @@ _PADDABLE_SUBJECTS = frozenset(
         "button",
         ".sb-segmented-option",
         ".sb-color-input-text",
+        ".sb-value-field-text",
         ".sb-popover-panel",
         "th",
         "td",

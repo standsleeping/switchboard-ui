@@ -39,6 +39,9 @@ from switchboard_ui.components import (
     slider_styles,
     theme_state,
     theme_state_scripts,
+    value_field,
+    value_field_scripts,
+    value_field_styles,
 )
 from switchboard_ui.model import Island
 from tests.htmlprobe import find
@@ -322,6 +325,51 @@ def test_slider_scripts_returns_the_adapter() -> None:
 def test_slider_styles_returns_the_structural_css() -> None:
     """The structural CSS ships and targets the component's hooks."""
     assert ".sb-slider" in slider_styles()
+
+
+def test_value_field_builds_a_value_field_island() -> None:
+    """The factory names the value-field adapter and publishes the chosen topic."""
+    island = value_field(topic="token:radius", value="0.375rem", label="Radius")
+    assert isinstance(island, Island)
+    assert island.name == "value-field"
+    assert island.publishes == ("token:radius",)
+    assert island.props == {"topic": "token:radius"}
+
+
+def test_value_field_server_renders_the_named_field_with_its_value() -> None:
+    """The field holds the initial value and carries the label at first paint."""
+    island = value_field(topic="token:radius", value="0.375rem", label="Radius")
+    (field,) = find(island.initial, "input", **{"class": "sb-value-field-text"})
+    assert field["value"] == "0.375rem"
+    assert field["aria-label"] == "Radius"
+
+
+def test_value_field_carries_an_unvalidated_value() -> None:
+    """It validates nothing: a font family with commas and quotes round-trips."""
+    family = 'ui-monospace, "SF Mono", monospace'
+    (field,) = find(
+        value_field(topic="token:font", value=family, label="Family").initial,
+        "input",
+        **{"class": "sb-value-field-text"},
+    )
+    assert field["value"] == family
+
+
+def test_value_field_rejects_a_blank_label() -> None:
+    """The field needs a name; a blank label fails where the call is written."""
+    with pytest.raises(ValueError, match="non-empty label"):
+        value_field(topic="token:radius", value="0", label="")
+
+
+def test_value_field_scripts_returns_the_adapter() -> None:
+    """The adapter ships and registers under the value-field name (the runtime's dispatch key)."""
+    (adapter,) = value_field_scripts()
+    assert 'register("value-field"' in adapter
+
+
+def test_value_field_styles_returns_the_structural_css() -> None:
+    """The structural CSS ships and targets the component's hooks."""
+    assert ".sb-value-field" in value_field_styles()
 
 
 def test_preview_builds_a_scoped_sample_surface() -> None:

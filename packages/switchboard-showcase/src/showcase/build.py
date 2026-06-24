@@ -16,6 +16,7 @@ the theme). That is the same opt-in a real host performs.
 from switchboard_ui import Document, Island
 from switchboard_ui.components import (
     ArmBinding,
+    ValueBinding,
     color_picker,
     color_picker_scripts,
     color_picker_styles,
@@ -32,6 +33,9 @@ from switchboard_ui.components import (
     slider_styles,
     theme_state,
     theme_state_scripts,
+    value_field,
+    value_field_scripts,
+    value_field_styles,
 )
 from switchboard_ui.model import Region
 from switchboard_ui.presets import three_column
@@ -67,6 +71,9 @@ def build_showcase() -> Document:
                     ArmBinding(
                         topic="token:accent", token="--sb-color-accent", arm="dark"
                     ),
+                    # A scheme-invariant token edited directly: the value field
+                    # publishes a length string, written straight onto the radius.
+                    ValueBinding(topic="token:radius", token="--sb-radius-base"),
                 ),
             ),
         ),
@@ -88,6 +95,7 @@ def build_showcase() -> Document:
                 value=400,
                 label="Weight",
             ),
+            value_field(topic="token:radius", value="0", label="Radius"),
         ),
         "body-r": (
             color_picker(topic="token:accent", value="#5b4bd6", label="Accent"),
@@ -104,6 +112,7 @@ def showcase_scripts() -> tuple[str, ...]:
         + popover_scripts()
         + color_picker_scripts()
         + slider_scripts()
+        + value_field_scripts()
         + theme_state_scripts()
     )
 
@@ -143,6 +152,7 @@ def showcase_styles() -> str:
             popover_styles(),
             color_picker_styles(),
             slider_styles(),
+            value_field_styles(),
             preview_styles(),
         )
     )

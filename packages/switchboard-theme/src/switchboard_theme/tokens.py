@@ -364,6 +364,33 @@ button:focus-visible {
   border-color: var(--sb-color-danger);
 }
 
+/* Value field: the general single-line editor for a scheme-invariant token
+ * (length, number, font family, shadow). The same field look as the colour
+ * input's hex field — square inset, the bg surface, a hairline border, the accent
+ * caret and an inset focus ring — with the non-default form surfaces (caret,
+ * placeholder, selection) tokenised so no UA colour leaks (the no-UA-default
+ * rule). */
+.sb-value-field-text {
+  font: inherit;
+  color: var(--sb-color-fg);
+  background: var(--sb-color-bg);
+  border: var(--sb-border-width-thin) solid var(--sb-color-border);
+  border-radius: var(--sb-radius-base);
+  padding: var(--sb-space-inset);
+  caret-color: var(--sb-color-accent);
+}
+.sb-value-field-text::placeholder {
+  color: var(--sb-color-subtle);
+}
+.sb-value-field-text::selection {
+  color: var(--sb-color-accent-fg);
+  background: var(--sb-color-accent);
+}
+.sb-value-field-text:focus-visible {
+  outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
+  outline-offset: -2px;
+}
+
 /* Popover: a non-modal floating panel rendered in the top layer. Flat by the
  * house default — a raised surface, a hairline border for separation (no
  * shadow), square corners. The trigger carries no special paint (it inherits the

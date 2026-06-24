@@ -1,0 +1,12 @@
+/* switchboard-ui: structural CSS for the value field.
+ *
+ * Geometry only, the same contract as layout.css: a single text field in an
+ * inline row. It carries no paint and no box-spacing — the field's colour, inset,
+ * caret, and focus ring are all the theme's, keyed to the .sb-value-field-text
+ * hook. The guard in tests/test_components.py holds this file to the geometry-only
+ * contract. */
+
+.sb-value-field {
+  display: inline-flex;
+  align-items: center;
+}
