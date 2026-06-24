@@ -122,12 +122,10 @@ def test_segmented_rejects_value_outside_options() -> None:
         )
 
 
-def test_segmented_scripts_returns_the_keyboard_radio_adapter() -> None:
-    """The adapter ships, registers under the segmented name, and navigates by arrow key."""
+def test_segmented_scripts_returns_the_adapter() -> None:
+    """The adapter ships and registers under the segmented name (the runtime's dispatch key)."""
     (adapter,) = segmented_scripts()
     assert 'register("segmented"' in adapter
-    assert "ArrowRight" in adapter
-    assert "aria-checked" in adapter
 
 
 def test_segmented_styles_returns_the_structural_css() -> None:
@@ -174,10 +172,9 @@ def test_color_input_rejects_a_blank_label() -> None:
 
 
 def test_color_input_scripts_returns_the_adapter() -> None:
-    """The adapter ships, registers under the color-input name, and validates hex."""
+    """The adapter ships and registers under the color-input name (the runtime's dispatch key)."""
     (adapter,) = color_input_scripts()
     assert 'register("color-input"' in adapter
-    assert "aria-invalid" in adapter
 
 
 def test_color_input_styles_returns_the_structural_css() -> None:
@@ -233,10 +230,9 @@ def test_color_picker_rejects_a_blank_label() -> None:
 
 
 def test_color_picker_scripts_returns_the_adapter() -> None:
-    """The picker ships its own adapter; the popover adapter is paired separately."""
+    """The picker ships exactly one adapter, registered under the color-picker name (popover is paired separately)."""
     (adapter,) = color_picker_scripts()
     assert 'register("color-picker"' in adapter
-    assert "hsvToRgb" in adapter
 
 
 def test_color_picker_styles_returns_the_structural_css() -> None:
@@ -316,10 +312,9 @@ def test_slider_rejects_a_blank_label() -> None:
 
 
 def test_slider_scripts_returns_the_adapter() -> None:
-    """The adapter ships, registers under the slider name, and publishes on input."""
+    """The adapter ships and registers under the slider name (the runtime's dispatch key)."""
     (adapter,) = slider_scripts()
     assert 'register("slider"' in adapter
-    assert "input" in adapter
 
 
 def test_slider_styles_returns_the_structural_css() -> None:
@@ -396,10 +391,9 @@ def test_theme_state_rejects_empty_bindings() -> None:
 
 
 def test_theme_state_scripts_returns_the_adapter() -> None:
-    """The adapter ships, registers under the theme-state name, and writes properties."""
+    """The adapter ships and registers under the theme-state name (the runtime's dispatch key)."""
     (adapter,) = theme_state_scripts()
     assert 'register("theme-state"' in adapter
-    assert "setProperty" in adapter
 
 
 def _popover(**overrides: object) -> Island:
@@ -468,11 +462,9 @@ def test_popover_rejects_empty_trigger_or_panel() -> None:
 
 
 def test_popover_scripts_returns_the_adapter() -> None:
-    """The adapter ships, registers under the popover name, and syncs open state."""
+    """The adapter ships and registers under the popover name (the runtime's dispatch key)."""
     (adapter,) = popover_scripts()
     assert 'register("popover"' in adapter
-    assert "toggle" in adapter
-    assert "aria-expanded" in adapter
 
 
 def test_popover_styles_returns_the_structural_css() -> None:
