@@ -5,7 +5,7 @@
  * is the source of truth: the SV area sets saturation/value, the hue slider sets
  * hue, the hex field sets all three; each change repaints the swatch + the
  * spectrum and publishes the colour on the island's topic. It never builds or
- * resizes anything (HYDRATION_RESERVES_GEOMETRY).
+ * resizes anything.
  *
  * The two spectrum gradients are functional DATA-VIZ: a full colour-space surface
  * cannot come from the token palette, so they are set inline as live data — the

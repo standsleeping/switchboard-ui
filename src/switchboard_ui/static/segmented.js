@@ -2,7 +2,7 @@
  *
  * The option buttons are server-rendered (present, sized, and focus-ordered at
  * first paint); this adapter only *enhances* them. It never builds or resizes
- * the control, so first-paint geometry is preserved (HYDRATION_RESERVES_GEOMETRY).
+ * the control, so first-paint geometry is preserved.
  *
  * Radio-group semantics (WAI-ARIA): exactly one option is checked, and it is the
  * group's single tab stop (roving tabindex). Selection follows focus — the arrow

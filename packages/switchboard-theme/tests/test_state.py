@@ -3,8 +3,8 @@
 Philosophy §9 / companion §1: state changes must not unexpectedly alter layout
 geometry. A hover, focus, selected, or disabled rule in the theme may change paint
 (color, background, outline) freely, but it may not declare a property that changes
-the box's size or position. A second guard keeps the focus ring inside the box
-(INSET_FOCUS_RING): now that every frame clips and the body cells scroll, an
+the box's size or position. A second guard keeps the focus ring inside the box:
+now that every frame clips and the body cells scroll, an
 outward ring would be clipped, so the offset must be non-positive (or a reserved
 paint outset). These are theme guards, siblings to ``test_theme_css.py``.
 """
@@ -129,5 +129,5 @@ def test_theme_focus_ring_stays_inside_the_box() -> None:
                 assert acceptable, (
                     f"theme {name!r} uses outward focus-ring offset {value!r} on "
                     f"{selectors.strip()!r}; inset it (negative outline-offset) or "
-                    "reserve --sb-fit-paint-outset (INSET_FOCUS_RING)"
+                    "reserve --sb-fit-paint-outset"
                 )

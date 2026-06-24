@@ -1,6 +1,6 @@
 """Showcase dev server: render switchboard's own pages live and reload on change.
 
-Phase 0 of the showcase (PF ``planning/switchboard-ui/showcase.md``): the live
+Phase 0 of the showcase: the live
 surface every later phase iterates against. It renders through the public
 ``render_document`` exactly as the demo CLI does, themes the page through the
 ``extra_head`` seam, and reloads the browser on any source edit so the theme and

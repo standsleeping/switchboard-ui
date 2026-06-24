@@ -167,7 +167,7 @@ button:focus-visible {
  * `button` paint by specificity, so an option is not an accent button. Every
  * option reserves the underline as a transparent accent-width block-end border,
  * recoloured only when selected, so moving the selection never shifts layout
- * (PEER_EDGE_RESERVATION, state-stable geometry: the width is on the base rule,
+ * (state-stable geometry: the width is on the base rule,
  * the selected rule only recolours). */
 .sb-segmented {
   gap: var(--sb-space-sm);

@@ -3,14 +3,14 @@
  * Geometry only: the flex stacks that make a Frame tree render, sizing, and a
  * viewport-locked root. It carries no paint (no color, type, or light/dark
  * theming) and no box-spacing: space between siblings is `gap` (structural
- * distribution), never `margin` (banned; see NEVER_MARGIN) and never `padding`
+ * distribution), never `margin` (banned) and never `padding`
  * (a box's inset is a density decision the theme owns, not the structure). The
  * one theme value it may consume is a Component Geometry obligation the theme
  * publishes as `--sb-fit-*`: a rail floors itself to `--sb-fit-rail-block`
  * rather than guessing a fixed height (the cause of the old spillover).
  *
  * Overflow is a declared policy, never an accident: every frame clips by default
- * so nothing escapes the viewport-locked root (NO_PAGE_SCROLL), and a region
+ * so nothing escapes the viewport-locked root, and a region
  * opts into owning its scroll with `sb-scroll`. It selects only its own `.sb-*`
  * elements, never the host's `body` / `:root`. The test suite enforces every
  * line of this statically. */
@@ -34,7 +34,7 @@
 }
 
 /* A scroll owner: the one region in a containment chain that scrolls, while
- * every frame above it clips (SCROLL_CONTAINMENT, NATIVE_SCROLLBAR). Defined
+ * every frame above it clips. Defined
  * after `.sb-frame` so it wins the equal-specificity tie and overrides the
  * default clip. The preset hands this to the body cells. */
 .sb-scroll {

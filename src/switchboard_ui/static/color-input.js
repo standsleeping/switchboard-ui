@@ -5,7 +5,7 @@
  * valid value repaints the swatch (an inline style — the live data being edited,
  * not a theme token) and publishes on the island's topic, an invalid one flags
  * the field (aria-invalid) and publishes nothing. The control never builds or
- * resizes itself, so first-paint geometry holds (HYDRATION_RESERVES_GEOMETRY).
+ * resizes itself, so first-paint geometry holds.
  *
  * This replaces the native <input type="color"> deliberately: its picker popover
  * is UA-painted and cannot be tokenised (the no-UA-default rule). */

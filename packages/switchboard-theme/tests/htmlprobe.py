@@ -1,8 +1,7 @@
 """Parse rendered HTML into ``(tag, attrs)`` structure for tests.
 
 Asserting on parsed elements and their attributes (rather than on raw
-substrings) keeps tests robust to attribute order and escaping changes
-(ASSERT_STRUCTURE_NOT_CONTENT). Stdlib only.
+substrings) keeps tests robust to attribute order and escaping changes. Stdlib only.
 """
 
 from html.parser import HTMLParser

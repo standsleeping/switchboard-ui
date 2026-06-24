@@ -6,7 +6,7 @@ theme-builder edits the arms (one ``setProperty`` per scheme value); the compose
 token reprojects, so light-dark()'s dual value is never patched in place. These
 guards keep every light-dark() in that exact shape with both arms defined, so the
 builder (and any host) can always reach each scheme value through a single-valued
-arm token. See PF ``planning/switchboard-ui/theme-layer.md`` (the token model).
+arm token.
 """
 
 import re

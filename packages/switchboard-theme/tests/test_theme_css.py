@@ -4,7 +4,7 @@ This is the inverse of the layout.css guards. The theme *may* use appearance,
 tokens, and light/dark theming, and *may* select non-.sb-* elements (it paints
 content). What it may not do is attach box-spacing where it does not belong:
 ``padding`` may target only an allowlisted control (the subject of its rule), and
-``margin`` never appears (NEVER_MARGIN). Padding on a layout, mount, or region
+``margin`` never appears. Padding on a layout, mount, or region
 hook fails the build.
 
 Vanilla ``default.css`` stays freely editable (the theme is shaped by sight against
@@ -88,9 +88,9 @@ def test_theme_padding_only_targets_allowlisted_controls() -> None:
 
 
 def test_theme_uses_no_margin() -> None:
-    """The theme never uses margin (NEVER_MARGIN); rhythm is gap, inset is padding."""
+    """The theme never uses margin; rhythm is gap, inset is padding."""
     for name, css in _theme_sheets():
         for selectors, body in _rules(css):
             assert not _declares(_properties(body), "margin"), (
-                f"theme {name!r} uses margin on {selectors.strip()!r} (NEVER_MARGIN)"
+                f"theme {name!r} uses margin on {selectors.strip()!r}"
             )

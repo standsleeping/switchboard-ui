@@ -10,7 +10,7 @@ classification now sits in one reviewable place, is what keeps the categories fr
 eroding.
 
 Scheme-varying tokens are authored per ``-light`` / ``-dark`` arm and composed with
-``light-dark()`` (the arm model; see PF ``theme-layer.md`` and ``test_tokens.py``);
+``light-dark()`` (the arm model; see ``test_tokens.py``);
 the renderer applies that rule so it cannot be gotten wrong. The Component Geometry
 Contract (``--sb-fit-*``) is a :class:`Derived` value, a ``calc()`` over the causes.
 
@@ -129,7 +129,7 @@ REGISTRY: tuple[Token, ...] = (
     # leaking the UA ::backdrop colour (no-UA-default).
     _color("popover-scrim", "rgb(0 0 0 / 0)", "rgb(0 0 0 / 0)"),
     # The colour-picker handle ring. Near-white so the drag handle stays visible
-    # over any spectrum colour beneath it, in either scheme (TOKEN_PAIR_CONTRAST
+    # over any spectrum colour beneath it, in either scheme (holding contrast
     # against an unknown ground).
     _color("handle-ring", "#ffffff", "#f6f7f9"),
     # Type. A UI family + a prose family, a small size scale, weights, line-height,
@@ -301,7 +301,7 @@ button:focus-visible {
  * `button` paint by specificity, so an option is not an accent button. Every
  * option reserves the underline as a transparent accent-width block-end border,
  * recoloured only when selected, so moving the selection never shifts layout
- * (PEER_EDGE_RESERVATION, state-stable geometry: the width is on the base rule,
+ * (state-stable geometry: the width is on the base rule,
  * the selected rule only recolours). */
 .sb-segmented {
   gap: var(--sb-space-sm);

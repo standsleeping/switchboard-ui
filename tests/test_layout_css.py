@@ -18,7 +18,7 @@ from switchboard_ui.assets import read_static
 # The only properties the layout layer may declare: those that determine size,
 # position, and flow. Two deliberate exclusions, stricter than "no appearance":
 #
-#   margin  — banned outright (NEVER_MARGIN). Inter-element rhythm belongs to the
+#   margin  — banned outright. Inter-element rhythm belongs to the
 #             parent's `gap`; explicit gaps between regions to a structural
 #             spacer; centering to `place-*` / `justify-*` / `align-*`. Banning it
 #             removes margin collapsing (a top layout-bug source) and the
