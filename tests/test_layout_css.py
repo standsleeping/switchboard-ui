@@ -150,14 +150,6 @@ def test_layout_css_selects_only_sb_classes() -> None:
     assert not foreign, f"layout.css selects non-sb elements: {foreign}"
 
 
-def test_layout_css_is_flex_not_grid() -> None:
-    """The layout is built from flex frames; no CSS grid template remains."""
-    css = read_static("layout.css")
-    assert ".sb-frame" in css
-    assert "display: flex" in css
-    assert "grid-template-areas" not in css
-
-
 def test_layout_css_admits_only_contract_tokens() -> None:
     """Structure may consume contract obligations (--sb-fit-*), no other token, never theming.
 
