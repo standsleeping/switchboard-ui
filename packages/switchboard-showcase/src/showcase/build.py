@@ -15,6 +15,7 @@ the theme). That is the same opt-in a real host performs.
 
 from switchboard_ui import Document, Island
 from switchboard_ui.components import (
+    ArmBinding,
     color_picker,
     color_picker_scripts,
     color_picker_styles,
@@ -54,9 +55,19 @@ def build_showcase() -> Document:
             preview(scope_id="preview-1"),
             # Binds the colour picker's topic to the preview's accent token, so
             # editing the colour live-restyles the preview (and only the preview).
+            # One pane, so both arms move together: two arm bindings on the one
+            # topic. The builder edits the arms on separate topics for independent
+            # light/dark themes.
             theme_state(
                 scope='[data-sb-scope="preview-1"]',
-                bindings={"token:accent": "--sb-color-accent"},
+                bindings=(
+                    ArmBinding(
+                        topic="token:accent", token="--sb-color-accent", arm="light"
+                    ),
+                    ArmBinding(
+                        topic="token:accent", token="--sb-color-accent", arm="dark"
+                    ),
+                ),
             ),
         ),
         "body-l": (

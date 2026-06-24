@@ -28,12 +28,13 @@ and selected label), ``--sb-color-accent`` (the underline), ``--sb-color-subtle`
 """
 
 import re
-from collections.abc import Mapping, Sequence
-from typing import Literal
+from collections.abc import Sequence
+from dataclasses import dataclass
+from typing import Literal, assert_never
 
 from switchboard_ui.assets import read_static
 from switchboard_ui.html import attributes, classes, element, escape_text
-from switchboard_ui.model import Island
+from switchboard_ui.model import Island, Json
 from switchboard_ui.render import render_island
 
 _ADAPTER = "segmented"
@@ -528,14 +529,60 @@ def preview_styles() -> str:
     return read_static("preview.css")
 
 
-def theme_state(*, scope: str, bindings: Mapping[str, str]) -> Island:
+@dataclass(frozen=True)
+class ArmBinding:
+    """Bind a topic to one scheme arm of a scheme-varying token.
+
+    A scheme-varying token (a colour) is authored per ``-light`` / ``-dark`` arm,
+    composed with ``light-dark()``. This binding edits *one* arm: publishing a
+    value writes ``<token>-<arm>`` onto the scope and re-declares the
+    ``light-dark()`` composition there, so the scoped subtree repaints in that
+    arm's scheme. Two arm bindings on the same topic (one per arm) move both arms
+    in lockstep; distinct topics edit each arm independently.
+    """
+
+    topic: str
+    token: str
+    arm: Literal["light", "dark"]
+
+
+@dataclass(frozen=True)
+class ValueBinding:
+    """Bind a topic to a scheme-invariant token, set directly (no arms).
+
+    Lengths, numbers, and font families do not vary by scheme, so publishing a
+    value writes it straight onto the token (``setProperty(token, value)``) with no
+    composition.
+    """
+
+    topic: str
+    token: str
+
+
+Binding = ArmBinding | ValueBinding
+"""One token edit the theme-state island applies: an arm edit or a direct value."""
+
+
+def _binding_payload(binding: Binding) -> dict[str, Json]:
+    """Serialize a binding to the ``kind``-tagged dict the adapter dispatches on."""
+    match binding:
+        case ArmBinding(topic=topic, token=token, arm=arm):
+            return {"kind": "arm", "topic": topic, "token": token, "arm": arm}
+        case ValueBinding(topic=topic, token=token):
+            return {"kind": "value", "topic": topic, "token": token}
+    assert_never(binding)  # pragma: no cover
+
+
+def theme_state(*, scope: str, bindings: Sequence[Binding]) -> Island:
     """The apply-edit island: write bound token edits onto a scoped element.
 
     ``scope`` is a CSS selector for the override target(s) (e.g. a preview's
-    ``[data-sb-scope]`` wrapper); ``bindings`` maps a bus topic to a scheme-varying
-    colour token (``{"token:accent": "--sb-color-accent"}``). When a bound topic
-    publishes a value, the adapter writes it onto every scoped element as the
-    token's two arms (``-light`` / ``-dark``), so the scoped subtree repaints. The
+    ``[data-sb-scope]`` wrapper); ``bindings`` lists the token edits to apply.
+    Each is an :class:`ArmBinding` (one scheme arm of a colour) or a
+    :class:`ValueBinding` (a scheme-invariant length/number/family). When a bound
+    topic publishes a value, the adapter writes it onto every scoped element, so
+    the scoped subtree repaints. The token names come from the trusted bindings,
+    never from a published value, so a value can only ever be a CSS value. The
     island has no markup of its own. Raises :class:`ValueError` at the authoring
     boundary if ``scope`` is blank or ``bindings`` is empty.
     """
@@ -543,10 +590,14 @@ def theme_state(*, scope: str, bindings: Mapping[str, str]) -> Island:
         raise ValueError("theme_state requires a non-empty scope selector")
     if not bindings:
         raise ValueError("theme_state requires at least one binding")
+    # A topic appears once in the declared subscription set even when two arm
+    # bindings share it (the static-analysis surface lists each topic once); the
+    # adapter still wires one handler per binding at runtime.
+    topics = tuple(dict.fromkeys(b.topic for b in bindings))
     return Island(
         name="theme-state",
-        props={"scope": scope, "bindings": dict(bindings)},
-        subscribes=tuple(bindings),
+        props={"scope": scope, "bindings": [_binding_payload(b) for b in bindings]},
+        subscribes=topics,
     )
 
 

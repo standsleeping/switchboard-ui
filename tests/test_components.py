@@ -18,6 +18,8 @@ from importlib.resources import files
 import pytest
 
 from switchboard_ui.components import (
+    ArmBinding,
+    ValueBinding,
     color_input,
     color_input_scripts,
     color_input_styles,
@@ -364,30 +366,81 @@ def test_preview_styles_returns_the_structural_css() -> None:
     assert ".sb-preview" in preview_styles()
 
 
-def test_theme_state_subscribes_to_its_bound_topics() -> None:
-    """The apply-edit island subscribes to each bound topic and carries the map."""
+def test_theme_state_serializes_an_arm_binding() -> None:
+    """An arm binding becomes a kind-tagged payload carrying the token and arm."""
     island = theme_state(
         scope='[data-sb-scope="preview-1"]',
-        bindings={"token:accent": "--sb-color-accent"},
+        bindings=(
+            ArmBinding(topic="token:accent", token="--sb-color-accent", arm="light"),
+        ),
     )
     assert island.name == "theme-state"
     assert island.subscribes == ("token:accent",)
     assert island.props == {
         "scope": '[data-sb-scope="preview-1"]',
-        "bindings": {"token:accent": "--sb-color-accent"},
+        "bindings": [
+            {
+                "kind": "arm",
+                "topic": "token:accent",
+                "token": "--sb-color-accent",
+                "arm": "light",
+            }
+        ],
     }
+
+
+def test_theme_state_serializes_a_value_binding() -> None:
+    """A value binding becomes a kind-tagged payload with no arm (set directly)."""
+    island = theme_state(
+        scope="[data-sb-scope]",
+        bindings=(ValueBinding(topic="token:radius", token="--sb-radius-base"),),
+    )
+    assert island.subscribes == ("token:radius",)
+    assert island.props["bindings"] == [
+        {"kind": "value", "topic": "token:radius", "token": "--sb-radius-base"}
+    ]
+
+
+def test_theme_state_lists_each_topic_once_in_subscriptions() -> None:
+    """Two arm bindings sharing a topic declare it once (the static-analysis set)."""
+    island = theme_state(
+        scope="[data-sb-scope]",
+        bindings=(
+            ArmBinding(topic="token:accent", token="--sb-color-accent", arm="light"),
+            ArmBinding(topic="token:accent", token="--sb-color-accent", arm="dark"),
+        ),
+    )
+    assert island.subscribes == ("token:accent",)
+    # Both arm edits still ship as runtime bindings; only the declaration dedupes.
+    assert island.props["bindings"] == [
+        {
+            "kind": "arm",
+            "topic": "token:accent",
+            "token": "--sb-color-accent",
+            "arm": "light",
+        },
+        {
+            "kind": "arm",
+            "topic": "token:accent",
+            "token": "--sb-color-accent",
+            "arm": "dark",
+        },
+    ]
 
 
 def test_theme_state_rejects_a_blank_scope() -> None:
     """Without a scope there is nothing to write onto; reject a blank."""
     with pytest.raises(ValueError, match="non-empty scope"):
-        theme_state(scope="", bindings={"token:accent": "--sb-color-accent"})
+        theme_state(
+            scope="",
+            bindings=(ValueBinding(topic="token:radius", token="--sb-radius-base"),),
+        )
 
 
 def test_theme_state_rejects_empty_bindings() -> None:
     """With no bindings the island would do nothing; reject it at the boundary."""
     with pytest.raises(ValueError, match="at least one binding"):
-        theme_state(scope="[data-sb-scope]", bindings={})
+        theme_state(scope="[data-sb-scope]", bindings=())
 
 
 def test_theme_state_scripts_returns_the_adapter() -> None:
