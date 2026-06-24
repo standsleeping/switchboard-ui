@@ -54,8 +54,10 @@ def _row(
 ) -> Frame:
     """One row: fixed-width side cells around a flexible center cell.
 
-    ``class_`` marks the row's structural role; the head and foot rows pass
-    ``sb-rail`` so the layer floors them to the contract (see ``layout.css``).
+    ``class_`` marks the row's structural and semantic roles. The head and foot
+    rows pass ``sb-rail`` so the layer floors them to the contract; all three
+    rows carry an identity hook (``sb-head-row`` / ``sb-body-row`` /
+    ``sb-foot-row``) so a theme can give each full-width seam one row owner.
     ``scroll`` makes the row's cells scroll owners; the body row passes it so the
     center and sidebars scroll while the chrome rails clip.
     """
@@ -82,17 +84,39 @@ def three_column(
     (fixed-width sides around a flexible center). Islands are placed by region
     name (``head-l`` through ``foot-r``); an omitted region renders as an empty
     cell that collapses. Each cell carries an ``sb-<region>`` class as a theming
-    hook. The three body cells are scroll owners (``sb-scroll``): they scroll
-    their own overflow while the root and chrome rails clip. The result is an
-    ordinary ``Document`` you render with :func:`switchboard_ui.render_document`.
+    hook; each row carries an ``sb-<row>-row`` hook for full-width seam ownership.
+    The three body cells are scroll owners (``sb-scroll``): they scroll their own
+    overflow while the root and chrome rails clip. The result is an ordinary
+    ``Document`` you render with :func:`switchboard_ui.render_document`.
     """
     placed = regions or {}
     body = Frame(
         direction="column",
         children=(
-            _row("head-l", "head-c", "head-r", placed, class_="sb-rail"),
-            Slot(_row("body-l", "body-c", "body-r", placed, scroll=True)),
-            _row("foot-l", "foot-c", "foot-r", placed, class_="sb-rail"),
+            _row(
+                "head-l",
+                "head-c",
+                "head-r",
+                placed,
+                class_="sb-rail sb-head-row",
+            ),
+            Slot(
+                _row(
+                    "body-l",
+                    "body-c",
+                    "body-r",
+                    placed,
+                    class_="sb-body-row",
+                    scroll=True,
+                )
+            ),
+            _row(
+                "foot-l",
+                "foot-c",
+                "foot-r",
+                placed,
+                class_="sb-rail sb-foot-row",
+            ),
         ),
     )
     return Document(body=body, title=title)

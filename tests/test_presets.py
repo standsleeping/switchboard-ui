@@ -33,7 +33,7 @@ def test_three_column_places_an_island_in_the_named_cell() -> None:
 
 
 def test_three_column_rails_are_content_driven_not_fixed() -> None:
-    """The head and foot rows are bare ``sb-rail`` frames, floored by the contract.
+    """The head and foot rows are ``sb-rail`` frames, floored by the contract.
 
     They are deliberately *not* fixed-basis ``Slot``s: the layer floors them to
     ``--sb-fit-rail-block`` (the theme's obligation) and lets content drive above
@@ -42,9 +42,22 @@ def test_three_column_rails_are_content_driven_not_fixed() -> None:
     doc = three_column()
     head, middle, foot = doc.body.children
     assert isinstance(middle, Slot)  # the flexible center row
-    for rail in (head, foot):
+    for rail, role in ((head, "sb-head-row"), (foot, "sb-foot-row")):
         assert isinstance(rail, Frame)  # not a Slot: no fixed height guess
-        assert rail.class_ == "sb-rail"  # the layer floors it to the contract
+        assert rail.class_ == f"sb-rail {role}"
+
+
+def test_three_column_rows_have_explicit_seam_ownership_hooks() -> None:
+    """Every row has a stable identity hook for full-width seam ownership."""
+    doc = three_column()
+    head, middle, foot = doc.body.children
+    assert isinstance(head, Frame)
+    assert isinstance(middle, Slot)
+    assert isinstance(middle.child, Frame)
+    assert isinstance(foot, Frame)
+    assert "sb-head-row" in head.class_
+    assert middle.child.class_ == "sb-body-row"
+    assert "sb-foot-row" in foot.class_
 
 
 def _cells(row: Frame) -> list[Frame]:
