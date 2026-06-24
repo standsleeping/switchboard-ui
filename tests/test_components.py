@@ -37,6 +37,9 @@ from switchboard_ui.components import (
     slider,
     slider_scripts,
     slider_styles,
+    theme_export,
+    theme_export_scripts,
+    theme_export_styles,
     theme_state,
     theme_state_scripts,
     value_field,
@@ -495,6 +498,70 @@ def test_theme_state_scripts_returns_the_adapter() -> None:
     """The adapter ships and registers under the theme-state name (the runtime's dispatch key)."""
     (adapter,) = theme_state_scripts()
     assert 'register("theme-state"' in adapter
+
+
+def test_theme_export_carries_the_scope_and_bindings_with_no_topics() -> None:
+    """The export island reads on demand: it ships the scope and binding payloads
+    but subscribes to and publishes nothing (it never touches the bus)."""
+    island = theme_export(
+        scope="[data-sb-scope]",
+        bindings=(
+            ArmBinding(topic="token:accent", token="--sb-color-accent", arm="light"),
+            ValueBinding(topic="token:radius", token="--sb-radius-base"),
+        ),
+    )
+    assert island.name == "theme-export"
+    assert island.subscribes == ()
+    assert island.publishes == ()
+    assert island.props == {
+        "scope": "[data-sb-scope]",
+        "bindings": [
+            {
+                "kind": "arm",
+                "topic": "token:accent",
+                "token": "--sb-color-accent",
+                "arm": "light",
+            },
+            {"kind": "value", "topic": "token:radius", "token": "--sb-radius-base"},
+        ],
+    }
+
+
+def test_theme_export_server_renders_a_copy_button() -> None:
+    """The control is present at first paint: a button labelled for the export."""
+    island = theme_export(
+        scope="[data-sb-scope]",
+        bindings=(ValueBinding(topic="token:radius", token="--sb-radius-base"),),
+    )
+    (button,) = find(island.initial, "button", **{"class": "sb-export-button"})
+    assert button["type"] == "button"
+    assert "Copy tokens.css" in island.initial
+
+
+def test_theme_export_rejects_a_blank_scope() -> None:
+    """Without a scope there is nothing to read from; reject a blank."""
+    with pytest.raises(ValueError, match="non-empty scope"):
+        theme_export(
+            scope="",
+            bindings=(ValueBinding(topic="token:radius", token="--sb-radius-base"),),
+        )
+
+
+def test_theme_export_rejects_empty_bindings() -> None:
+    """With no bindings there is nothing to serialize; reject it at the boundary."""
+    with pytest.raises(ValueError, match="at least one binding"):
+        theme_export(scope="[data-sb-scope]", bindings=())
+
+
+def test_theme_export_scripts_returns_the_adapter() -> None:
+    """The adapter ships and registers under the theme-export name (the runtime's dispatch key)."""
+    (adapter,) = theme_export_scripts()
+    assert 'register("theme-export"' in adapter
+
+
+def test_theme_export_styles_returns_the_structural_css() -> None:
+    """The structural CSS ships and targets the component's hooks."""
+    assert ".sb-export" in theme_export_styles()
 
 
 def _popover(**overrides: object) -> Island:

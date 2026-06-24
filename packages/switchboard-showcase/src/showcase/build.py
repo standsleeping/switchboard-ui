@@ -39,6 +39,9 @@ from switchboard_ui.components import (
     slider,
     slider_scripts,
     slider_styles,
+    theme_export,
+    theme_export_scripts,
+    theme_export_styles,
     theme_state,
     theme_state_scripts,
     value_field,
@@ -297,9 +300,8 @@ def build_theme_builder() -> Document:
     """The theme builder page: a generated control panel beside a live light/dark
     preview, all wired to the registry's tokens through one theme_state island."""
     controls, bindings = _builder_controls()
-    state = theme_state(
-        scope=f'[data-sb-scope="{_BUILDER_SCOPE}"]', bindings=tuple(bindings)
-    )
+    scope = f'[data-sb-scope="{_BUILDER_SCOPE}"]'
+    state = theme_state(scope=scope, bindings=tuple(bindings))
     preview_col = Frame(
         direction="row",
         children=(
@@ -310,7 +312,10 @@ def build_theme_builder() -> Document:
     )
     header = Frame(
         direction="row",
-        children=(_static("brand", "theme builder", "sb-builder-brand"),),
+        children=(
+            _static("brand", "theme builder", "sb-builder-brand"),
+            theme_export(scope=scope, bindings=tuple(bindings)),
+        ),
         class_="sb-rail sb-builder-header",
     )
     main = Frame(
@@ -323,9 +328,14 @@ def build_theme_builder() -> Document:
 
 
 def theme_builder_scripts() -> tuple[str, ...]:
-    """The adapters the builder registers: the colour input, the value field, and
-    the theme-state island that applies every edit to the preview scope."""
-    return color_input_scripts() + value_field_scripts() + theme_state_scripts()
+    """The adapters the builder registers: the colour input, the value field, the
+    theme-state island that applies every edit, and the export control."""
+    return (
+        color_input_scripts()
+        + value_field_scripts()
+        + theme_state_scripts()
+        + theme_export_scripts()
+    )
 
 
 # The builder's own page layout (host CSS, not the core's structure or the theme's
@@ -334,6 +344,7 @@ def theme_builder_scripts() -> tuple[str, ...]:
 _BUILDER_CSS = """
 .sb-builder-header {
   align-items: center;
+  justify-content: space-between;
   padding: var(--sb-space-inset);
   font-weight: var(--sb-font-weight-bold);
 }
@@ -375,5 +386,12 @@ _BUILDER_CSS = """
 
 def theme_builder_styles() -> str:
     """The builder's component CSS plus its own page layout, for ``extra_head``."""
-    sheets = "\n".join((color_input_styles(), value_field_styles(), preview_styles()))
+    sheets = "\n".join(
+        (
+            color_input_styles(),
+            value_field_styles(),
+            preview_styles(),
+            theme_export_styles(),
+        )
+    )
     return f"<style>{sheets}</style><style>{_BUILDER_CSS}</style>"

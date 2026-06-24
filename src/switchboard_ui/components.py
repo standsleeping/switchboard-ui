@@ -648,3 +648,48 @@ def theme_state(*, scope: str, bindings: Sequence[Binding]) -> Island:
 def theme_state_scripts() -> tuple[str, ...]:
     """The theme-state adapter, for the host to pass to ``extra_scripts``."""
     return (read_static("theme-state.js"),)
+
+
+def theme_export(*, scope: str, bindings: Sequence[Binding]) -> Island:
+    """An export control: serialise a scope's current tokens to a ``tokens.css``.
+
+    The read-back sibling of :func:`theme_state`. It renders a button that, on
+    click, reads every bound token's current value off the ``scope`` (with
+    ``getComputedStyle``, so an unedited token exports its inherited default) and
+    assembles a ``:root`` block — an arm token as its two arms plus the
+    ``light-dark()`` composition, a value token as one declaration — then copies it
+    to the clipboard. ``bindings`` is the same list :func:`theme_state` applies, so
+    the export covers exactly the editable set. The button carries no topic (it
+    reads on demand, not over the bus). Raises :class:`ValueError` at the authoring
+    boundary if ``scope`` is blank or ``bindings`` is empty.
+    """
+    if not scope:
+        raise ValueError("theme_export requires a non-empty scope selector")
+    if not bindings:
+        raise ValueError("theme_export requires at least one binding")
+    button = element(
+        "button",
+        {"type": "button", "class": "sb-export-button"},
+        [escape_text("Copy tokens.css")],
+    )
+    status = element(
+        "span",
+        {"class": "sb-export-status", "role": "status", "aria-live": "polite"},
+        (),
+    )
+    initial = element("div", {"class": "sb-export"}, [button, status])
+    return Island(
+        name="theme-export",
+        props={"scope": scope, "bindings": [_binding_payload(b) for b in bindings]},
+        initial=initial,
+    )
+
+
+def theme_export_scripts() -> tuple[str, ...]:
+    """The theme-export adapter, for the host to pass to ``extra_scripts``."""
+    return (read_static("theme-export.js"),)
+
+
+def theme_export_styles() -> str:
+    """The theme-export structural CSS, for the host to inline in ``extra_head``."""
+    return read_static("theme-export.css")

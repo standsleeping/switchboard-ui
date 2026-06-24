@@ -536,6 +536,15 @@ button:focus-visible {
 .sb-preview-table th {
   background: var(--sb-color-bg-raised);
   font-weight: var(--sb-font-weight-bold);
+}
+
+/* Export control: the button carries the base button paint; the status note
+ * beside it is muted, set off by a gap. */
+.sb-export {
+  gap: var(--sb-space-sm);
+}
+.sb-export-status {
+  color: var(--sb-color-muted);
 }"""
 
 
