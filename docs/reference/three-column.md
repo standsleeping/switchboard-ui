@@ -20,16 +20,16 @@ html = render_document(page)
 
 ```
 ┌────────┬────────┬────────┐
-│ head-l │ head-c │ head-r │   top row (fixed height)
+│ head-l │ head-c │ head-r │   top rail (content-driven)
 ├────────┼────────┼────────┤
 │ body-l │ body-c │ body-r │   middle row (flexible)
 ├────────┼────────┼────────┤
-│ foot-l │ foot-c │ foot-r │   bottom row (fixed height)
+│ foot-l │ foot-c │ foot-r │   bottom rail (content-driven)
 └────────┴────────┴────────┘
   fixed    flexible  fixed
 ```
 
-The preset builds an outer **column** of three rows: a fixed-height top and bottom around a flexible middle. Each row is a **row** of three cells: fixed-width sides around a flexible center. Islands are placed by region name (`head-l` through `foot-r`), the keys the `regions` argument accepts, drawn from [`REGIONS`](page-model.md#region-and-regions). An omitted region is an empty cell that collapses. The lines between regions are *seams*; see [Seams](../explanation/seams.md) for how each is drawn exactly once.
+The preset builds an outer **column** of three rows: content-driven head and foot rails around a flexible middle. Each row is a **row** of three cells: fixed-width sides around a flexible center. Islands are placed by region name (`head-l` through `foot-r`), the keys the `regions` argument accepts, drawn from [`REGIONS`](page-model.md#region-and-regions). An omitted region is an empty cell that collapses. The rows carry identity hooks so full-width horizontal *seams* can have one owner; see [Seams](../explanation/seams.md).
 
 | Parameter | Type | Default | Effect |
 |---|---|---|---|
@@ -42,13 +42,13 @@ The preset is plain frames and slots, so it renders through [`render_document`](
 
 ```html
 <div class="sb-frame sb-frame-column sb-root">
-  <div class="sb-frame sb-frame-row" style="flex: 0 0 2.5rem">                       <!-- head row -->
+  <div class="sb-frame sb-frame-row sb-rail sb-head-row">                            <!-- head row -->
     <div class="sb-frame sb-frame-column sb-head-l" style="flex: 0 0 220px"></div>  <!-- empty: collapses -->
     <div class="sb-frame sb-frame-column sb-head-c" style="flex: 1 1 0">...</div>
     <div class="sb-frame sb-frame-column sb-head-r" style="flex: 0 0 200px"></div>  <!-- empty: collapses -->
   </div>
-  <div class="sb-frame sb-frame-row" style="flex: 1 1 0">...</div>                   <!-- body row -->
-  <div class="sb-frame sb-frame-row" style="flex: 0 0 2.5rem">...</div>              <!-- foot row -->
+  <div class="sb-frame sb-frame-row sb-body-row" style="flex: 1 1 0">...</div>       <!-- body row -->
+  <div class="sb-frame sb-frame-row sb-rail sb-foot-row">...</div>                  <!-- foot row -->
 </div>
 ```
 
@@ -56,12 +56,14 @@ The preset is plain frames and slots, so it renders through [`render_document`](
 |---|---|
 | `.sb-frame` + `.sb-frame-row` / `.sb-frame-column` | A flex stack and its axis. |
 | `.sb-root` | The document root frame, sized to the viewport. |
+| `.sb-head-row`, `.sb-body-row`, `.sb-foot-row` | Row identity hooks; themes use the head and foot hooks to own full-width horizontal seams. |
+| `.sb-rail` | A content-driven head or foot row with a theme-published minimum block size. |
 | `.sb-<region>` | A cell's region identity (`sb-head-l` through `sb-foot-r`), a theming hook. |
 | `.sb-island` | A mount point inside a cell. |
 
 ## Layout sizes
 
-The rails are sized with plain CSS lengths, not design tokens: a `2.5rem` row height and `220px` / `200px` side columns, emitted as inline `flex` styles. These are layout values the preset owns. For different sizes, build your own frame tree with different [`Slot`](page-model.md#slot) bases.
+The side columns use the preset's `220px` / `200px` structural widths. The head and foot rows are content-driven and floored by the theme's `--sb-fit-rail-block` geometry obligation; only the middle row receives a flexible slot. For different column widths or row behavior, build your own frame tree with different [`Slot`](page-model.md#slot) bases and role classes.
 
 ## The stylesheet is structure only
 

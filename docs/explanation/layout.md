@@ -12,7 +12,7 @@ One mechanism (a flex stack) at every level means there is no separate page-leve
 
 A preset is an ordinary function that assembles islands into a frame tree and returns a `Document`. It owns no rendering path and no type of its own; it is sugar over the primitive, so anything a preset builds you could build by hand.
 
-`three_column` is the preset the demo uses: a column of three rows (a fixed-height top and bottom around a flexible middle), each a row of three cells (fixed-width sides around a flexible center). Islands are placed by region name, and an omitted region collapses. It is built from `Frame` and `Slot` like any other layout; the sizes are plain CSS lengths the preset owns, not design tokens.
+`three_column` is the preset the demo uses: a column of three rows (content-driven head and foot rails around a flexible middle), each a row of three cells (fixed-width sides around a flexible center). Islands are placed by region name, and an omitted region collapses. It is built from `Frame` and `Slot` like any other layout; the side widths are plain CSS lengths the preset owns, while the rail floor comes from the theme's component-geometry contract.
 
 ## Style is the host's, not the package's
 
