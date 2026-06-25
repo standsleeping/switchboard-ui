@@ -51,6 +51,8 @@ def _row(
     *,
     class_: str = "",
     scroll: bool = False,
+    left_width: str = _LEFT_WIDTH,
+    right_width: str = _RIGHT_WIDTH,
 ) -> Frame:
     """One row: fixed-width side cells around a flexible center cell.
 
@@ -59,14 +61,16 @@ def _row(
     rows carry an identity hook (``sb-head-row`` / ``sb-body-row`` /
     ``sb-foot-row``) so a theme can give each full-width seam one row owner.
     ``scroll`` makes the row's cells scroll owners; the body row passes it so the
-    center and sidebars scroll while the chrome rails clip.
+    center and sidebars scroll while the chrome rails clip. ``left_width`` /
+    ``right_width`` are the side cells' fixed bases (one layout choice for the
+    whole arrangement, so the columns line up across all three rows).
     """
     return Frame(
         direction="row",
         children=(
-            Slot(_cell(left, placed, scroll=scroll), basis=_LEFT_WIDTH),
+            Slot(_cell(left, placed, scroll=scroll), basis=left_width),
             Slot(_cell(center, placed, scroll=scroll)),
-            Slot(_cell(right, placed, scroll=scroll), basis=_RIGHT_WIDTH),
+            Slot(_cell(right, placed, scroll=scroll), basis=right_width),
         ),
         class_=class_,
     )
@@ -76,6 +80,8 @@ def three_column(
     regions: Mapping[Region, Sequence[Island]] | None = None,
     *,
     title: str = "switchboard-ui",
+    left_width: str = _LEFT_WIDTH,
+    right_width: str = _RIGHT_WIDTH,
 ) -> Document:
     """Build the nine-region three-column arrangement as a :class:`Document`.
 
@@ -88,6 +94,11 @@ def three_column(
     The three body cells are scroll owners (``sb-scroll``): they scroll their own
     overflow while the root and chrome rails clip. The result is an ordinary
     ``Document`` you render with :func:`switchboard_ui.render_document`.
+
+    ``left_width`` / ``right_width`` size the side columns: a layout choice (how
+    wide the nav and the inspector are), defaulting to the standard rails. A tool
+    whose inspector needs more room widens the right column without leaving the
+    preset.
     """
     placed = regions or {}
     body = Frame(
@@ -99,6 +110,8 @@ def three_column(
                 "head-r",
                 placed,
                 class_="sb-rail sb-head-row",
+                left_width=left_width,
+                right_width=right_width,
             ),
             Slot(
                 _row(
@@ -108,6 +121,8 @@ def three_column(
                     placed,
                     class_="sb-body-row",
                     scroll=True,
+                    left_width=left_width,
+                    right_width=right_width,
                 )
             ),
             _row(
@@ -116,6 +131,8 @@ def three_column(
                 "foot-r",
                 placed,
                 class_="sb-rail sb-foot-row",
+                left_width=left_width,
+                right_width=right_width,
             ),
         ),
     )

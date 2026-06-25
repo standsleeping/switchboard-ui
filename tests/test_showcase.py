@@ -29,9 +29,56 @@ def test_showcase_keeps_corner_regions_empty() -> None:
         )
 
 
-def test_showcase_css_reveals_only_direct_empty_region_cells() -> None:
-    """The demo grid uncollapses row cells through scoped paint-only CSS."""
+def test_showcase_styles_carry_the_three_column_chrome() -> None:
+    """The gallery paints its own column seams, nav, and inspector (host chrome)."""
     css = showcase_styles()
-    for row in ("head", "body", "foot"):
-        assert f".sb-{row}-row > .sb-frame:empty" in css
-    assert "display: flex" in css
+    assert ".sb-body-c" in css  # the centre column owns both column seams
+    assert ".sb-gallery-nav" in css
+    assert ".sb-gallery-inspector" in css
+
+
+_EXPECTED_IDS = [
+    "segmented",
+    "slider",
+    "color-picker",
+    "popover",
+    "value-field",
+    "preview",
+    "table",
+    "code-block",
+]
+
+
+def test_showcase_nav_publishes_selection_and_inspector_subscribes() -> None:
+    """The nav publishes gallery:select across regions; the inspector subscribes it."""
+    html = render_document(build_showcase())
+    (nav,) = find(html, "div", **{"data-island": "gallery-nav"})
+    assert nav["data-pub"] == "gallery:select"
+    (inspector,) = find(html, "div", **{"data-island": "gallery-inspector"})
+    assert inspector["data-sub"] == "gallery:select"
+
+
+def test_showcase_nav_lists_every_component_with_the_first_active() -> None:
+    """The nav has one in-page anchor per specimen; the first specimen is active."""
+    html = render_document(build_showcase())
+    items = find(html, "a", **{"class": "sb-gallery-nav-item"})
+    assert [it["data-id"] for it in items] == _EXPECTED_IDS
+    assert [it["href"] for it in items] == [f"#sec-{i}" for i in _EXPECTED_IDS]
+    active = [it["data-id"] for it in items if it.get("aria-current") == "true"]
+    assert active == ["segmented"]
+
+
+def test_showcase_inspector_shows_only_the_active_panel_at_first_paint() -> None:
+    """Every component gets an inspector panel; only the first is unhidden initially."""
+    html = render_document(build_showcase())
+    panels = find(html, "div", **{"class": "sb-gallery-inspector-panel"})
+    assert [p["data-id"] for p in panels] == _EXPECTED_IDS
+    visible = [p["data-id"] for p in panels if "hidden" not in p]
+    assert visible == ["segmented"]
+
+
+def test_showcase_content_anchors_match_the_nav_targets() -> None:
+    """Each specimen heading carries the id its nav anchor scrolls to."""
+    html = render_document(build_showcase())
+    headings = find(html, "div", **{"class": "sb-gallery-heading"})
+    assert [h["id"] for h in headings] == [f"sec-{i}" for i in _EXPECTED_IDS]

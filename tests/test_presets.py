@@ -32,6 +32,30 @@ def test_three_column_places_an_island_in_the_named_cell() -> None:
     assert "sb-body-c" in cell.class_  # region identity hook for theming
 
 
+def test_three_column_side_widths_default_to_the_standard_rails() -> None:
+    """The side columns default to the standard nav / inspector rail widths."""
+    middle = three_column().body.children[1]
+    assert isinstance(middle, Slot)
+    row = middle.child
+    assert isinstance(row, Frame)
+    left, _, right = row.children
+    assert isinstance(left, Slot)
+    assert isinstance(right, Slot)
+    assert (left.basis, right.basis) == ("220px", "200px")
+
+
+def test_three_column_side_widths_are_overridable() -> None:
+    """A tool widens the side columns without leaving the preset (e.g. a roomy inspector)."""
+    middle = three_column(left_width="16rem", right_width="20rem").body.children[1]
+    assert isinstance(middle, Slot)
+    row = middle.child
+    assert isinstance(row, Frame)
+    left, _, right = row.children
+    assert isinstance(left, Slot)
+    assert isinstance(right, Slot)
+    assert (left.basis, right.basis) == ("16rem", "20rem")
+
+
 def test_three_column_rails_are_content_driven_not_fixed() -> None:
     """The head and foot rows are ``sb-rail`` frames, floored by the contract.
 

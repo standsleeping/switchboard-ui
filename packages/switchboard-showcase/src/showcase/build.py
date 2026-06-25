@@ -19,6 +19,7 @@ the theme). That is the same opt-in a real host performs.
 """
 
 import re
+from dataclasses import dataclass
 from typing import Literal
 
 from switchboard_theme import REGISTRY, Category, Fixed, Themed, Token, ValueType
@@ -27,6 +28,9 @@ from switchboard_ui.components import (
     ArmBinding,
     Binding,
     ValueBinding,
+    code_block,
+    code_block_scripts,
+    code_block_styles,
     color_input,
     color_input_scripts,
     color_input_styles,
@@ -44,6 +48,8 @@ from switchboard_ui.components import (
     slider,
     slider_scripts,
     slider_styles,
+    table,
+    table_styles,
     theme_export,
     theme_export_scripts,
     theme_export_styles,
@@ -53,77 +59,343 @@ from switchboard_ui.components import (
     value_field_scripts,
     value_field_styles,
 )
-from switchboard_ui.html import escape_text
+from switchboard_ui.html import element, escape_text
 from switchboard_ui.model import Frame, Region, Slot
 from switchboard_ui.presets import three_column
 
+# The gallery is a nav | content | inspector tool, the three columns of the
+# three_column preset used for what they mean. All three are projections of one
+# registry (`_gallery_specs`): the nav lists each component, the centre renders it,
+# and the inspector shows its props and tokens. So a column placement is never
+# arbitrary — it is the component's row read in a different direction.
+_SELECT_TOPIC = "gallery:select"
+
+
+@dataclass(frozen=True)
+class _Spec:
+    """One gallery entry, projected into all three columns.
+
+    ``body`` is the specimen island(s) the centre renders (an invisible wiring
+    island like ``theme_state`` is carried here too and floated to the end of the
+    column so it adds no gap mid-content). ``props`` and ``tokens`` are the
+    inspector's two sections for this component.
+    """
+
+    id: str
+    name: str
+    section: str
+    body: tuple[Island, ...]
+    props: tuple[tuple[str, str], ...]
+    tokens: tuple[str, ...]
+
+
+def _gallery_specs() -> tuple[_Spec, ...]:
+    """The component registry the three columns are projected from.
+
+    The colour picker and value field publish the same topics the preview's
+    ``theme_state`` subscribes to, so editing either live-restyles the preview even
+    though they sit in different sections — the bus crossing the gallery, which is
+    the showcase's whole point.
+    """
+    return (
+        _Spec(
+            id="segmented",
+            name="Segmented toggle",
+            section="Controls",
+            body=(
+                segmented(
+                    topic="view:changed",
+                    options=(
+                        ("overview", "Overview"),
+                        ("api", "API"),
+                        ("examples", "Examples"),
+                    ),
+                    value="overview",
+                    label="View",
+                ),
+            ),
+            props=(("topic", "view:changed"), ("options", "overview · api · examples")),
+            tokens=(
+                "--sb-color-accent",
+                "--sb-color-muted",
+                "--sb-border-width-accent",
+            ),
+        ),
+        _Spec(
+            id="slider",
+            name="Slider",
+            section="Controls",
+            body=(
+                slider(
+                    topic="weight:changed",
+                    min=200,
+                    max=900,
+                    step=10,
+                    value=400,
+                    label="Weight",
+                ),
+            ),
+            props=(("topic", "weight:changed"), ("range", "200-900"), ("step", "10")),
+            tokens=("--sb-color-accent", "--sb-color-border", "--sb-fit-slider-thumb"),
+        ),
+        _Spec(
+            id="color-picker",
+            name="Colour picker",
+            section="Controls",
+            body=(color_picker(topic="token:accent", value="#5b4bd6", label="Accent"),),
+            props=(("topic", "token:accent"), ("value", "#5b4bd6")),
+            tokens=("--sb-color-accent", "--sb-color-border", "--sb-color-handle-ring"),
+        ),
+        _Spec(
+            id="popover",
+            name="Popover",
+            section="Controls",
+            body=(
+                popover(
+                    trigger="Settings",
+                    panel=(
+                        "<p>A popover panel in the top layer.</p>"
+                        '<button type="button">Action</button>'
+                    ),
+                    label="Settings",
+                    panel_id="demo-popover",
+                ),
+            ),
+            props=(("panel_id", "demo-popover"), ("haspopup", "dialog")),
+            tokens=("--sb-color-bg-raised", "--sb-color-border"),
+        ),
+        _Spec(
+            id="value-field",
+            name="Value field",
+            section="Controls",
+            body=(value_field(topic="token:radius", value="0", label="Radius"),),
+            props=(("topic", "token:radius"), ("value", "0")),
+            tokens=("--sb-color-fg", "--sb-color-border", "--sb-color-accent"),
+        ),
+        _Spec(
+            id="preview",
+            name="Live preview",
+            section="Display",
+            body=(
+                preview(scope_id="preview-1"),
+                theme_state(
+                    scope='[data-sb-scope="preview-1"]',
+                    bindings=(
+                        ArmBinding(
+                            topic="token:accent", token="--sb-color-accent", arm="light"
+                        ),
+                        ArmBinding(
+                            topic="token:accent", token="--sb-color-accent", arm="dark"
+                        ),
+                        ValueBinding(topic="token:radius", token="--sb-radius-base"),
+                    ),
+                ),
+            ),
+            props=(("scope_id", "preview-1"), ("binds", "accent · radius")),
+            tokens=("--sb-color-bg", "--sb-color-fg", "--sb-font-family"),
+        ),
+        _Spec(
+            id="table",
+            name="Table",
+            section="Display",
+            body=(
+                table(
+                    columns=("Component", "Section", "Adapter"),
+                    rows=(
+                        ("segmented", "control", "yes"),
+                        ("colour picker", "control", "yes"),
+                        ("slider", "control", "yes"),
+                        ("preview", "display", "no"),
+                        ("table", "display", "no"),
+                        ("code block", "display", "copy only"),
+                    ),
+                    label="Component set",
+                ),
+            ),
+            props=(("columns", "3"), ("rows", "6")),
+            tokens=(
+                "--sb-color-border",
+                "--sb-color-bg-raised",
+                "--sb-font-tracking-wide",
+            ),
+        ),
+        _Spec(
+            id="code-block",
+            name="Code block",
+            section="Display",
+            body=(
+                code_block(
+                    code=(
+                        "from switchboard_ui.components import table\n"
+                        "\n"
+                        "grid = table(\n"
+                        '    columns=("Name", "Role"),\n'
+                        '    rows=(("accent", "interactive"),),\n'
+                        '    label="Tokens",\n'
+                        ")"
+                    ),
+                    label="Using the table component",
+                    language="python",
+                ),
+            ),
+            props=(("language", "python"), ("copy", "true")),
+            tokens=("--sb-color-bg-raised", "--sb-color-border", "--sb-color-accent"),
+        ),
+    )
+
+
+def _gallery_heading(spec: _Spec) -> Island:
+    """A specimen's heading — the nav's scroll target (the anchor ``id`` lands here)."""
+    heading = element(
+        "div",
+        {
+            "id": f"sec-{spec.id}",
+            "class": "sb-gallery-heading",
+            "role": "heading",
+            "aria-level": "2",
+        },
+        [escape_text(spec.name)],
+    )
+    return Island(name="gallery-heading", initial=heading)
+
+
+def _gallery_nav(specs: tuple[_Spec, ...]) -> Island:
+    """The nav column: one mono link per specimen, grouped by section, first active.
+
+    Each link is an in-page anchor (native scroll to the specimen's heading) whose
+    adapter also publishes the selection on the bus, so the inspector follows.
+    """
+    items: list[str] = []
+    section = ""
+    for index, spec in enumerate(specs):
+        if spec.section != section:
+            section = spec.section
+            items.append(
+                element(
+                    "div", {"class": "sb-gallery-nav-group"}, [escape_text(section)]
+                )
+            )
+        items.append(
+            element(
+                "a",
+                {
+                    "class": "sb-gallery-nav-item",
+                    "href": f"#sec-{spec.id}",
+                    "data-id": spec.id,
+                    "aria-current": "true" if index == 0 else "false",
+                },
+                [escape_text(spec.name)],
+            )
+        )
+    nav = element("nav", {"class": "sb-gallery-nav", "aria-label": "Components"}, items)
+    return Island(
+        name="gallery-nav",
+        props={"topic": _SELECT_TOPIC},
+        publishes=(_SELECT_TOPIC,),
+        initial=nav,
+    )
+
+
+def _inspector_panel(spec: _Spec, *, active: bool) -> str:
+    """One inspector panel: the component's name, section, props table, and tokens.
+
+    The props reuse the `table` component (its rendered ``initial`` markup, so the
+    panel gets the table paint without nesting a second island). Only the active
+    panel is shown at first paint; the adapter swaps them on selection.
+    """
+    title = element(
+        "div", {"class": "sb-gallery-inspector-title"}, [escape_text(spec.name)]
+    )
+    section = element(
+        "div", {"class": "sb-gallery-inspector-kind"}, [escape_text(spec.section)]
+    )
+    props_label = element(
+        "div", {"class": "sb-gallery-inspector-label"}, [escape_text("Props")]
+    )
+    props = table(
+        columns=("Prop", "Value"), rows=spec.props, label=f"{spec.name} props"
+    ).initial
+    tokens_label = element(
+        "div", {"class": "sb-gallery-inspector-label"}, [escape_text("Tokens")]
+    )
+    tokens = element(
+        "div",
+        {"class": "sb-gallery-inspector-tokens"},
+        [element("code", {}, [escape_text(token)]) for token in spec.tokens],
+    )
+    return element(
+        "div",
+        {
+            "class": "sb-gallery-inspector-panel",
+            "data-id": spec.id,
+            "hidden": None if active else "",
+        },
+        [title, section, props_label, props, tokens_label, tokens],
+    )
+
+
+def _gallery_inspector(specs: tuple[_Spec, ...]) -> Island:
+    """The inspector column: every specimen's panel, only the first shown.
+
+    Subscribes the selection topic; the adapter unhides the chosen panel and hides
+    the rest, so the inspector tracks the nav across regions over the bus.
+    """
+    panels = [
+        _inspector_panel(spec, active=index == 0) for index, spec in enumerate(specs)
+    ]
+    return Island(
+        name="gallery-inspector",
+        props={"topic": _SELECT_TOPIC},
+        subscribes=(_SELECT_TOPIC,),
+        initial=element("div", {"class": "sb-gallery-inspector"}, panels),
+    )
+
 
 def build_showcase() -> Document:
-    """The showcase page. Phase 1: the component gallery, growing one control at a time."""
+    """The component gallery as a nav | content | inspector tool.
+
+    The three columns are projections of one registry: the nav (body-l) lists each
+    component, the centre (body-c) renders it under a section heading, and the
+    inspector (body-r) shows its props and tokens. Selecting a nav item publishes
+    ``gallery:select``; the inspector subscribes and swaps to that component's
+    panel — the bus carrying a selection across regions, the same coordination the
+    demo proves with counter → readout. Invisible wiring islands float to the end
+    of the centre column so they add no gap between specimens.
+    """
+    specs = _gallery_specs()
+    content: list[Island] = []
+    trailing: list[Island] = []
+    section = ""
+    for spec in specs:
+        if spec.section != section:
+            section = spec.section
+            content.append(
+                Island(
+                    name="gallery-group",
+                    initial=element(
+                        "div",
+                        {"class": "sb-gallery-group"},
+                        [escape_text(spec.section)],
+                    ),
+                )
+            )
+        content.append(_gallery_heading(spec))
+        for island in spec.body:
+            (content if island.initial else trailing).append(island)
     regions: dict[Region, tuple[Island, ...]] = {
         "head-c": (Island(name="brand", initial="switchboard-ui"),),
-        "body-c": (
-            segmented(
-                topic="view:changed",
-                options=(
-                    ("overview", "Overview"),
-                    ("api", "API"),
-                    ("examples", "Examples"),
-                ),
-                value="overview",
-                label="View",
-            ),
-            preview(scope_id="preview-1"),
-            # Binds the colour picker's topic to the preview's accent token, so
-            # editing the colour live-restyles the preview (and only the preview).
-            # One pane, so both arms move together: two arm bindings on the one
-            # topic. The builder edits the arms on separate topics for independent
-            # light/dark themes.
-            theme_state(
-                scope='[data-sb-scope="preview-1"]',
-                bindings=(
-                    ArmBinding(
-                        topic="token:accent", token="--sb-color-accent", arm="light"
-                    ),
-                    ArmBinding(
-                        topic="token:accent", token="--sb-color-accent", arm="dark"
-                    ),
-                    # A scheme-invariant token edited directly: the value field
-                    # publishes a length string, written straight onto the radius.
-                    ValueBinding(topic="token:radius", token="--sb-radius-base"),
-                ),
-            ),
-        ),
-        "body-l": (
-            popover(
-                trigger="Settings",
-                panel=(
-                    "<p>A popover panel in the top layer.</p>"
-                    '<button type="button">Action</button>'
-                ),
-                label="Settings",
-                panel_id="demo-popover",
-            ),
-            slider(
-                topic="weight:changed",
-                min=200,
-                max=900,
-                step=10,
-                value=400,
-                label="Weight",
-            ),
-            value_field(topic="token:radius", value="0", label="Radius"),
-        ),
-        "body-r": (
-            color_picker(topic="token:accent", value="#5b4bd6", label="Accent"),
-        ),
+        "body-l": (_gallery_nav(specs),),
+        "body-c": tuple(content + trailing),
+        "body-r": (_gallery_inspector(specs),),
         "foot-c": (Island(name="status", initial="component gallery"),),
     }
-    return three_column(regions, title="switchboard-ui showcase")
+    # A wider right column than the default rail: the inspector holds props tables
+    # and full token names, which the standard 200px inspector would clip.
+    return three_column(regions, title="switchboard-ui showcase", right_width="20rem")
 
 
 def showcase_scripts() -> tuple[str, ...]:
-    """The island adapters the showcase page registers (the picker pairs the popover)."""
+    """The adapters the gallery registers: each specimen's, plus the nav and inspector."""
     return (
         segmented_scripts()
         + popover_scripts()
@@ -131,38 +403,150 @@ def showcase_scripts() -> tuple[str, ...]:
         + slider_scripts()
         + value_field_scripts()
         + theme_state_scripts()
+        + code_block_scripts()
+        + (_GALLERY_NAV_JS, _GALLERY_INSPECTOR_JS)
     )
 
 
-# A showcase-only visualization (paint, not structure): outline the nine
-# three_column regions so the layout grid reads as a 3x3. Kept out of the default
-# theme, which stays flat (rail hairlines only). Every seam is a border with a
-# single owner: the root owns the perimeter, each row owns its full-width
-# horizontal seam through the theme, and the centre column owns both internal
-# column seams (its inline-start and inline-end borders; the side columns draw
-# neither). The empty-cell override is scoped to direct row children: it reveals
-# the complete demo grid without inventing application content. `box-sizing:
-# border-box` keeps the fixed root inside the viewport. See
-# docs/explanation/seams.md for the ownership map.
-_GRID_DEMO = """
-.sb-root {
-  box-sizing: border-box;
-  border: var(--sb-border-width-thin) solid var(--sb-color-border);
-}
-.sb-head-row > .sb-frame:empty,
-.sb-body-row > .sb-frame:empty,
-.sb-foot-row > .sb-frame:empty {
-  display: flex;
-}
-.sb-head-c, .sb-body-c, .sb-foot-c {
+# The gallery's own two islands — host chrome, not core components: a nav that
+# publishes the selected component, and an inspector that subscribes and swaps to
+# that component's panel. Inlined here (like the page CSS below) because they are
+# showcase-local, not part of the shipped component set.
+_GALLERY_NAV_JS = """
+window.switchboard.register("gallery-nav", function (el, props, bus) {
+  var items = Array.prototype.slice.call(
+    el.querySelectorAll(".sb-gallery-nav-item")
+  );
+  function onClick(e) {
+    var item = e.currentTarget;
+    items.forEach(function (it) {
+      it.setAttribute("aria-current", it === item ? "true" : "false");
+    });
+    bus.publish(props.topic, item.dataset.id);
+  }
+  items.forEach(function (it) {
+    it.addEventListener("click", onClick);
+  });
+  return function teardown() {
+    items.forEach(function (it) {
+      it.removeEventListener("click", onClick);
+    });
+  };
+});
+"""
+
+_GALLERY_INSPECTOR_JS = """
+window.switchboard.register("gallery-inspector", function (el, props, bus) {
+  var panels = Array.prototype.slice.call(
+    el.querySelectorAll(".sb-gallery-inspector-panel")
+  );
+  function show(id) {
+    panels.forEach(function (p) {
+      p.hidden = p.dataset.id !== id;
+    });
+  }
+  var off = bus.subscribe(props.topic, function (id) {
+    if (typeof id === "string") show(id);
+  });
+  return function teardown() {
+    off();
+  };
+});
+"""
+
+
+# The gallery's page chrome (host CSS, not the core's structure or the theme's
+# paint): the column seams, the component nav, the content rhythm, and the
+# inspector. It reads the theme's --sb-* tokens because the theme is loaded. The
+# centre column owns both internal seams (single-owner; the side columns draw
+# neither). The nav's active item reserves the accent channel as a transparent
+# inline-start border, recoloured on selection, so the indicator never shifts the
+# row (peer edge reservation).
+_GALLERY_CSS = """
+.sb-body-c {
   border-inline-start: var(--sb-border-width-thin) solid var(--sb-color-border);
   border-inline-end: var(--sb-border-width-thin) solid var(--sb-color-border);
+  gap: var(--sb-space-lg);
+  padding: var(--sb-space-lg);
+}
+.sb-gallery-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sb-space-2xs);
+  padding: var(--sb-space-md);
+}
+.sb-gallery-nav-group {
+  color: var(--sb-color-muted);
+  font-weight: var(--sb-font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--sb-font-tracking-wide);
+  font-size: var(--sb-font-size-sm);
+}
+.sb-gallery-nav-item {
+  color: var(--sb-color-fg);
+  text-decoration: none;
+  border-inline-start: var(--sb-border-width-accent) solid transparent;
+  padding: var(--sb-space-xs);
+}
+.sb-gallery-nav-item:hover {
+  color: var(--sb-color-accent);
+}
+.sb-gallery-nav-item[aria-current="true"] {
+  color: var(--sb-color-accent);
+  border-inline-start-color: var(--sb-color-accent);
+}
+.sb-gallery-nav-item:focus-visible {
+  outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
+  outline-offset: -2px;
+}
+.sb-gallery-group {
+  color: var(--sb-color-muted);
+  font-weight: var(--sb-font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--sb-font-tracking-wide);
+}
+.sb-gallery-heading {
+  font-weight: var(--sb-font-weight-bold);
+}
+.sb-gallery-inspector {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sb-space-md);
+  padding: var(--sb-space-md);
+}
+.sb-gallery-inspector-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sb-space-sm);
+}
+/* Re-assert the hidden attribute: the display rule above outranks the UA
+ * `[hidden] { display: none }`, so an inactive panel needs this to stay hidden. */
+.sb-gallery-inspector-panel[hidden] {
+  display: none;
+}
+.sb-gallery-inspector-title {
+  font-weight: var(--sb-font-weight-bold);
+}
+.sb-gallery-inspector-kind {
+  color: var(--sb-color-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--sb-font-tracking-wide);
+  font-size: var(--sb-font-size-sm);
+}
+.sb-gallery-inspector-label {
+  color: var(--sb-color-muted);
+  font-size: var(--sb-font-size-sm);
+}
+.sb-gallery-inspector-tokens {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sb-space-2xs);
 }
 """
 
 
 def showcase_styles() -> str:
-    """The components' structural CSS plus the grid visualization, for ``extra_head``."""
+    """The components' structural CSS plus the gallery's page chrome, for ``extra_head``."""
     sheets = "\n".join(
         (
             segmented_styles(),
@@ -171,9 +555,11 @@ def showcase_styles() -> str:
             slider_styles(),
             value_field_styles(),
             preview_styles(),
+            table_styles(),
+            code_block_styles(),
         )
     )
-    return f"<style>{sheets}</style><style>{_GRID_DEMO}</style>"
+    return f"<style>{sheets}</style><style>{_GALLERY_CSS}</style>"
 
 
 # --- the theme builder -------------------------------------------------------
