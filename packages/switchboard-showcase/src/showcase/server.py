@@ -36,6 +36,7 @@ from showcase.build import (
     theme_builder_scripts,
     theme_builder_styles,
 )
+from showcase.docs import DOCS_ROOT, build_doc, docs_scripts, docs_styles
 from switchboard_ui import Document, render_document
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -100,11 +101,32 @@ def render_builder_page() -> str:
     )
 
 
+def render_docs_page(relpath: str) -> str:
+    """Render a documentation page (the docs rendered through switchboard itself)."""
+    return _render(build_doc(relpath), docs_styles(), docs_scripts())
+
+
+def _docs_relpath(path: str) -> str | None:
+    """Resolve a ``/docs`` URL path to a doc path under ``docs/``, or ``None``.
+
+    ``/docs`` is the index; ``/docs/<category>/<page>`` is a doc. The resolved
+    file must stay inside ``DOCS_ROOT`` (no ``..`` escape) and exist, else this
+    returns ``None`` and the caller 404s.
+    """
+    if path in {"/docs", "/docs/"}:
+        return "index.md"
+    relpath = f"{path.removeprefix('/docs/')}.md"
+    target = (DOCS_ROOT / relpath).resolve()
+    if not target.is_relative_to(DOCS_ROOT) or not target.is_file():
+        return None
+    return relpath
+
+
 class Handler(BaseHTTPRequestHandler):
     """Serve the rendered showcase page and the live-reload event stream."""
 
     def do_GET(self) -> None:
-        """Route the gallery, the builder, the live-reload stream, else 404."""
+        """Route the gallery, the builder, the docs, the live-reload stream, else 404."""
         path = urlparse(self.path).path
         if path == LIVERELOAD_PATH:
             self._serve_livereload()
@@ -112,6 +134,12 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_html(render_page())
         elif path == "/builder":
             self._serve_html(render_builder_page())
+        elif path == "/docs" or path.startswith("/docs/"):
+            relpath = _docs_relpath(path)
+            if relpath is None:
+                self.send_error(HTTPStatus.NOT_FOUND)
+            else:
+                self._serve_html(render_docs_page(relpath))
         else:
             self.send_error(HTTPStatus.NOT_FOUND)
 
