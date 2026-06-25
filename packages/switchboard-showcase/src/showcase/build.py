@@ -28,9 +28,13 @@ from switchboard_ui.components import (
     ArmBinding,
     Binding,
     ValueBinding,
+    breadcrumb,
+    breadcrumb_styles,
     code_block,
     code_block_scripts,
     code_block_styles,
+    collapsible,
+    collapsible_styles,
     color_input,
     color_input_scripts,
     color_input_styles,
@@ -266,6 +270,36 @@ def _gallery_specs() -> tuple[_Spec, ...]:
             ),
             props=(("language", "python"), ("copy", "true")),
             tokens=("--sb-color-bg-raised", "--sb-color-border", "--sb-color-accent"),
+        ),
+        _Spec(
+            id="breadcrumb",
+            name="Breadcrumb",
+            section="Display",
+            body=(
+                breadcrumb(
+                    trail=(("Showcase", "#"), ("Components", "#")), current="Breadcrumb"
+                ),
+            ),
+            props=(("trail", "Showcase / Components"), ("current", "Breadcrumb")),
+            tokens=("--sb-color-muted", "--sb-color-subtle", "--sb-color-fg"),
+        ),
+        _Spec(
+            id="collapsible",
+            name="Collapsible",
+            section="Display",
+            body=(
+                collapsible(
+                    title="Grouped items",
+                    body=(
+                        "<p>Related items live in a collapsible section with a count "
+                        "badge; the disclosure is the native &lt;details&gt;.</p>"
+                    ),
+                    count=3,
+                    open=True,
+                ),
+            ),
+            props=(("count", "3"), ("open", "true")),
+            tokens=("--sb-color-border", "--sb-color-muted", "--sb-color-fg"),
         ),
     )
 
@@ -585,6 +619,8 @@ def showcase_styles() -> str:
             table_styles(),
             code_block_styles(),
             modal_styles(),
+            breadcrumb_styles(),
+            collapsible_styles(),
         )
     )
     return f"<style>{sheets}</style><style>{_GALLERY_CSS}</style>"

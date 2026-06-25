@@ -47,6 +47,8 @@ _EXPECTED_IDS = [
     "preview",
     "table",
     "code-block",
+    "breadcrumb",
+    "collapsible",
 ]
 
 
