@@ -37,6 +37,9 @@ from switchboard_ui.components import (
     color_picker,
     color_picker_scripts,
     color_picker_styles,
+    modal,
+    modal_scripts,
+    modal_styles,
     popover,
     popover_scripts,
     popover_styles,
@@ -163,6 +166,29 @@ def _gallery_specs() -> tuple[_Spec, ...]:
             ),
             props=(("panel_id", "demo-popover"), ("haspopup", "dialog")),
             tokens=("--sb-color-bg-raised", "--sb-color-border"),
+        ),
+        _Spec(
+            id="modal",
+            name="Modal",
+            section="Controls",
+            body=(
+                modal(
+                    trigger="Open dialog",
+                    body=(
+                        "<p>A modal dialog in the top layer, with a focus trap and "
+                        "Esc to close.</p>"
+                    ),
+                    label="Example dialog",
+                    dialog_id="demo-modal",
+                    title="Dialog",
+                ),
+            ),
+            props=(("dialog_id", "demo-modal"), ("title", "Dialog")),
+            tokens=(
+                "--sb-color-modal-scrim",
+                "--sb-color-bg-raised",
+                "--sb-color-border",
+            ),
         ),
         _Spec(
             id="value-field",
@@ -404,6 +430,7 @@ def showcase_scripts() -> tuple[str, ...]:
         + value_field_scripts()
         + theme_state_scripts()
         + code_block_scripts()
+        + modal_scripts()
         + (_GALLERY_NAV_JS, _GALLERY_INSPECTOR_JS)
     )
 
@@ -557,6 +584,7 @@ def showcase_styles() -> str:
             preview_styles(),
             table_styles(),
             code_block_styles(),
+            modal_styles(),
         )
     )
     return f"<style>{sheets}</style><style>{_GALLERY_CSS}</style>"

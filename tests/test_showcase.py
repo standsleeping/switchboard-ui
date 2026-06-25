@@ -42,6 +42,7 @@ _EXPECTED_IDS = [
     "slider",
     "color-picker",
     "popover",
+    "modal",
     "value-field",
     "preview",
     "table",
