@@ -20,6 +20,9 @@ import pytest
 from switchboard_ui.components import (
     ArmBinding,
     ValueBinding,
+    code_block,
+    code_block_scripts,
+    code_block_styles,
     color_input,
     color_input_scripts,
     color_input_styles,
@@ -37,6 +40,8 @@ from switchboard_ui.components import (
     slider,
     slider_scripts,
     slider_styles,
+    table,
+    table_styles,
     theme_export,
     theme_export_scripts,
     theme_export_styles,
@@ -638,6 +643,168 @@ def test_popover_scripts_returns_the_adapter() -> None:
 def test_popover_styles_returns_the_structural_css() -> None:
     """The structural CSS ships and targets the component's hooks."""
     assert ".sb-popover" in popover_styles()
+
+
+# --- table -------------------------------------------------------------------
+
+_COLUMNS = ("Token", "Role")
+_ROWS = (("accent", "interactive"), ("fg", "text"))
+
+
+def _table() -> Island:
+    """A table over two columns and two rows, named for assistive tech."""
+    return table(columns=_COLUMNS, rows=_ROWS, label="Tokens")
+
+
+def test_table_builds_a_static_table_island() -> None:
+    """The factory names the table slot and ships no pub/sub or props (it is inert)."""
+    island = _table()
+    assert isinstance(island, Island)
+    assert island.name == "table"
+    assert island.publishes == ()
+    assert island.subscribes == ()
+    assert island.props == {}
+
+
+def test_table_renders_a_named_grid() -> None:
+    """The grid is a real <table> carrying the label as its accessible name."""
+    (grid,) = find(_table().initial, "table", **{"class": "sb-table-grid"})
+    assert grid["aria-label"] == "Tokens"
+
+
+def test_table_server_renders_every_header_as_a_column_scope_th() -> None:
+    """Each column is a ``<th scope="col">``, present and named at first paint."""
+    island = _table()
+    headers = find(island.initial, "th", scope="col")
+    assert len(headers) == len(_COLUMNS)
+    for column in _COLUMNS:
+        assert column in island.initial
+
+
+def test_table_server_renders_one_row_of_cells_per_data_row() -> None:
+    """Every data row is a ``<tr>`` of ``<td>`` cells with the supplied text."""
+    island = _table()
+    assert len(find(island.initial, "tr")) == len(_ROWS) + 1  # + the header row
+    assert len(find(island.initial, "td")) == len(_ROWS) * len(_COLUMNS)
+    assert "interactive" in island.initial
+
+
+def test_table_escapes_cell_text() -> None:
+    """Cell text is escaped, never injected as markup."""
+    island = table(columns=("X",), rows=(("<b>raw</b>",),), label="T")
+    assert "<b>raw</b>" not in island.initial
+    assert "&lt;b&gt;raw&lt;/b&gt;" in island.initial
+
+
+def test_table_allows_a_header_only_table() -> None:
+    """Zero rows is valid: a header with an empty body."""
+    island = table(columns=_COLUMNS, rows=(), label="Tokens")
+    assert find(island.initial, "td") == []
+
+
+def test_table_rejects_no_columns() -> None:
+    """A table needs at least one column; an empty set fails where it is written."""
+    with pytest.raises(ValueError, match="at least one column"):
+        table(columns=(), rows=(), label="Tokens")
+
+
+def test_table_rejects_blank_label() -> None:
+    """A table needs an accessible name; a blank label fails at the boundary."""
+    with pytest.raises(ValueError, match="non-empty label"):
+        table(columns=_COLUMNS, rows=_ROWS, label="")
+
+
+def test_table_rejects_a_ragged_row() -> None:
+    """A row whose cell count does not match the columns fails where it is written."""
+    with pytest.raises(ValueError, match="row 1 has 1 cells, expected 2"):
+        table(columns=_COLUMNS, rows=(("a", "b"), ("c",)), label="Tokens")
+
+
+def test_table_styles_returns_the_structural_css() -> None:
+    """The structural CSS ships and targets the component's hooks."""
+    assert ".sb-table" in table_styles()
+
+
+# --- code block --------------------------------------------------------------
+
+_CODE = "x = 1\nprint(x)"
+
+
+def _code() -> Island:
+    """A code block with the default chrome (a copy action, no language)."""
+    return code_block(code=_CODE, label="Example")
+
+
+def test_code_block_builds_a_named_group_island() -> None:
+    """The factory names the code-block adapter and labels the group for AT."""
+    island = _code()
+    assert isinstance(island, Island)
+    assert island.name == "code-block"
+    assert island.publishes == ()
+    (group,) = find(island.initial, "div", role="group")
+    assert group["aria-label"] == "Example"
+
+
+def test_code_block_server_renders_the_escaped_source() -> None:
+    """The source lands in a <code> element, escaped, never injected as markup."""
+    island = code_block(code="a < b && c", label="Example")
+    assert find(island.initial, "code", **{"class": "sb-code-text"})
+    assert "a &lt; b &amp;&amp; c" in island.initial
+    assert "a < b && c" not in island.initial
+
+
+def test_code_block_shows_the_copy_action_by_default() -> None:
+    """The default block ships the copy button and a polite status node."""
+    island = _code()
+    assert find(island.initial, "button", **{"class": "sb-code-copy"})
+    (status,) = find(island.initial, "span", **{"class": "sb-code-status"})
+    assert status["role"] == "status"
+    assert status["aria-live"] == "polite"
+
+
+def test_code_block_shows_a_language_tag_when_given() -> None:
+    """A supplied language renders in the chrome strip's language slot."""
+    island = code_block(code=_CODE, label="Example", language="python")
+    (lang,) = find(island.initial, "span", **{"class": "sb-code-lang"})
+    assert "python" in island.initial
+    assert lang is not None
+
+
+def test_code_block_without_language_or_copy_has_no_chrome() -> None:
+    """A bare block (no language, no copy) carries no chrome strip at all."""
+    island = code_block(code=_CODE, label="Example", language=None, copy=False)
+    assert find(island.initial, "div", **{"class": "sb-code-chrome"}) == []
+    assert find(island.initial, "button", **{"class": "sb-code-copy"}) == []
+
+
+def test_code_block_keeps_chrome_for_a_language_without_copy() -> None:
+    """A language with copy off still has a chrome strip (the tag), but no button."""
+    island = code_block(code=_CODE, label="Example", language="sh", copy=False)
+    assert find(island.initial, "div", **{"class": "sb-code-chrome"})
+    assert find(island.initial, "button", **{"class": "sb-code-copy"}) == []
+
+
+def test_code_block_rejects_empty_code() -> None:
+    """An empty code block is a likely mistake; it fails where it is written."""
+    with pytest.raises(ValueError, match="non-empty code"):
+        code_block(code="", label="Example")
+
+
+def test_code_block_rejects_blank_label() -> None:
+    """A code block needs an accessible name; a blank label fails at the boundary."""
+    with pytest.raises(ValueError, match="non-empty label"):
+        code_block(code=_CODE, label="")
+
+
+def test_code_block_scripts_returns_the_adapter() -> None:
+    """The adapter ships and registers under the code-block name."""
+    (adapter,) = code_block_scripts()
+    assert 'register("code-block"' in adapter
+
+
+def test_code_block_styles_returns_the_structural_css() -> None:
+    """The structural CSS ships and targets the component's hooks."""
+    assert ".sb-code" in code_block_styles()
 
 
 def _component_sheets() -> list[tuple[str, str]]:

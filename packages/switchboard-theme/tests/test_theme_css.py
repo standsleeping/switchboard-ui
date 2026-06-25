@@ -17,15 +17,22 @@ import re
 import switchboard_theme as themes
 from switchboard_ui.assets import read_asset
 
-# The only selectors padding may target: controls, where padding is the hit
-# target. Widen deliberately, and never to a layout / mount / region selector, as
-# real controls and tables arrive (input, select, textarea, td, th).
+# The only selectors padding may target: controls and content surfaces, where the
+# inset is the element's own. Widen deliberately, and never to a layout / mount /
+# region selector, as real controls and tables arrive (input, select, textarea,
+# td, th).
 # `.sb-segmented-option` is a control (a tab button); the class is its subject
 # because its paint overrides the base `button` rule by specificity.
 # `.sb-color-input-text` is the hex field, a control whose inset is the theme's.
 # `.sb-value-field-text` is the general value field, the same kind of control.
 # `.sb-popover-panel` is a floating content surface that insets its own content.
 # `th` / `td` are table cells, whose inset is the cell's own (the canonical case).
+# `.sb-code-chrome` is the code block's chrome strip (a toolbar surface that insets
+# its language tag and copy action); `.sb-code-pre` is the code content surface
+# that insets its source. They each own their inset because the hairline seam
+# between them is full-bleed, so the container cannot inset them as flow children.
+# `.sb-code-copy` is the copy control, the class its subject for the same reason as
+# `.sb-segmented-option` (its quiet paint overrides the base `button` rule).
 _PADDABLE_SUBJECTS = frozenset(
     {
         "button",
@@ -35,6 +42,9 @@ _PADDABLE_SUBJECTS = frozenset(
         ".sb-popover-panel",
         "th",
         "td",
+        ".sb-code-chrome",
+        ".sb-code-pre",
+        ".sb-code-copy",
     }
 )
 

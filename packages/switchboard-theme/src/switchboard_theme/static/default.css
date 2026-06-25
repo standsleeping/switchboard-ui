@@ -412,3 +412,81 @@ button:focus-visible {
 .sb-export-status {
   color: var(--sb-color-muted);
 }
+
+/* Table: the canonical structured-data surface. Collapsed hairline cells over the
+ * page surface; the header row reads as a structural label band — a raised
+ * surface, mono semibold uppercase with wide tracking — while the body cells stay
+ * natural case. Square corners, no zebra: the grid reads from the hairlines and
+ * the header band alone. Values align to the start edge (logical, so it follows
+ * writing direction). */
+.sb-table-grid {
+  border-collapse: collapse;
+  background: var(--sb-color-bg);
+  color: var(--sb-color-fg);
+}
+.sb-table-grid th,
+.sb-table-grid td {
+  border: var(--sb-border-width-thin) solid var(--sb-color-border);
+  padding: var(--sb-space-sm);
+  text-align: start;
+}
+.sb-table-grid th {
+  background: var(--sb-color-bg-raised);
+  font-weight: var(--sb-font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--sb-font-tracking-wide);
+}
+
+/* Code block: a raised, hairline-bordered surface. A chrome strip (a muted
+ * uppercase language tag, the copy action) sits over the code area, separated by a
+ * hairline seam the chrome owns at its block-end. The code is mono (the UI family
+ * already is) at the small size and never wraps (`white-space: pre`); the area
+ * owns the horizontal scroll declared in the structural sheet. The copy button is
+ * a quiet accent-text action, not the accent fill — it beats the base `button`
+ * paint by class specificity and drops the inline floor so a short label is not
+ * stretched to the control-inline width — so it recedes into the chrome. */
+.sb-code {
+  background: var(--sb-color-bg-raised);
+  border: var(--sb-border-width-thin) solid var(--sb-color-border);
+  border-radius: var(--sb-radius-base);
+}
+.sb-code-chrome {
+  gap: var(--sb-space-sm);
+  padding: var(--sb-space-sm);
+  border-block-end: var(--sb-border-width-thin) solid var(--sb-color-border);
+}
+.sb-code-lang {
+  color: var(--sb-color-muted);
+  font-size: var(--sb-font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: var(--sb-font-tracking-wide);
+}
+.sb-code-actions {
+  gap: var(--sb-space-sm);
+}
+.sb-code-copy {
+  font: inherit;
+  min-width: 0;
+  color: var(--sb-color-accent);
+  background: none;
+  border: none;
+  padding: var(--sb-space-xs);
+  cursor: pointer;
+}
+.sb-code-copy:focus-visible {
+  outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
+  outline-offset: -2px;
+}
+.sb-code-status {
+  color: var(--sb-color-muted);
+  font-size: var(--sb-font-size-sm);
+}
+.sb-code-pre {
+  padding: var(--sb-space-inset);
+  color: var(--sb-color-fg);
+  font-size: var(--sb-font-size-sm);
+  white-space: pre;
+}
+.sb-code-text {
+  font-family: var(--sb-font-family);
+}

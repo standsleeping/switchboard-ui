@@ -8,6 +8,15 @@ opts the adapter and CSS in exactly as the demo wires its adapters. All
 appearance comes from the theme's ``--sb-*`` tokens, so a component carries no
 baked visual opinion and re-skins by swapping tokens.
 
+The set spans interactive controls (the segmented toggle, colour input/picker,
+popover, slider, value field) and display surfaces (the live preview, the
+:func:`table`, and the :func:`code_block`). A display surface is the same shape
+minus the behaviour: a :func:`table` ships no adapter at all (it is inert markup
+plus structure plus paint), while a :func:`code_block` ships one only for its
+copy action. Both own their horizontal scroll on their own content element, so a
+wide table or a long code line never pushes the page (the scroll-containment
+contract).
+
 The segmented toggle is the first: a single-select control (visually a row of
 mono options, the selected one underlined with the accent) that publishes the
 chosen value on a bus topic. It carries no content panel of its own — it emits a
@@ -693,3 +702,106 @@ def theme_export_scripts() -> tuple[str, ...]:
 def theme_export_styles() -> str:
     """The theme-export structural CSS, for the host to inline in ``extra_head``."""
     return read_static("theme-export.css")
+
+
+def table(
+    *, columns: Sequence[str], rows: Sequence[Sequence[str]], label: str
+) -> Island:
+    """A data table: a header row of ``columns`` over ``rows`` of cells.
+
+    The canonical structured-data surface — a real ``<table>``, not a card grid.
+    ``columns`` are the header labels (one per column); ``rows`` are the body rows,
+    each a sequence of cell strings whose length must equal the column count.
+    ``label`` is the table's accessible name (its ``aria-label``). Header and cell
+    text is escaped. The table fills its column and becomes its own horizontal
+    scroll container when the content is wider, so a wide table never pushes the
+    page (the scroll-containment contract). It is a static display surface — no
+    adapter, so it is also a plain gallery specimen. Raises :class:`ValueError` at
+    the authoring boundary if ``columns`` is empty, ``label`` is blank, or any
+    row's cell count does not match the column count — so a ragged table fails
+    where it is written, not at render or in the browser.
+    """
+    if not columns:
+        raise ValueError("table requires at least one column")
+    if not label:
+        raise ValueError("table requires a non-empty label (the table's name)")
+    width = len(columns)
+    for index, row in enumerate(rows):
+        if len(row) != width:
+            msg = f"table row {index} has {len(row)} cells, expected {width}"
+            raise ValueError(msg)
+    header = element(
+        "tr", {}, [element("th", {"scope": "col"}, [escape_text(c)]) for c in columns]
+    )
+    body = [
+        element("tr", {}, [element("td", {}, [escape_text(cell)]) for cell in row])
+        for row in rows
+    ]
+    grid = element(
+        "table",
+        {"class": "sb-table-grid", "aria-label": label},
+        [element("thead", {}, [header]), element("tbody", {}, body)],
+    )
+    return Island(name="table", initial=element("div", {"class": "sb-table"}, [grid]))
+
+
+def table_styles() -> str:
+    """The table structural CSS, for the host to inline in ``extra_head``."""
+    return read_static("table.css")
+
+
+def code_block(
+    *, code: str, label: str, language: str | None = None, copy: bool = True
+) -> Island:
+    """A code block: preformatted source with an optional copy action.
+
+    Renders ``code`` as escaped, preformatted text in a mono surface that scrolls
+    horizontally for long lines (it never wraps and never pushes the page).
+    ``label`` is the block's accessible name (the ``aria-label`` of the group).
+    ``language`` shows a small language tag in the block's chrome strip; it is
+    cosmetic — the block does no syntax highlighting. ``copy`` adds a button that
+    copies the source to the clipboard (its adapter mirrors :func:`theme_export`).
+    A block with neither a ``language`` nor ``copy`` carries no chrome strip at all.
+    Raises :class:`ValueError` at the authoring boundary if ``code`` or ``label``
+    is empty, so a bad call fails where it is written.
+    """
+    if not code:
+        raise ValueError("code_block requires non-empty code")
+    if not label:
+        raise ValueError("code_block requires a non-empty label (the block's name)")
+    children: list[str] = []
+    if language is not None or copy:
+        chrome = [
+            element("span", {"class": "sb-code-lang"}, [escape_text(language or "")])
+        ]
+        if copy:
+            button = element(
+                "button",
+                {"type": "button", "class": "sb-code-copy"},
+                [escape_text("Copy")],
+            )
+            status = element(
+                "span",
+                {"class": "sb-code-status", "role": "status", "aria-live": "polite"},
+                (),
+            )
+            chrome.append(
+                element("div", {"class": "sb-code-actions"}, [button, status])
+            )
+        children.append(element("div", {"class": "sb-code-chrome"}, chrome))
+    code_el = element("code", {"class": "sb-code-text"}, [escape_text(code)])
+    children.append(element("div", {"class": "sb-code-pre"}, [code_el]))
+    initial = element(
+        "div", {"class": "sb-code", "role": "group", "aria-label": label}, children
+    )
+    return Island(name="code-block", initial=initial)
+
+
+def code_block_scripts() -> tuple[str, ...]:
+    """The code-block adapter (the copy action), for the host's ``extra_scripts``."""
+    return (read_static("code-block.js"),)
+
+
+def code_block_styles() -> str:
+    """The code-block structural CSS, for the host to inline in ``extra_head``."""
+    return read_static("code-block.css")

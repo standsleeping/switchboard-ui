@@ -1,0 +1,17 @@
+/* switchboard-ui: structural CSS for the table.
+ *
+ * Geometry only, the same contract as layout.css: the grid fills its column, and
+ * the wrapper becomes the table's own horizontal scroll container when the content
+ * is wider than the column (the scroll-containment contract — a wide table scrolls
+ * inside itself instead of pushing the page). It carries no paint and no
+ * box-spacing: the collapsed hairlines, the header surface, and the cell inset are
+ * all the theme's, keyed to these same .sb-* hooks. The guard in
+ * tests/test_components.py holds this file to the geometry-only, token-free,
+ * .sb-*-only contract, exactly as test_layout_css.py holds the layout spine. */
+
+.sb-table {
+  overflow: auto;
+}
+.sb-table-grid {
+  inline-size: 100%;
+}

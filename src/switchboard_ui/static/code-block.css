@@ -1,0 +1,28 @@
+/* switchboard-ui: structural CSS for the code block.
+ *
+ * Geometry only, the same contract as layout.css. A column holding an optional
+ * chrome strip (a language tag at the start, the copy action at the end) over the
+ * code area. The code area owns its horizontal scroll, so a long line scrolls
+ * inside the block instead of pushing the page (the scroll-containment contract);
+ * it never wraps, which is the theme's `white-space: pre`. It carries no paint and
+ * no box-spacing: the surface, the hairline seam under the chrome, the insets, the
+ * gaps, and the quiet copy button are all the theme's, keyed to these same .sb-*
+ * hooks. The guard in tests/test_components.py holds this file to the
+ * geometry-only, token-free, .sb-*-only contract. */
+
+.sb-code {
+  display: flex;
+  flex-direction: column;
+}
+.sb-code-chrome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sb-code-actions {
+  display: flex;
+  align-items: center;
+}
+.sb-code-pre {
+  overflow: auto;
+}
