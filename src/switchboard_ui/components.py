@@ -9,7 +9,7 @@ appearance comes from the theme's ``--sb-*`` tokens, so a component carries no
 baked visual opinion and re-skins by swapping tokens.
 
 The set spans interactive controls (the segmented toggle, colour input/picker,
-popover, slider, value field) and display surfaces (the live preview, the
+popover, modal, slider, value field) and display surfaces (the live preview, the
 :func:`table`, and the :func:`code_block`). A display surface is the same shape
 minus the behaviour: a :func:`table` ships no adapter at all (it is inert markup
 plus structure plus paint), while a :func:`code_block` ships one only for its
@@ -805,3 +805,92 @@ def code_block_scripts() -> tuple[str, ...]:
 def code_block_styles() -> str:
     """The code-block structural CSS, for the host to inline in ``extra_head``."""
     return read_static("code-block.css")
+
+
+def modal(
+    *,
+    trigger: str,
+    body: str,
+    label: str,
+    dialog_id: str,
+    title: str | None = None,
+    trigger_class: str = "",
+    trigger_label: str | None = None,
+    open_topic: str | None = None,
+) -> Island:
+    """A modal dialog: a trigger that opens a centred, focus-trapping ``<dialog>``.
+
+    The modal sibling of :func:`popover`. ``trigger`` is the open button's content
+    and ``body`` the dialog's content (both raw-HTML fragments); ``label`` is the
+    dialog's accessible name and ``dialog_id`` links the trigger (``aria-controls``)
+    to the dialog. ``title`` shows a visible heading beside the close button.
+    Opening uses the native ``dialog.showModal()`` — so the browser supplies the
+    top layer, the ``::backdrop`` scrim, the focus trap, Esc-to-close, and an inert
+    background; the adapter only wires the open button, the close button, and an
+    optional ``open_topic`` bus echo of ``{"open": bool}``. Dismissal is the close
+    button or Esc, deliberately not a backdrop click, so a modal is not lost by an
+    accidental outside click. ``trigger_class`` / ``trigger_label`` style or name a
+    chip trigger, as in :func:`popover`. Raises :class:`ValueError` at the authoring
+    boundary if ``label`` is blank, ``dialog_id`` is not a valid HTML id, ``body``
+    is empty, or ``trigger`` is empty without a ``trigger_label``.
+    """
+    if not label:
+        raise ValueError("modal requires a non-empty label (the dialog's name)")
+    if not _ID.match(dialog_id):
+        raise ValueError(f"modal dialog_id {dialog_id!r} is not a valid HTML id")
+    if not trigger and not trigger_label:
+        raise ValueError("modal requires trigger content or a trigger_label")
+    if not body:
+        raise ValueError("modal requires body content")
+    trigger_el = element(
+        "button",
+        {
+            "class": classes("sb-modal-trigger", trigger_class),
+            "type": "button",
+            "aria-haspopup": "dialog",
+            "aria-controls": dialog_id,
+            "aria-expanded": "false",
+            "aria-label": trigger_label,
+        },
+        [trigger],
+    )
+    header_children: list[str] = []
+    if title is not None:
+        header_children.append(
+            element(
+                "div",
+                {"class": "sb-modal-title", "role": "heading", "aria-level": "2"},
+                [escape_text(title)],
+            )
+        )
+    header_children.append(
+        element(
+            "button",
+            {"class": "sb-modal-close", "type": "button", "aria-label": "Close"},
+            [chr(0xD7)],  # the close glyph (multiplication sign), ASCII-safe source
+        )
+    )
+    header = element("div", {"class": "sb-modal-header"}, header_children)
+    body_el = element("div", {"class": "sb-modal-body"}, [body])
+    dialog = element(
+        "dialog",
+        {"class": "sb-modal-dialog", "id": dialog_id, "aria-label": label},
+        [header, body_el],
+    )
+    initial = element("div", {"class": "sb-modal"}, [trigger_el, dialog])
+    return Island(
+        name="modal",
+        props={"topic": open_topic} if open_topic else {},
+        publishes=(open_topic,) if open_topic else (),
+        initial=initial,
+    )
+
+
+def modal_scripts() -> tuple[str, ...]:
+    """The modal adapter, for the host to pass to ``extra_scripts``."""
+    return (read_static("modal.js"),)
+
+
+def modal_styles() -> str:
+    """The modal structural CSS, for the host to inline in ``extra_head``."""
+    return read_static("modal.css")

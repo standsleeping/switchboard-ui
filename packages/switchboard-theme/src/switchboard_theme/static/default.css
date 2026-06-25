@@ -55,6 +55,10 @@
   --sb-color-popover-scrim-dark: rgb(0 0 0 / 0);
   --sb-color-popover-scrim: light-dark(var(--sb-color-popover-scrim-light), var(--sb-color-popover-scrim-dark));
 
+  --sb-color-modal-scrim-light: rgb(0 0 0 / 0.4);
+  --sb-color-modal-scrim-dark: rgb(0 0 0 / 0.6);
+  --sb-color-modal-scrim: light-dark(var(--sb-color-modal-scrim-light), var(--sb-color-modal-scrim-dark));
+
   --sb-color-handle-ring-light: #ffffff;
   --sb-color-handle-ring-dark: #f6f7f9;
   --sb-color-handle-ring: light-dark(var(--sb-color-handle-ring-light), var(--sb-color-handle-ring-dark));
@@ -105,6 +109,7 @@
   --sb-fit-color-hue: var(--sb-fit-control-block);
   --sb-fit-color-handle: 0.75rem;
   --sb-fit-slider-thumb: 0.875rem;
+  --sb-fit-modal-inline: 32rem;
 }
 
 /* Density mode "compact": reassigns cause tokens; the --sb-fit-*
@@ -489,4 +494,45 @@ button:focus-visible {
 }
 .sb-code-text {
   font-family: var(--sb-font-family);
+}
+
+/* Modal: a centred dialog over a dimming scrim. The surface is the raised colour
+ * with a hairline border and square corners (flat by the house default; the scrim
+ * supplies the elevation, not a shadow). The header lays a bold title against a
+ * quiet close control. The trigger keeps the base button paint. The browser owns
+ * the centring, the focus trap, and Esc through `showModal()`; the theme paints
+ * only the surfaces. */
+.sb-modal-dialog {
+  background: var(--sb-color-bg-raised);
+  color: var(--sb-color-fg);
+  border: var(--sb-border-width-thin) solid var(--sb-color-border);
+  border-radius: var(--sb-radius-base);
+  box-shadow: var(--sb-shadow-base);
+  padding: var(--sb-space-inset);
+  gap: var(--sb-space-md);
+}
+.sb-modal-dialog::backdrop {
+  background: var(--sb-color-modal-scrim);
+}
+.sb-modal-header {
+  gap: var(--sb-space-md);
+}
+.sb-modal-title {
+  font-weight: var(--sb-font-weight-bold);
+}
+.sb-modal-close {
+  font: inherit;
+  min-width: 0;
+  color: var(--sb-color-muted);
+  background: none;
+  border: none;
+  padding: var(--sb-space-xs);
+  cursor: pointer;
+}
+.sb-modal-close:hover {
+  color: var(--sb-color-fg);
+}
+.sb-modal-close:focus-visible {
+  outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
+  outline-offset: -2px;
 }

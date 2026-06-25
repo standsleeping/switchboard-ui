@@ -1,0 +1,31 @@
+/* switchboard-ui: structural CSS for the modal.
+ *
+ * Geometry only, the same contract as layout.css. The wrapper is an inline-flex
+ * box holding the trigger (the dialog leaves the flow — it is display:none closed,
+ * top-layer when open). The open dialog is a flex column: a header strip over a
+ * body that scrolls, the whole capped so it never exceeds the viewport. The
+ * browser owns the rest through `showModal()` — the top layer, the `::backdrop`
+ * scrim, the focus trap, and Esc-to-close — so no positioning or z-index lives
+ * here. It carries no paint and no box-spacing: the surface, the scrim, the
+ * insets, the header gap, and the close control are all the theme's, keyed to
+ * these same .sb-* hooks. The max width is the theme's `--sb-fit-modal-inline`
+ * obligation (a contract token, the one token structure may consume). */
+
+.sb-modal {
+  display: inline-flex;
+}
+.sb-modal-dialog[open] {
+  display: flex;
+  flex-direction: column;
+  max-inline-size: min(100vw, var(--sb-fit-modal-inline));
+  max-block-size: 90dvb;
+}
+.sb-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sb-modal-body {
+  min-block-size: 0;
+  overflow: auto;
+}

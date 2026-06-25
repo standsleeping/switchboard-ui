@@ -29,6 +29,9 @@ from switchboard_ui.components import (
     color_picker,
     color_picker_scripts,
     color_picker_styles,
+    modal,
+    modal_scripts,
+    modal_styles,
     popover,
     popover_scripts,
     popover_styles,
@@ -805,6 +808,120 @@ def test_code_block_scripts_returns_the_adapter() -> None:
 def test_code_block_styles_returns_the_structural_css() -> None:
     """The structural CSS ships and targets the component's hooks."""
     assert ".sb-code" in code_block_styles()
+
+
+# --- modal --------------------------------------------------------------------
+
+
+def _modal() -> Island:
+    """A modal with a titled header and a default close button."""
+    return modal(
+        trigger="Open",
+        body="<p>Body.</p>",
+        label="Example dialog",
+        dialog_id="demo-modal",
+        title="Dialog",
+    )
+
+
+def test_modal_builds_a_modal_island() -> None:
+    """The factory names the modal adapter; with no open_topic it is silent on the bus."""
+    island = _modal()
+    assert isinstance(island, Island)
+    assert island.name == "modal"
+    assert island.publishes == ()
+    assert island.props == {}
+
+
+def test_modal_trigger_controls_a_named_dialog() -> None:
+    """The trigger advertises a dialog popup and points at the dialog by id."""
+    island = _modal()
+    (trigger,) = find(island.initial, "button", **{"class": "sb-modal-trigger"})
+    assert trigger["aria-haspopup"] == "dialog"
+    assert trigger["aria-controls"] == "demo-modal"
+    assert trigger["aria-expanded"] == "false"
+    (dialog,) = find(island.initial, "dialog", id="demo-modal")
+    assert dialog["aria-label"] == "Example dialog"
+
+
+def test_modal_renders_a_title_and_a_close_button() -> None:
+    """A titled modal shows the heading and an accessible close control."""
+    island = _modal()
+    (title,) = find(island.initial, "div", **{"class": "sb-modal-title"})
+    assert title["role"] == "heading"
+    assert "Dialog" in island.initial
+    (close,) = find(island.initial, "button", **{"class": "sb-modal-close"})
+    assert close["aria-label"] == "Close"
+
+
+def test_modal_omits_the_title_when_not_given() -> None:
+    """An untitled modal has only the close control in its header."""
+    island = modal(
+        trigger="Open", body="<p>Body.</p>", label="Bare", dialog_id="bare-modal"
+    )
+    assert find(island.initial, "div", **{"class": "sb-modal-title"}) == []
+    assert find(island.initial, "button", **{"class": "sb-modal-close"})
+
+
+def test_modal_echoes_open_state_when_given_a_topic() -> None:
+    """An open_topic makes the modal publish its open/close on the bus."""
+    island = modal(
+        trigger="Open",
+        body="<p>Body.</p>",
+        label="Echoing",
+        dialog_id="echo-modal",
+        open_topic="modal:open",
+    )
+    assert island.publishes == ("modal:open",)
+    assert island.props == {"topic": "modal:open"}
+
+
+def test_modal_supports_a_content_less_chip_trigger() -> None:
+    """An empty trigger is allowed when a trigger_label names it."""
+    island = modal(
+        trigger="",
+        body="<p>Body.</p>",
+        label="Chip",
+        dialog_id="chip-modal",
+        trigger_label="Open settings",
+    )
+    (trigger,) = find(island.initial, "button", **{"class": "sb-modal-trigger"})
+    assert trigger["aria-label"] == "Open settings"
+
+
+def test_modal_rejects_blank_label() -> None:
+    """A dialog needs an accessible name; a blank label fails at the boundary."""
+    with pytest.raises(ValueError, match="non-empty label"):
+        modal(trigger="Open", body="<p>x</p>", label="", dialog_id="m")
+
+
+def test_modal_rejects_an_invalid_dialog_id() -> None:
+    """A malformed id silently breaks the trigger/dialog wiring, so it fails early."""
+    with pytest.raises(ValueError, match="not a valid HTML id"):
+        modal(trigger="Open", body="<p>x</p>", label="M", dialog_id="2 bad")
+
+
+def test_modal_rejects_empty_body() -> None:
+    """A modal with no content is a likely mistake; it fails where it is written."""
+    with pytest.raises(ValueError, match="requires body content"):
+        modal(trigger="Open", body="", label="M", dialog_id="m")
+
+
+def test_modal_rejects_a_content_less_trigger_without_a_label() -> None:
+    """An empty trigger with no trigger_label has no accessible name; it fails early."""
+    with pytest.raises(ValueError, match="trigger content or a trigger_label"):
+        modal(trigger="", body="<p>x</p>", label="M", dialog_id="m")
+
+
+def test_modal_scripts_returns_the_adapter() -> None:
+    """The adapter ships and registers under the modal name."""
+    (adapter,) = modal_scripts()
+    assert 'register("modal"' in adapter
+
+
+def test_modal_styles_returns_the_structural_css() -> None:
+    """The structural CSS ships and targets the component's hooks."""
+    assert ".sb-modal" in modal_styles()
 
 
 def _component_sheets() -> list[tuple[str, str]]:

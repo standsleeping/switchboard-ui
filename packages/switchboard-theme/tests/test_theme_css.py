@@ -33,6 +33,9 @@ from switchboard_ui.assets import read_asset
 # between them is full-bleed, so the container cannot inset them as flow children.
 # `.sb-code-copy` is the copy control, the class its subject for the same reason as
 # `.sb-segmented-option` (its quiet paint overrides the base `button` rule).
+# `.sb-modal-dialog` is the dialog surface that insets its own content (like
+# `.sb-popover-panel`); `.sb-modal-close` is its quiet close control (a button-rule
+# override, like `.sb-code-copy`).
 _PADDABLE_SUBJECTS = frozenset(
     {
         "button",
@@ -45,6 +48,8 @@ _PADDABLE_SUBJECTS = frozenset(
         ".sb-code-chrome",
         ".sb-code-pre",
         ".sb-code-copy",
+        ".sb-modal-dialog",
+        ".sb-modal-close",
     }
 )
 

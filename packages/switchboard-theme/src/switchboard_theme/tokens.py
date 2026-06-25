@@ -128,6 +128,10 @@ REGISTRY: tuple[Token, ...] = (
     # dim the page); arms so a host can opt into a faint scrim per scheme without
     # leaking the UA ::backdrop colour (no-UA-default).
     _color("popover-scrim", "rgb(0 0 0 / 0)", "rgb(0 0 0 / 0)"),
+    # The modal backdrop. Unlike the popover scrim it dims the page (a modal is
+    # the sole focus); darker in the dark scheme so the dimming reads against the
+    # darker ground. Arms keep it off the UA ::backdrop colour (no-UA-default).
+    _color("modal-scrim", "rgb(0 0 0 / 0.4)", "rgb(0 0 0 / 0.6)"),
     # The colour-picker handle ring. Near-white so the drag handle stays visible
     # over any spectrum colour beneath it, in either scheme (holding contrast
     # against an unknown ground).
@@ -212,6 +216,9 @@ REGISTRY: tuple[Token, ...] = (
     # Slider geometry: the thumb is a square this tall, and the input is the same
     # height so the thumb centres with no margin (banned) or transform (forbidden).
     Token(Category.FIT, "slider-thumb", ValueType.LENGTH, Fixed("0.875rem")),
+    # Modal geometry: the dialog's max width (it caps at this or the viewport,
+    # whichever is smaller; the height caps at the viewport in the structural CSS).
+    Token(Category.FIT, "modal-inline", ValueType.LENGTH, Fixed("32rem")),
 )
 
 
@@ -623,6 +630,47 @@ button:focus-visible {
 }
 .sb-code-text {
   font-family: var(--sb-font-family);
+}
+
+/* Modal: a centred dialog over a dimming scrim. The surface is the raised colour
+ * with a hairline border and square corners (flat by the house default; the scrim
+ * supplies the elevation, not a shadow). The header lays a bold title against a
+ * quiet close control. The trigger keeps the base button paint. The browser owns
+ * the centring, the focus trap, and Esc through `showModal()`; the theme paints
+ * only the surfaces. */
+.sb-modal-dialog {
+  background: var(--sb-color-bg-raised);
+  color: var(--sb-color-fg);
+  border: var(--sb-border-width-thin) solid var(--sb-color-border);
+  border-radius: var(--sb-radius-base);
+  box-shadow: var(--sb-shadow-base);
+  padding: var(--sb-space-inset);
+  gap: var(--sb-space-md);
+}
+.sb-modal-dialog::backdrop {
+  background: var(--sb-color-modal-scrim);
+}
+.sb-modal-header {
+  gap: var(--sb-space-md);
+}
+.sb-modal-title {
+  font-weight: var(--sb-font-weight-bold);
+}
+.sb-modal-close {
+  font: inherit;
+  min-width: 0;
+  color: var(--sb-color-muted);
+  background: none;
+  border: none;
+  padding: var(--sb-space-xs);
+  cursor: pointer;
+}
+.sb-modal-close:hover {
+  color: var(--sb-color-fg);
+}
+.sb-modal-close:focus-visible {
+  outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
+  outline-offset: -2px;
 }"""
 
 
