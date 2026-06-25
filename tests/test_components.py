@@ -19,6 +19,7 @@ import pytest
 
 from switchboard_ui.components import (
     ArmBinding,
+    Cell,
     ValueBinding,
     breadcrumb,
     breadcrumb_styles,
@@ -725,6 +726,34 @@ def test_table_rejects_a_ragged_row() -> None:
     """A row whose cell count does not match the columns fails where it is written."""
     with pytest.raises(ValueError, match="row 1 has 1 cells, expected 2"):
         table(columns=_COLUMNS, rows=(("a", "b"), ("c",)), label="Tokens")
+
+
+def test_table_emits_a_rich_cell_as_trusted_inline_html() -> None:
+    """A ``Cell`` carries already-rendered inline HTML into the ``<td>`` verbatim."""
+    island = table(
+        columns=("Doc",),
+        rows=((Cell('<a href="/docs/x">X</a>'),),),
+        label="Docs",
+    )
+    assert '<td><a href="/docs/x">X</a></td>' in island.initial
+
+
+def test_table_escapes_plain_cells_beside_rich_cells() -> None:
+    """A plain ``str`` cell is still escaped even when a row also carries a ``Cell``."""
+    island = table(
+        columns=("A", "B"),
+        rows=((Cell("<em>safe</em>"), "<b>raw</b>"),),
+        label="Mixed",
+    )
+    assert "<em>safe</em>" in island.initial  # the rich cell is trusted
+    assert "&lt;b&gt;raw&lt;/b&gt;" in island.initial  # the plain cell is escaped
+    assert "<b>raw</b>" not in island.initial
+
+
+def test_table_counts_a_rich_cell_as_one_cell_for_the_rectangular_check() -> None:
+    """A ``Cell`` is one cell, so mixing kinds does not break the column-count rule."""
+    with pytest.raises(ValueError, match="row 0 has 1 cells, expected 2"):
+        table(columns=("A", "B"), rows=((Cell("<i>x</i>"),),), label="T")
 
 
 def test_table_styles_returns_the_structural_css() -> None:

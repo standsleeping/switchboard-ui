@@ -705,22 +705,43 @@ def theme_export_styles() -> str:
     return read_static("theme-export.css")
 
 
+@dataclass(frozen=True)
+class Cell:
+    """A table cell carrying trusted, already-rendered inline HTML.
+
+    A plain ``str`` cell is escaped (the structured-data default); a ``Cell`` is
+    emitted verbatim, for a cell whose content is inline markup the caller has
+    already rendered safely (a link, inline code). The same trust model as
+    :attr:`Island.initial` and :func:`modal`'s ``body``: the caller owns escaping
+    the leaf text, so composed fragments are not double-escaped.
+    """
+
+    html: str
+
+
+def _table_cell(cell: str | Cell) -> str:
+    """One body ``<td>``: a plain string is escaped, a :class:`Cell` is trusted."""
+    content = escape_text(cell) if isinstance(cell, str) else cell.html
+    return element("td", {}, [content])
+
+
 def table(
-    *, columns: Sequence[str], rows: Sequence[Sequence[str]], label: str
+    *, columns: Sequence[str], rows: Sequence[Sequence[str | Cell]], label: str
 ) -> Island:
     """A data table: a header row of ``columns`` over ``rows`` of cells.
 
     The canonical structured-data surface — a real ``<table>``, not a card grid.
-    ``columns`` are the header labels (one per column); ``rows`` are the body rows,
-    each a sequence of cell strings whose length must equal the column count.
-    ``label`` is the table's accessible name (its ``aria-label``). Header and cell
-    text is escaped. The table fills its column and becomes its own horizontal
-    scroll container when the content is wider, so a wide table never pushes the
-    page (the scroll-containment contract). It is a static display surface — no
-    adapter, so it is also a plain gallery specimen. Raises :class:`ValueError` at
-    the authoring boundary if ``columns`` is empty, ``label`` is blank, or any
-    row's cell count does not match the column count — so a ragged table fails
-    where it is written, not at render or in the browser.
+    ``columns`` are the header labels (one per column), always escaped plain text;
+    ``rows`` are the body rows, each a sequence whose length must equal the column
+    count. A cell is a plain ``str`` (escaped) or a :class:`Cell` (trusted inline
+    HTML, for a link or inline code the caller has already rendered). ``label`` is
+    the table's accessible name (its ``aria-label``). The table fills its column
+    and becomes its own horizontal scroll container when the content is wider, so a
+    wide table never pushes the page (the scroll-containment contract). It is a
+    static display surface — no adapter, so it is also a plain gallery specimen.
+    Raises :class:`ValueError` at the authoring boundary if ``columns`` is empty,
+    ``label`` is blank, or any row's cell count does not match the column count — so
+    a ragged table fails where it is written, not at render or in the browser.
     """
     if not columns:
         raise ValueError("table requires at least one column")
@@ -734,10 +755,7 @@ def table(
     header = element(
         "tr", {}, [element("th", {"scope": "col"}, [escape_text(c)]) for c in columns]
     )
-    body = [
-        element("tr", {}, [element("td", {}, [escape_text(cell)]) for cell in row])
-        for row in rows
-    ]
+    body = [element("tr", {}, [_table_cell(cell) for cell in row]) for row in rows]
     grid = element(
         "table",
         {"class": "sb-table-grid", "aria-label": label},
