@@ -1,0 +1,20 @@
+/* switchboard-ui: structural CSS for the collapsible section.
+ *
+ * Geometry only, the same contract as layout.css. The component is a native
+ * <details>, so the disclosure itself — toggling, keyboard operation, and the
+ * open/closed state — is the browser's; this only lays out the summary row (the
+ * label against the count) and leaves the body to flow. It carries no paint and no
+ * box-spacing: the insets, the +/- marker, the count, the hover accent, and the
+ * separating hairline are all the theme's, keyed to these same .sb-* hooks. The
+ * guard in tests/test_components.py holds this file to the geometry-only,
+ * token-free, .sb-*-only contract. */
+
+.sb-collapsible-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sb-collapsible-label {
+  display: flex;
+  align-items: center;
+}

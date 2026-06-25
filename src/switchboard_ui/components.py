@@ -10,7 +10,8 @@ baked visual opinion and re-skins by swapping tokens.
 
 The set spans interactive controls (the segmented toggle, colour input/picker,
 popover, modal, slider, value field) and display surfaces (the live preview, the
-:func:`table`, and the :func:`code_block`). A display surface is the same shape
+:func:`table`, the :func:`code_block`, the :func:`breadcrumb`, and the
+:func:`collapsible` section). A display surface is the same shape
 minus the behaviour: a :func:`table` ships no adapter at all (it is inert markup
 plus structure plus paint), while a :func:`code_block` ships one only for its
 copy action. Both own their horizontal scroll on their own content element, so a
@@ -894,3 +895,109 @@ def modal_scripts() -> tuple[str, ...]:
 def modal_styles() -> str:
     """The modal structural CSS, for the host to inline in ``extra_head``."""
     return read_static("modal.css")
+
+
+# A breadcrumb separator (a slash), between crumbs and hidden from assistive tech;
+# the theme colours it.
+_BREADCRUMB_SEP = element(
+    "span", {"class": "sb-breadcrumb-sep", "aria-hidden": "true"}, ["/"]
+)
+
+
+def breadcrumb(
+    *, trail: Sequence[tuple[str, str]], current: str, label: str = "Breadcrumb"
+) -> Island:
+    """A breadcrumb trail: ``trail`` ancestor links ending at the ``current`` page.
+
+    ``trail`` is an ordered sequence of ``(label, href)`` ancestor links (it may be
+    empty when the current page is the root); ``current`` is the current page,
+    rendered as the trailing non-link crumb carrying ``aria-current="page"``.
+    ``label`` names the navigation landmark for assistive tech. Inert separators sit
+    between crumbs. It is a static navigation surface — no adapter, the links
+    navigate natively. Raises :class:`ValueError` at the authoring boundary if
+    ``current`` or ``label`` is blank, or any trail crumb has a blank label or href —
+    so a malformed trail fails where it is written.
+    """
+    if not current:
+        raise ValueError("breadcrumb requires a non-empty current page")
+    if not label:
+        raise ValueError("breadcrumb requires a non-empty label (the nav's name)")
+    crumbs: list[str] = []
+    for index, (crumb_label, href) in enumerate(trail):
+        if not crumb_label:
+            raise ValueError(f"breadcrumb trail crumb {index} has a blank label")
+        if not href:
+            raise ValueError(f"breadcrumb trail crumb {index} has a blank href")
+        if index:
+            crumbs.append(_BREADCRUMB_SEP)
+        crumbs.append(
+            element(
+                "a",
+                {"class": "sb-breadcrumb-link", "href": href},
+                [escape_text(crumb_label)],
+            )
+        )
+    if trail:
+        crumbs.append(_BREADCRUMB_SEP)
+    crumbs.append(
+        element(
+            "span",
+            {"class": "sb-breadcrumb-current", "aria-current": "page"},
+            [escape_text(current)],
+        )
+    )
+    initial = element("nav", {"class": "sb-breadcrumb", "aria-label": label}, crumbs)
+    return Island(name="breadcrumb", initial=initial)
+
+
+def breadcrumb_styles() -> str:
+    """The breadcrumb structural CSS, for the host to inline in ``extra_head``."""
+    return read_static("breadcrumb.css")
+
+
+def collapsible(
+    *, title: str, body: str, count: int | None = None, open: bool = False
+) -> Island:
+    """A collapsible section: a ``<details>`` whose summary is ``title`` and a count.
+
+    The disclosure is native (``<details>`` / ``<summary>``), so toggling, keyboard
+    operation, and the open/closed state come for free — no adapter. ``title`` is the
+    summary's heading; ``body`` is the content revealed when expanded; ``count``
+    shows a badge of how many items the section groups (omitted when ``None``);
+    ``open`` starts it expanded. Raises :class:`ValueError` at the authoring boundary
+    if ``title`` is blank, ``body`` is empty, or ``count`` is negative.
+    """
+    if not title:
+        raise ValueError("collapsible requires a non-empty title")
+    if not body:
+        raise ValueError("collapsible requires body content")
+    if count is not None and count < 0:
+        raise ValueError(f"collapsible count must be non-negative, got {count}")
+    label = element(
+        "span",
+        {"class": "sb-collapsible-label"},
+        [
+            element("span", {"class": "sb-collapsible-marker", "aria-hidden": "true"}),
+            element("span", {"class": "sb-collapsible-title"}, [escape_text(title)]),
+        ],
+    )
+    summary_children = [label]
+    if count is not None:
+        summary_children.append(
+            element(
+                "span", {"class": "sb-collapsible-count"}, [escape_text(str(count))]
+            )
+        )
+    summary = element("summary", {"class": "sb-collapsible-summary"}, summary_children)
+    body_el = element("div", {"class": "sb-collapsible-body"}, [body])
+    initial = element(
+        "details",
+        {"class": "sb-collapsible", "open": "" if open else None},
+        [summary, body_el],
+    )
+    return Island(name="collapsible", initial=initial)
+
+
+def collapsible_styles() -> str:
+    """The collapsible structural CSS, for the host to inline in ``extra_head``."""
+    return read_static("collapsible.css")

@@ -671,6 +671,74 @@ button:focus-visible {
 .sb-modal-close:focus-visible {
   outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
   outline-offset: -2px;
+}
+
+/* Breadcrumb: a trail of muted ancestor links and subtle separators ending at the
+ * current page — the one crumb in the foreground colour, and not a link. Links
+ * recede until hovered, when they take the accent. */
+.sb-breadcrumb {
+  gap: var(--sb-space-sm);
+}
+.sb-breadcrumb-link {
+  color: var(--sb-color-muted);
+  text-decoration: none;
+}
+.sb-breadcrumb-link:hover {
+  color: var(--sb-color-accent);
+}
+.sb-breadcrumb-link:focus-visible {
+  outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
+  outline-offset: -2px;
+}
+.sb-breadcrumb-sep {
+  color: var(--sb-color-subtle);
+}
+.sb-breadcrumb-current {
+  color: var(--sb-color-fg);
+}
+
+/* Collapsible section: a flat disclosure, separated from its neighbours by a
+ * hairline rather than boxed. The summary is a bold header row — a +/- marker and
+ * the title against a muted count — that takes the accent on hover; the native
+ * disclosure marker is suppressed (no-UA-default) for the tokenised +/- one. The
+ * body insets the revealed content. */
+.sb-collapsible {
+  border-block-end: var(--sb-border-width-thin) solid var(--sb-color-border);
+}
+.sb-collapsible-summary {
+  gap: var(--sb-space-md);
+  padding: var(--sb-space-sm);
+  color: var(--sb-color-fg);
+  font-weight: var(--sb-font-weight-bold);
+  cursor: pointer;
+  list-style: none;
+}
+.sb-collapsible-summary::-webkit-details-marker {
+  display: none;
+}
+.sb-collapsible-summary:hover {
+  color: var(--sb-color-accent);
+}
+.sb-collapsible-summary:focus-visible {
+  outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
+  outline-offset: -2px;
+}
+.sb-collapsible-label {
+  gap: var(--sb-space-sm);
+}
+.sb-collapsible-marker::before {
+  content: "+";
+  color: var(--sb-color-muted);
+}
+.sb-collapsible[open] .sb-collapsible-marker::before {
+  content: "-";
+}
+.sb-collapsible-count {
+  color: var(--sb-color-muted);
+}
+.sb-collapsible-body {
+  padding: var(--sb-space-sm);
+  color: var(--sb-color-fg);
 }"""
 
 

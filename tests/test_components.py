@@ -20,9 +20,13 @@ import pytest
 from switchboard_ui.components import (
     ArmBinding,
     ValueBinding,
+    breadcrumb,
+    breadcrumb_styles,
     code_block,
     code_block_scripts,
     code_block_styles,
+    collapsible,
+    collapsible_styles,
     color_input,
     color_input_scripts,
     color_input_styles,
@@ -922,6 +926,152 @@ def test_modal_scripts_returns_the_adapter() -> None:
 def test_modal_styles_returns_the_structural_css() -> None:
     """The structural CSS ships and targets the component's hooks."""
     assert ".sb-modal" in modal_styles()
+
+
+# --- breadcrumb ---------------------------------------------------------------
+
+_TRAIL = (("Home", "/"), ("Components", "/components"))
+
+
+def _breadcrumb() -> Island:
+    """A breadcrumb of two ancestor links ending at the current page."""
+    return breadcrumb(trail=_TRAIL, current="Modal")
+
+
+def test_breadcrumb_builds_a_static_nav_island() -> None:
+    """The factory names the breadcrumb slot and ships no pub/sub (it is inert)."""
+    island = _breadcrumb()
+    assert isinstance(island, Island)
+    assert island.name == "breadcrumb"
+    assert island.publishes == ()
+    (nav,) = find(island.initial, "nav", **{"class": "sb-breadcrumb"})
+    assert nav["aria-label"] == "Breadcrumb"
+
+
+def test_breadcrumb_renders_each_ancestor_as_a_link() -> None:
+    """Every trail crumb is an anchor to its href; the current page is not a link."""
+    island = _breadcrumb()
+    links = find(island.initial, "a", **{"class": "sb-breadcrumb-link"})
+    assert [(a_["href"]) for a_ in links] == ["/", "/components"]
+    assert "Home" in island.initial and "Components" in island.initial
+
+
+def test_breadcrumb_marks_the_current_page() -> None:
+    """The current page is a non-link crumb carrying aria-current=page."""
+    island = _breadcrumb()
+    (current,) = find(island.initial, "span", **{"class": "sb-breadcrumb-current"})
+    assert current["aria-current"] == "page"
+    assert "Modal" in island.initial
+
+
+def test_breadcrumb_separates_crumbs() -> None:
+    """Inert separators sit between every crumb (links plus the current page)."""
+    seps = find(_breadcrumb().initial, "span", **{"class": "sb-breadcrumb-sep"})
+    assert len(seps) == len(_TRAIL)  # one before each of the two links' successor
+    assert all(s["aria-hidden"] == "true" for s in seps)
+
+
+def test_breadcrumb_allows_a_root_only_trail() -> None:
+    """An empty trail is valid: just the current page, no separators."""
+    island = breadcrumb(trail=(), current="Home")
+    assert find(island.initial, "a") == []
+    assert find(island.initial, "span", **{"class": "sb-breadcrumb-sep"}) == []
+
+
+def test_breadcrumb_rejects_blank_current() -> None:
+    """The trail must end somewhere; a blank current page fails at the boundary."""
+    with pytest.raises(ValueError, match="non-empty current"):
+        breadcrumb(trail=_TRAIL, current="")
+
+
+def test_breadcrumb_rejects_blank_label() -> None:
+    """The nav landmark needs a name; a blank label fails where the call is written."""
+    with pytest.raises(ValueError, match="non-empty label"):
+        breadcrumb(trail=_TRAIL, current="Modal", label="")
+
+
+def test_breadcrumb_rejects_a_blank_crumb_href() -> None:
+    """A link with no target fails where it is written, not silently in the browser."""
+    with pytest.raises(ValueError, match="crumb 0 has a blank href"):
+        breadcrumb(trail=(("Home", ""),), current="Modal")
+
+
+def test_breadcrumb_rejects_a_blank_crumb_label() -> None:
+    """A crumb with no visible label fails at the authoring boundary."""
+    with pytest.raises(ValueError, match="crumb 0 has a blank label"):
+        breadcrumb(trail=(("", "/"),), current="Modal")
+
+
+def test_breadcrumb_styles_returns_the_structural_css() -> None:
+    """The structural CSS ships and targets the component's hooks."""
+    assert ".sb-breadcrumb" in breadcrumb_styles()
+
+
+# --- collapsible --------------------------------------------------------------
+
+
+def _collapsible() -> Island:
+    """A collapsible section with a count badge, expanded."""
+    return collapsible(title="Items", body="<p>Body.</p>", count=3, open=True)
+
+
+def test_collapsible_builds_a_native_details_island() -> None:
+    """The factory is a static <details> island (no adapter, native disclosure)."""
+    island = _collapsible()
+    assert isinstance(island, Island)
+    assert island.name == "collapsible"
+    assert island.publishes == ()
+    (details,) = find(island.initial, "details", **{"class": "sb-collapsible"})
+    assert "open" in details
+
+
+def test_collapsible_starts_closed_by_default() -> None:
+    """Without ``open`` the details has no open attribute (collapsed at first paint)."""
+    (details,) = find(
+        collapsible(title="T", body="<p>x</p>").initial,
+        "details",
+        **{"class": "sb-collapsible"},
+    )
+    assert "open" not in details
+
+
+def test_collapsible_summary_carries_the_title_and_count() -> None:
+    """The summary shows the title and, when given, a count badge."""
+    island = _collapsible()
+    assert find(island.initial, "summary", **{"class": "sb-collapsible-summary"})
+    (count,) = find(island.initial, "span", **{"class": "sb-collapsible-count"})
+    assert count is not None
+    assert "Items" in island.initial
+    assert ">3<" in island.initial
+
+
+def test_collapsible_omits_the_count_when_not_given() -> None:
+    """A section with no count renders no badge."""
+    island = collapsible(title="T", body="<p>x</p>")
+    assert find(island.initial, "span", **{"class": "sb-collapsible-count"}) == []
+
+
+def test_collapsible_rejects_blank_title() -> None:
+    """A section needs a heading; a blank title fails at the boundary."""
+    with pytest.raises(ValueError, match="non-empty title"):
+        collapsible(title="", body="<p>x</p>")
+
+
+def test_collapsible_rejects_empty_body() -> None:
+    """A section with no content is a likely mistake; it fails where it is written."""
+    with pytest.raises(ValueError, match="requires body content"):
+        collapsible(title="T", body="")
+
+
+def test_collapsible_rejects_a_negative_count() -> None:
+    """A count is a tally; a negative one fails at the authoring boundary."""
+    with pytest.raises(ValueError, match="non-negative"):
+        collapsible(title="T", body="<p>x</p>", count=-1)
+
+
+def test_collapsible_styles_returns_the_structural_css() -> None:
+    """The structural CSS ships and targets the component's hooks."""
+    assert ".sb-collapsible" in collapsible_styles()
 
 
 def _component_sheets() -> list[tuple[str, str]]:

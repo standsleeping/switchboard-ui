@@ -36,6 +36,8 @@ from switchboard_ui.assets import read_asset
 # `.sb-modal-dialog` is the dialog surface that insets its own content (like
 # `.sb-popover-panel`); `.sb-modal-close` is its quiet close control (a button-rule
 # override, like `.sb-code-copy`).
+# `.sb-collapsible-summary` is the disclosure header row (a control), and
+# `.sb-collapsible-body` is the revealed content surface that insets its content.
 _PADDABLE_SUBJECTS = frozenset(
     {
         "button",
@@ -50,6 +52,8 @@ _PADDABLE_SUBJECTS = frozenset(
         ".sb-code-copy",
         ".sb-modal-dialog",
         ".sb-modal-close",
+        ".sb-collapsible-summary",
+        ".sb-collapsible-body",
     }
 )
 
