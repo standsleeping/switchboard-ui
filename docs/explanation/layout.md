@@ -1,4 +1,4 @@
-# Explanation: layout
+# Layout
 
 Layout is a recursive value. The package provides one general primitive, the `Frame`, and a preset that arranges it into a ready-made page. This page explains the primitive first, then the preset. For the preset's structure, see [The three-column preset](../reference/three-column.md).
 
@@ -16,6 +16,6 @@ A preset is an ordinary function that assembles islands into a frame tree and re
 
 ## Style is the host's, not the package's
 
-The packaged stylesheet is layout structure only: the flex rules that make a frame tree render. It sets no color, type, or theming, and no box-spacing either: it distributes space with `gap` and never uses `margin` (banned) or `padding` (a box's inset is a density decision the host owns). It styles only its own `.sb-*` elements, never your `body` or `:root`. A preset may hold opinions about *layout* (three columns, fixed side rails, a flexible center), but visual *style* belongs to the application that hosts the islands; the package stays out of the way. The test suite enforces all of this statically.
+The packaged stylesheet is layout structure only: the flex rules that make a frame tree render. It sets no color, type, or theming, and no box-spacing either: it distributes space with `gap` and never uses `margin` (banned) or `padding` (a box's inset is a density decision the host owns). It styles only its own `.sb-*` elements, never your `body` or `:root`. A preset may hold opinions about *layout* (three columns, fixed side rails, a flexible center), but visual *style* belongs to the application that hosts the islands; the package stays out of the way. The test suite enforces all of this statically. This division of decisions among layers, and the two things it buys, is the subject of [Ownership](ownership.md).
 
 The lines between tiled regions are a host (theme) concern too. For how a border between two cells is drawn exactly once, with a single owner, see [Seams](seams.md).

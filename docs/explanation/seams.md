@@ -1,4 +1,4 @@
-# Explanation: seams
+# Seams
 
 A *seam* is the border line between two tiled regions of a layout. The three-column preset tiles the page into nine region cells (`head-l` through `foot-r`); the lines between those cells, and the frame around them, are seams. This page explains how the project draws them so that every line is crisp, uniform, and drawn exactly once.
 
@@ -7,6 +7,8 @@ A *seam* is the border line between two tiled regions of a layout. The three-col
 When tiled cells share an edge, the tempting move is to give every cell a full border. That draws every interior seam *twice*, once by each neighbour, and a doubled hairline is not a thicker line: it is two 1px borders that can disagree on colour, render on a fractional boundary, or stack to an uneven weight. The weight of a seam starts to depend on how many cells happen to meet there, which is not a property a seam should have.
 
 The rule that avoids this is **single ownership**: every seam has exactly one owner (the cell, frame, or rule responsible for drawing it), and the neighbour on the other side of that seam draws nothing there. A seam's weight is then a property of the seam itself, never of its neighbourhood.
+
+Single ownership is not specific to borders. It is the organizing rule across every layer of the page: each spatial or visual decision has exactly one owning layer. See [Ownership](ownership.md) for the general principle this page is one instance of.
 
 ## The layout is nested flex, not one grid
 
