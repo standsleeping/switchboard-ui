@@ -22,6 +22,7 @@ construct a future doc introduces before the renderer gains it.
 from dataclasses import dataclass
 from pathlib import Path
 
+from showcase.chrome import surface_switch, surface_switch_styles
 from showcase.markdown import (
     Heading,
     MarkdownError,
@@ -145,11 +146,13 @@ def _nav(current: str) -> Island:
 def _toc(headings: tuple[Heading, ...]) -> Island:
     """The on-this-page column: the doc's H2/H3 headings as anchor links.
 
-    A static island: each link is an in-page anchor to the heading's id, indented
-    by level so H3s nest under their H2.
+    A static island: each link is an in-page anchor to the heading's id. H3s are
+    grouped into a sublist that owns the nesting indent structurally, so the links
+    themselves keep a square inset rather than an asymmetric left padding.
     """
-    links = [
-        element(
+
+    def link(heading: Heading) -> str:
+        return element(
             "a",
             {
                 "class": f"sb-docs-toc-link sb-docs-toc-l{heading.level}",
@@ -157,12 +160,27 @@ def _toc(headings: tuple[Heading, ...]) -> Island:
             },
             [escape_text(heading.text)],
         )
-        for heading in headings
-    ]
+
+    rows: list[str] = []
+    sublist: list[str] = []
+
+    def flush_sublist() -> None:
+        if sublist:
+            rows.append(element("div", {"class": "sb-docs-toc-sublist"}, list(sublist)))
+            sublist.clear()
+
+    for heading in headings:
+        if heading.level >= 3:
+            sublist.append(link(heading))
+        else:
+            flush_sublist()
+            rows.append(link(heading))
+    flush_sublist()
+
     children = [
-        element("div", {"class": "sb-docs-toc-label"}, [escape_text("On this page")])
+        element("div", {"class": "sb-docs-toc-label"}, [escape_text("On this page")]),
+        element("div", {"class": "sb-docs-toc-links"}, rows),
     ]
-    children.extend(links)
     toc = element(
         "nav", {"class": "sb-docs-toc", "aria-label": "On this page"}, children
     )
@@ -192,7 +210,7 @@ def _shell(
     """Assemble the docs three-column shell around a doc's rendered content."""
     body_c = (_breadcrumb(relpath, title), *content)
     regions: dict[Region, tuple[Island, ...]] = {
-        "head-c": (Island(name="brand", initial=_brand()),),
+        "head-c": (surface_switch("docs"),),
         "body-l": (_nav(relpath),),
         "body-c": body_c,
         "body-r": (_toc(headings),),
@@ -200,15 +218,6 @@ def _shell(
     }
     return three_column(
         regions, title=f"{title} · switchboard-ui docs", right_width="16rem"
-    )
-
-
-def _brand() -> str:
-    """The header brand, a link back to the gallery so the surfaces interlink."""
-    return element(
-        "a",
-        {"class": "sb-docs-brand", "href": "/"},
-        [escape_text("switchboard-ui docs")],
     )
 
 
@@ -378,14 +387,27 @@ _DOCS_CSS = f"""
 .sb-docs-toc {{
   display: flex;
   flex-direction: column;
-  gap: var(--sb-space-2xs);
+  gap: var(--sb-space-sm);
   padding: var(--sb-space-md);
 }}
 .sb-docs-toc-label {{
   color: var(--sb-color-muted);
+  font-weight: var(--sb-font-weight-bold);
   text-transform: uppercase;
   letter-spacing: var(--sb-font-tracking-wide);
   font-size: var(--sb-font-size-sm);
+  padding: var(--sb-space-2xs);
+}}
+.sb-docs-toc-links {{
+  display: flex;
+  flex-direction: column;
+  gap: var(--sb-space-2xs);
+}}
+.sb-docs-toc-sublist {{
+  display: flex;
+  flex-direction: column;
+  gap: var(--sb-space-2xs);
+  padding-inline-start: var(--sb-space-md);
 }}
 .sb-docs-toc-link {{
   color: var(--sb-color-muted);
@@ -395,14 +417,6 @@ _DOCS_CSS = f"""
 }}
 .sb-docs-toc-link:hover {{
   color: var(--sb-color-accent);
-}}
-.sb-docs-toc-l3 {{
-  padding-inline-start: var(--sb-space-md);
-}}
-.sb-docs-brand {{
-  color: var(--sb-color-fg);
-  text-decoration: none;
-  font-weight: var(--sb-font-weight-bold);
 }}
 .sb-docs-notice {{
   border: var(--sb-border-width-thin) solid var(--sb-color-border);
@@ -425,4 +439,4 @@ _DOCS_CSS = f"""
 def docs_styles() -> str:
     """The components' structural CSS plus the docs' page chrome, for ``extra_head``."""
     sheets = "\n".join((code_block_styles(), breadcrumb_styles(), table_styles()))
-    return f"<style>{sheets}</style><style>{_DOCS_CSS}</style>"
+    return f"<style>{sheets}</style><style>{_DOCS_CSS}</style>{surface_switch_styles()}"

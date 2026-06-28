@@ -20,8 +20,8 @@ the theme). That is the same opt-in a real host performs.
 
 import re
 from dataclasses import dataclass
-from typing import Literal
 
+from showcase.chrome import surface_switch, surface_switch_styles
 from switchboard_theme import REGISTRY, Category, Fixed, Themed, Token, ValueType
 from switchboard_ui import Document, Island
 from switchboard_ui.components import (
@@ -48,6 +48,7 @@ from switchboard_ui.components import (
     popover_scripts,
     popover_styles,
     preview,
+    preview_items,
     preview_styles,
     segmented,
     segmented_scripts,
@@ -443,7 +444,7 @@ def build_showcase() -> Document:
         for island in spec.body:
             (content if island.initial else trailing).append(island)
     regions: dict[Region, tuple[Island, ...]] = {
-        "head-c": (Island(name="brand", initial="switchboard-ui"),),
+        "head-c": (surface_switch("gallery"),),
         "body-l": (_gallery_nav(specs),),
         "body-c": tuple(content + trailing),
         "body-r": (_gallery_inspector(specs),),
@@ -623,7 +624,9 @@ def showcase_styles() -> str:
             collapsible_styles(),
         )
     )
-    return f"<style>{sheets}</style><style>{_GALLERY_CSS}</style>"
+    return (
+        f"<style>{sheets}</style><style>{_GALLERY_CSS}</style>{surface_switch_styles()}"
+    )
 
 
 # --- the theme builder -------------------------------------------------------
@@ -639,6 +642,7 @@ def showcase_styles() -> str:
 # so a new token appears in the builder the moment it lands in tokens.py.
 
 _BUILDER_SCOPE = "builder-preview"
+_DENSITY_TOPIC = "builder:density"
 _HEX = re.compile(r"#[0-9a-fA-F]{6}\Z")
 
 
@@ -701,7 +705,7 @@ def _token_row(token: Token) -> tuple[Frame, list[Binding]]:
     row = Frame(
         direction="row",
         children=(
-            Slot(_static("builder-label", label, "sb-builder-label"), basis="11rem"),
+            Slot(_static("builder-label", label, "sb-builder-label"), basis="9rem"),
             *controls,
         ),
         class_="sb-builder-row",
@@ -709,24 +713,37 @@ def _token_row(token: Token) -> tuple[Frame, list[Binding]]:
     return row, bindings
 
 
-def _builder_controls() -> tuple[Frame, list[Binding]]:
+def _category_id(category: Category) -> str:
+    """The anchor id of a category's section header (the nav's scroll target)."""
+    return f"builder-cat-{category.value}"
+
+
+def _builder_section(category: Category) -> Island:
+    """A category header in the controls column, carrying the nav's anchor id.
+
+    The id sits on the header text so the nav's in-page link scrolls the controls
+    column (the scroll owner) to this section.
+    """
+    head = element(
+        "span",
+        {"id": _category_id(category), "class": "sb-builder-section-anchor"},
+        [escape_text(_humanize(category.value))],
+    )
+    return Island(name="builder-section", class_="sb-builder-section", initial=head)
+
+
+def _builder_controls() -> tuple[Frame, list[Binding], list[Category]]:
     """The controls column: every editable token, grouped by category, plus the
-    full binding list the one theme_state island applies to the preview scope."""
+    full binding list and the ordered categories the nav is projected from."""
     children: list[Island | Frame | Slot] = []
     bindings: list[Binding] = []
-    seen: set[Category] = set()
+    categories: list[Category] = []
     for token in REGISTRY:
         if token.category is Category.FIT:
             continue
-        if token.category not in seen:
-            seen.add(token.category)
-            children.append(
-                _static(
-                    "builder-section",
-                    _humanize(token.category.value),
-                    "sb-builder-section",
-                )
-            )
+        if token.category not in categories:
+            categories.append(token.category)
+            children.append(_builder_section(token.category))
         row, row_bindings = _token_row(token)
         children.append(row)
         bindings.extend(row_bindings)
@@ -735,78 +752,242 @@ def _builder_controls() -> tuple[Frame, list[Binding]]:
         children=tuple(children),
         class_="sb-builder-controls sb-scroll",
     )
-    return column, bindings
+    return column, bindings, categories
 
 
-def _builder_pane(scheme: Literal["light", "dark"], label: str) -> Frame:
-    """One preview pane pinned to a colour scheme, sharing the builder scope so a
-    scoped edit repaints it (the arm matching its scheme; both for a value edit)."""
-    return Frame(
-        direction="column",
-        children=(
-            _static("builder-pane-label", label, "sb-builder-pane-label"),
-            preview(scope_id=_BUILDER_SCOPE, scheme=scheme),
-        ),
-        class_="sb-builder-pane sb-scroll",
+def _builder_nav(categories: list[Category]) -> Island:
+    """The category nav rail: one in-page link per token category.
+
+    A static island (no adapter): each link scrolls the controls column to that
+    category's section. The categories are the same list the controls are grouped
+    by, so the nav and the controls never drift (one projection, two readings).
+    """
+    items = [
+        element(
+            "a",
+            {"class": "sb-builder-nav-item", "href": f"#{_category_id(category)}"},
+            [escape_text(_humanize(category.value))],
+        )
+        for category in categories
+    ]
+    nav = element(
+        "nav", {"class": "sb-builder-nav", "aria-label": "Token categories"}, items
+    )
+    return Island(name="builder-nav", initial=nav)
+
+
+def _builder_matrix() -> Island:
+    """The preview matrix: each sample surface in its own box, rendered in a light
+    cell (left) and a dark cell (right).
+
+    Both cells of every box carry the builder scope, so one token edit repaints the
+    matching arm in every cell at once. Replaces the two whole-pane previews; the
+    per-item split puts each surface's two arms adjacent, so a token's effect on
+    both schemes reads at the level of the surface it paints.
+    """
+    boxes: list[str] = []
+    for item in preview_items():
+        cells = [
+            element(
+                "div",
+                {
+                    "class": (
+                        f"sb-builder-matrix-cell sb-preview-scope sb-preview-{scheme}"
+                    ),
+                    "data-sb-scope": _BUILDER_SCOPE,
+                },
+                [item],
+            )
+            for scheme in ("light", "dark")
+        ]
+        boxes.append(element("div", {"class": "sb-builder-matrix-item"}, cells))
+    matrix = element("div", {"class": "sb-builder-matrix"}, boxes)
+    return Island(name="preview-matrix", initial=matrix)
+
+
+def _builder_density() -> Island:
+    """An invisible wiring island: flip the controls column's density on the bus.
+
+    Subscribes the topic the header's density toggle publishes and writes the
+    chosen value (``comfortable`` / ``compact``) to ``data-density`` on the
+    controls column, where the CSS reads it to tighten the row rhythm. Paint only:
+    no control is added or removed, so the column's topology and seams are
+    unchanged. Mirrors how ``theme_state`` applies a bus value to a scoped target.
+    """
+    return Island(
+        name="builder-density",
+        props={"topic": _DENSITY_TOPIC, "target": ".sb-builder-controls"},
+        subscribes=(_DENSITY_TOPIC,),
     )
 
 
 def build_theme_builder() -> Document:
     """The theme builder page: a generated control panel beside a live light/dark
     preview, all wired to the registry's tokens through one theme_state island."""
-    controls, bindings = _builder_controls()
+    controls, bindings, categories = _builder_controls()
     scope = f'[data-sb-scope="{_BUILDER_SCOPE}"]'
     state = theme_state(scope=scope, bindings=tuple(bindings))
+    # The matrix is the region's single child; the region owns the scroll, so the
+    # stack of per-item boxes scrolls within it.
     preview_col = Frame(
-        direction="row",
-        children=(
-            Slot(_builder_pane("light", "Light")),
-            Slot(_builder_pane("dark", "Dark")),
-        ),
-        class_="sb-builder-preview",
+        direction="column",
+        children=(_builder_matrix(),),
+        class_="sb-builder-preview sb-scroll",
+    )
+    # The surface switch stands alone flush-left (as in head-c on the gallery and
+    # docs); the page-local controls — the density toggle and the export — group
+    # flush-right, at the opposite end from Gallery · Docs · Builder, so the toggle
+    # reads as a setting of this page rather than a fourth surface tab. No brand
+    # label — the active Builder tab and the page title name the surface, as the
+    # gallery and docs do.
+    density = segmented(
+        topic=_DENSITY_TOPIC,
+        options=(("comfortable", "Comfortable"), ("compact", "Compact")),
+        value="comfortable",
+        label="Density",
     )
     header = Frame(
         direction="row",
         children=(
-            _static("brand", "theme builder", "sb-builder-brand"),
-            theme_export(scope=scope, bindings=tuple(bindings)),
+            surface_switch("builder"),
+            Frame(
+                direction="row",
+                children=(
+                    density,
+                    theme_export(scope=scope, bindings=tuple(bindings)),
+                ),
+                class_="sb-builder-header-right",
+            ),
         ),
         class_="sb-rail sb-builder-header",
     )
     main = Frame(
         direction="row",
-        children=(Slot(controls, basis="34rem"), Slot(preview_col)),
+        children=(
+            Slot(_builder_nav(categories), basis="12rem"),
+            Slot(controls, basis="32rem"),
+            Slot(preview_col),
+        ),
         class_="sb-builder-main",
     )
-    body = Frame(direction="column", children=(header, Slot(main), state))
+    # The density applier (invisible) subscribes the toggle's topic and flips the
+    # controls column's compact state; it sits beside the theme-state applier.
+    body = Frame(
+        direction="column",
+        children=(header, Slot(main), state, _builder_density()),
+    )
     return Document(body=body, title="switchboard-ui theme builder")
 
 
 def theme_builder_scripts() -> tuple[str, ...]:
     """The adapters the builder registers: the colour input, the value field, the
-    theme-state island that applies every edit, and the export control."""
+    theme-state island that applies every edit, the export control, the density
+    toggle, and the applier that flips the controls column's density."""
     return (
         color_input_scripts()
         + value_field_scripts()
         + theme_state_scripts()
         + theme_export_scripts()
+        + segmented_scripts()
+        + (_BUILDER_DENSITY_JS,)
     )
+
+
+# The density applier: a builder-local invisible island (host chrome, like the
+# gallery's nav/inspector adapters) that subscribes the header toggle's topic and
+# writes the chosen value onto the controls column's `data-density`, where the CSS
+# reads it. The token names it touches are none — it sets a view attribute, never
+# a value — so it carries no trust surface.
+_BUILDER_DENSITY_JS = """
+window.switchboard.register("builder-density", function (el, props, bus) {
+  var targets = Array.prototype.slice.call(
+    document.querySelectorAll(props.target)
+  );
+  var off = bus.subscribe(props.topic, function (value) {
+    if (typeof value !== "string") return;
+    targets.forEach(function (t) {
+      t.dataset.density = value;
+    });
+  });
+  return function teardown() {
+    off();
+  };
+});
+"""
 
 
 # The builder's own page layout (host CSS, not the core's structure or the theme's
 # paint): gaps, insets, and the section/label chrome for the control panel and the
 # preview panes. It reads the theme's --sb-* tokens because the theme is loaded.
 _BUILDER_CSS = """
+/* Flush like the gallery/docs head-c cell: no padding of its own, so the switch
+ * self-insets to the same 12px the other surfaces show (rather than double-padding
+ * the switch's own inset). The export sits flush at the trailing edge (flush
+ * chrome). The rail floor still gives the row its height, and the bottom seam
+ * anchors it as chrome, matching the head row on the gallery and docs. */
 .sb-builder-header {
   align-items: center;
   justify-content: space-between;
-  padding: var(--sb-space-inset);
   font-weight: var(--sb-font-weight-bold);
+  border-block-end: var(--sb-border-width-thin) solid var(--sb-color-border);
 }
+/* The surface switch stands alone flush-left (its self-inset keeps the alignment
+ * the gallery and docs heads show); the page-local controls — the density toggle,
+ * then the export — group flush-right (the header's space-between), at the
+ * opposite end from the surface tabs, so the toggle does not read as a fourth. */
+.sb-builder-header-right {
+  align-items: center;
+  gap: var(--sb-space-md);
+}
+/* Align the density toggle's underline with the surface switch beside it. The
+ * theme insets each segmented option by --sb-space-sm (a standalone control's
+ * density), which drops the active underline below the text, widens it, and makes
+ * the option taller than the zero-inset switch links. Here the two tab bars sit
+ * side by side, so reset the option inset to zero — the .sb-segmented gap still
+ * carries the horizontal rhythm, as the switch's gap does for its own links. */
+.sb-builder-header-right .sb-segmented-option {
+  padding: 0;
+}
+.sb-builder-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sb-space-2xs);
+  padding: var(--sb-space-md);
+}
+.sb-builder-nav-item {
+  color: var(--sb-color-fg);
+  text-decoration: none;
+  padding: var(--sb-space-xs);
+}
+.sb-builder-nav-item:hover {
+  color: var(--sb-color-accent);
+}
+.sb-builder-nav-item:focus-visible {
+  outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
+  outline-offset: -2px;
+}
+/* The controls column owns both vertical seams (single owner): the seam to the
+ * nav on its inline-start, the seam to the preview on its inline-end. It is the
+ * full-height flex cell of the main row, so each seam runs the column's whole
+ * height. The nav and preview draw neither. A side rail that bordered its own
+ * <nav> would stop the line where the content stops: island content is
+ * display:block and does not stretch to the cell, so the seam would truncate.
+ * Mirrors the gallery's centre cell (.sb-body-c) owning both of its seams. */
 .sb-builder-controls {
   gap: var(--sb-space-md);
   padding: var(--sb-space-lg);
+  border-inline-start: var(--sb-border-width-thin) solid var(--sb-color-border);
   border-inline-end: var(--sb-border-width-thin) solid var(--sb-color-border);
+}
+/* Compact density: the header toggle flips data-density on this column, tightening
+ * the inter-row gap, the in-row gap, and the inset. Paint only — no row is added
+ * or removed, so the column's topology and its seams are unchanged. */
+.sb-builder-controls[data-density="compact"] {
+  gap: var(--sb-space-xs);
+  padding: var(--sb-space-md);
+}
+.sb-builder-controls[data-density="compact"] .sb-builder-row {
+  gap: var(--sb-space-sm);
 }
 /* A row keeps its natural height: it is an .sb-frame (min-block-size: 0), so
  * without this it would flex-shrink to nothing in the fixed-height scroll column
@@ -824,17 +1005,47 @@ _BUILDER_CSS = """
   text-transform: uppercase;
   letter-spacing: var(--sb-font-tracking-wide);
 }
+/* The anchor the nav scrolls to: keep the section clear of the column's top edge
+ * when jumped to, rather than flush against it. */
+.sb-builder-section-anchor {
+  scroll-margin-block-start: var(--sb-space-md);
+}
 .sb-builder-label {
   color: var(--sb-color-fg);
 }
-.sb-builder-pane {
-  gap: var(--sb-space-sm);
+/* The preview region holds the matrix and owns the scroll; its inset floats the
+ * matrix off the controls seam and the viewport edge. */
+.sb-builder-preview {
   padding: var(--sb-space-md);
 }
-.sb-builder-pane-label {
-  color: var(--sb-color-muted);
-  text-transform: uppercase;
-  letter-spacing: var(--sb-font-tracking-wide);
+"""
+
+
+# The preview matrix's display chrome — the per-item box and its internal
+# light|dark divider. This is display chrome, not page-layout chrome: like a
+# component's own CSS it sits inside an island, so it is bundled with the component
+# sheets and kept out of _BUILDER_CSS (the layout chrome the seam guard scans). The
+# divider between the two shades is single-owned by the trailing (dark) cell, and
+# the two cells stretch to equal height as flex-row siblings, so that seam runs the
+# box's full height rather than truncating.
+_MATRIX_CSS = """
+.sb-builder-matrix {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sb-space-md);
+}
+.sb-builder-matrix-item {
+  display: flex;
+  flex-direction: row;
+  border: var(--sb-border-width-thin) solid var(--sb-color-border);
+}
+.sb-builder-matrix-cell {
+  flex: 1 1 0;
+  min-inline-size: 0;
+  padding: var(--sb-space-md);
+}
+.sb-builder-matrix-cell + .sb-builder-matrix-cell {
+  border-inline-start: var(--sb-border-width-thin) solid var(--sb-color-border);
 }
 """
 
@@ -847,6 +1058,10 @@ def theme_builder_styles() -> str:
             value_field_styles(),
             preview_styles(),
             theme_export_styles(),
+            segmented_styles(),
+            _MATRIX_CSS,
         )
     )
-    return f"<style>{sheets}</style><style>{_BUILDER_CSS}</style>"
+    return (
+        f"<style>{sheets}</style><style>{_BUILDER_CSS}</style>{surface_switch_styles()}"
+    )

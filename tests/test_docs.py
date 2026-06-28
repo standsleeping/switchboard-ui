@@ -28,8 +28,15 @@ def test_build_doc_fills_the_three_columns_with_nav_breadcrumb_content_and_toc()
 def test_nav_marks_the_current_doc() -> None:
     """Exactly the current doc's nav link carries aria-current, pointing at its route."""
     html = render_document(build_doc("tutorials/getting-started.md"))
-    current = find(html, "a", **{"aria-current": "page"})
+    current = find(html, "a", **{"class": "sb-docs-nav-item", "aria-current": "page"})
     assert [a["href"] for a in current] == ["/docs/tutorials/getting-started"]
+
+
+def test_docs_page_carries_the_surface_switch_marking_docs() -> None:
+    """The docs page shows the Gallery · Docs · Builder switch with Docs active."""
+    html = render_document(build_doc("index.md"))
+    active = find(html, "a", **{"class": "sb-switch-link", "aria-current": "page"})
+    assert [a["href"] for a in active] == ["/docs"]
 
 
 def test_every_doc_in_the_tree_renders_without_a_notice() -> None:
