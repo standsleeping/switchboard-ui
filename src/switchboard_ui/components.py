@@ -504,8 +504,14 @@ def value_field_styles() -> str:
     return read_static("value-field.css")
 
 
-def _preview_sample() -> str:
-    """A representative sample of surfaces, to exercise the token adjacencies live."""
+def preview_items() -> tuple[str, ...]:
+    """The preview sample's surfaces, each as a standalone html fragment.
+
+    The same representative surfaces :func:`preview` renders together, exposed
+    individually so a host can lay them out per item — the theme builder renders
+    each item in a light cell and a dark cell side by side. Each fragment paints
+    from the (scope-overridable) tokens, so it repaints when a token changes.
+    """
     heading = element("p", {"class": "sb-preview-heading"}, [escape_text("Heading")])
     prose = element(
         "p",
@@ -545,9 +551,12 @@ def _preview_sample() -> str:
         {"class": "sb-preview-table"},
         [element("thead", {}, [header]), element("tbody", {}, body)],
     )
-    return element(
-        "div", {"class": "sb-preview-sample"}, [heading, prose, button, swatch, table]
-    )
+    return (heading, prose, button, swatch, table)
+
+
+def _preview_sample() -> str:
+    """A representative sample of surfaces, to exercise the token adjacencies live."""
+    return element("div", {"class": "sb-preview-sample"}, list(preview_items()))
 
 
 def preview(*, scope_id: str, scheme: Literal["light", "dark"] | None = None) -> Island:
