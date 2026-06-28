@@ -1,4 +1,4 @@
-# Explanation: backend independence
+# Backend independence
 
 Backend independence is a property the package preserves. This page explains the rule that produces it and the consequences that follow.
 

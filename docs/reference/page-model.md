@@ -1,4 +1,4 @@
-# Reference: the page model
+# The page model
 
 The page model is defined in `switchboard_ui.model`. It is built from immutable dataclasses turned into HTML by pure functions.
 

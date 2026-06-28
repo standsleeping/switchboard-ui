@@ -1,4 +1,4 @@
-# Reference: the three-column preset
+# The three-column preset
 
 `three_column` is a layout preset: a function that places islands into a nine-region arrangement and returns a [`Document`](page-model.md#document). It is sugar over the [`Frame`](page-model.md#frame) primitive, not a separate type, so anything it builds you could build by hand. It lives in `switchboard_ui.presets`.
 

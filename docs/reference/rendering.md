@@ -1,4 +1,4 @@
-# Reference: rendering
+# Rendering
 
 The renderer is defined in `switchboard_ui.render`. It turns a `Document` into a complete HTML document string. It imports no web-framework type, so the output is independent of any backend.
 

@@ -1,4 +1,4 @@
-# Reference: the CLI
+# The CLI
 
 The package installs a console script, `switchboard-ui`, defined in `switchboard_ui.cli`. It renders the bundled demo page to standard output. It is the application layer: the one place that configures logging, done at runtime inside `main`.
 

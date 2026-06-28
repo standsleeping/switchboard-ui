@@ -1,4 +1,4 @@
-# Explanation: architecture
+# Architecture
 
 switchboard-ui exists to put interactive behavior on a server-rendered page without a framework, a build step, or a runtime dependency. This page explains the shape that goal produced.
 

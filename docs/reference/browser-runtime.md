@@ -1,4 +1,4 @@
-# Reference: the browser runtime
+# The browser runtime
 
 The runtime is `switchboard_ui/static/switchboard.js`: hand-written vanilla JavaScript with no dependencies and no build step. It scans the page for mount points and brings islands to life. It exposes one global, `window.switchboard`.
 
