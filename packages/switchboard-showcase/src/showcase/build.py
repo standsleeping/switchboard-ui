@@ -660,6 +660,8 @@ def _control(*, type_: ValueType, value: str, topic: str, label: str) -> Island:
     """The editor for one token value: a swatch + hex colour input for a hex
     colour, else the general value field (lengths, numbers, families, the rgba
     scrim that is a colour but not a hex)."""
+    # color_input (swatch + hex), not the richer color_picker: the builder shows
+    # one control per token, so the denser input keeps the palette compact.
     if type_ is ValueType.COLOR and _HEX.match(value):
         return color_input(topic=topic, value=value, label=label)
     return value_field(topic=topic, value=value, label=label)
@@ -787,6 +789,9 @@ def _builder_matrix() -> Island:
     """
     boxes: list[str] = []
     for item in preview_items():
+        # sb-preview-scope (beyond data-sb-scope) re-establishes the full token
+        # context on each cell (colour plus the type base), so a font edit
+        # repaints here too, not only colour edits.
         cells = [
             element(
                 "div",
@@ -861,6 +866,11 @@ def build_theme_builder() -> Document:
         ),
         class_="sb-rail sb-builder-header",
     )
+    # Not the three_column preset the gallery and docs use. The builder has two
+    # width-hungry regions (the controls column and the side-by-side light/dark
+    # preview), so the preset's one flex column between two narrow rails does not
+    # fit. A left nav rail plus a two-pane main keeps rail-consistency with the
+    # other surfaces without starving the preview.
     main = Frame(
         direction="row",
         children=(
