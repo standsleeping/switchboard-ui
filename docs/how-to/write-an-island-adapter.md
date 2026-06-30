@@ -2,6 +2,17 @@
 
 An adapter is the browser-side implementation of an island. This guide shows how to write one, register it, and connect it to the page.
 
+## The four parts of a component
+
+An adapter is one of four parts that ship together to make a component. The full recipe:
+
+1. **Factory.** A Python function returning an `Island` descriptor (in `components.py` for the bundled set). It server-renders the component's initial markup into `Island.initial`, so the component is present and correctly sized at first paint before any JavaScript runs, and it validates its inputs at the authoring boundary (raising `ValueError` on bad input). See the [page model reference](../reference/page-model.md).
+2. **Adapter.** The browser-side `mount(element, props, bus) => teardown` that the rest of this guide covers. It enhances the server-rendered markup in place; it never rebuilds or resizes it.
+3. **Structural CSS.** A per-component stylesheet (`static/<name>.css`) owning geometry only: token-free, `.sb-*` selectors only, the same contract as `layout.css`, with the test suite guarding every component sheet to that contract. See [Ownership](../explanation/ownership.md) and [Layout](../explanation/layout.md).
+4. **Paint.** The component's appearance, added to the theme as `--sb-*` tokens and rules. Geometry stays stable across interactive state: reserve any state geometry (for example a transparent accent-width border) on the base rule and only recolour it in the state rule, so a `:hover` or `:focus` never reflows the box.
+
+The split is by ownership: the factory owns markup, the adapter owns behavior, the structural CSS owns geometry, the theme owns paint. The host opts each part in, adapters through `extra_scripts` and structural CSS through `extra_head`. The rest of this guide covers part 2, the adapter.
+
 ## The mount contract
 
 Every adapter is a function with this shape:
