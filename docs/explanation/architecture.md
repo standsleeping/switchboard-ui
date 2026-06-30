@@ -36,6 +36,8 @@ The third consumer is why the topics are declared rather than discovered at runt
 
 **Declarative wiring.** Island pub/sub is declared on the descriptor, which is what makes the dependency graph drawable by static analysis.
 
+**Distributed as separable packages.** The project is one workspace of three distributions: the core mechanism (zero dependencies, ships only the structural `layout.css`), the theme you opt into (`import switchboard_theme`, which itself depends on the core), and the unpublished development and showcase server. The core declares no dependency on the theme, so the rule that the mechanism never reaches into the theme is a property of the package graph itself, not a test watching for a stray import: the core wheel has no path to the theme's code.
+
 ## See also
 
 - [Backend independence](backend-independence.md): why rendering returns a string.
