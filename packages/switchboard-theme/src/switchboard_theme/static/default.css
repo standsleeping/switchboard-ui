@@ -198,16 +198,19 @@ button:focus-visible {
 
 /* Color input: a swatch plus a hex field, a tokenised stand-in for the native
  * <input type="color"> (whose picker popover cannot be themed). The swatch shows
- * the live value (an inline background the adapter sets); the theme owns only its
- * frame. The field is a standard control — square inset, the bg surface, a
- * hairline border, the accent caret, and an inset focus ring. An invalid hex
- * recolours the border to danger (a state recolour, never a reshape). The
- * non-default form surfaces (caret, placeholder, selection) are tokenised so no
- * UA colour leaks (the no-UA-default rule). */
+ * the live value: the factory carries it as the per-instance `--sb-swatch` value
+ * (a value, not a registry token, and not an inline paint declaration) and the
+ * theme paints `background` from it here, so paint stays the theme's. The field
+ * is a standard control — square inset, the bg surface, a hairline border, the
+ * accent caret, and an inset focus ring. An invalid hex recolours the border to
+ * danger (a state recolour, never a reshape). The non-default form surfaces
+ * (caret, placeholder, selection) are tokenised so no UA colour leaks (the
+ * no-UA-default rule). */
 .sb-color-input {
   gap: var(--sb-space-xs);
 }
 .sb-color-input-swatch {
+  background: var(--sb-swatch);
   border: var(--sb-border-width-thin) solid var(--sb-color-border);
   border-radius: var(--sb-radius-base);
 }
@@ -280,11 +283,14 @@ button:focus-visible {
 }
 
 /* Color picker: the swatch is a chip trigger (the base button paint, re-bordered
- * to a hairline; its colour is the live value set inline). The spectrum surfaces
- * carry a hairline frame and an inset focus ring; their gradients are adapter-set
- * data-viz, not theme paint. The handle/thumb carry a near-white ring that reads
- * over any spectrum colour. */
+ * to a hairline; its colour is the live value the factory carries as the
+ * per-instance `--sb-swatch` value, painted here, not declared inline — the
+ * background overrides the base button fill by class specificity). The spectrum
+ * surfaces carry a hairline frame and an inset focus ring; their gradients are
+ * adapter-set data-viz, not theme paint. The handle/thumb carry a near-white ring
+ * that reads over any spectrum colour. */
 .sb-color-picker-swatch {
+  background: var(--sb-swatch);
   border-color: var(--sb-color-border);
 }
 .sb-color-picker-controls {
@@ -393,6 +399,7 @@ button:focus-visible {
   color: var(--sb-color-muted);
 }
 .sb-preview-swatch {
+  background: var(--sb-color-accent);
   border: var(--sb-border-width-thin) solid var(--sb-color-border);
 }
 .sb-preview-table {

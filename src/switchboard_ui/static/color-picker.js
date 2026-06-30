@@ -10,7 +10,8 @@
  * The two spectrum gradients are functional DATA-VIZ: a full colour-space surface
  * cannot come from the token palette, so they are set inline as live data — the
  * one sanctioned exception to the no-UA-default / token-only rule (philosophy
- * §17). Everything else (borders, the handle ring, the gap) is the theme's. */
+ * §17). Everything else — the swatch fill (painted from the --sb-swatch value this
+ * writes), borders, the handle ring, the gap — is the theme's. */
 window.switchboard.register("color-picker", function (el, props, bus) {
   var topic = props.topic;
   var trigger = el.querySelector(".sb-color-picker-swatch");
@@ -111,7 +112,7 @@ window.switchboard.register("color-picker", function (el, props, bus) {
   }
   function syncVisuals() {
     var hex = hsvToHex(st.h, st.s, st.v);
-    trigger.style.background = hex;
+    trigger.style.setProperty("--sb-swatch", hex);
     area.setAttribute(
       "aria-valuetext",
       Math.round(st.s * 100) + "% saturation, " + Math.round(st.v * 100) + "% brightness"

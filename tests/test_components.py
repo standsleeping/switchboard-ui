@@ -12,11 +12,11 @@ guard reuses the ``test_layout_css`` helpers and runs over every component sheet
 so a new component is covered the moment its CSS file lands.
 """
 
-import re
 from importlib.resources import files
 
 import pytest
 
+from switchboard_ui import ownership
 from switchboard_ui.components import (
     ArmBinding,
     Cell,
@@ -61,7 +61,6 @@ from switchboard_ui.components import (
 )
 from switchboard_ui.model import Island
 from tests.htmlprobe import find
-from tests.test_layout_css import _LAYOUT_PROPERTIES, _declared_properties, _selectors
 
 _OPTIONS = (("overview", "Overview"), ("api", "API"), ("examples", "Examples"))
 _LABEL = "View"
@@ -167,7 +166,7 @@ def test_color_input_server_renders_the_swatch_and_field() -> None:
     """The swatch shows the value and the named hex field holds it at first paint."""
     island = color_input(topic="token:accent", value="#5b4bd6", label="Accent")
     (swatch,) = find(island.initial, "span", **{"class": "sb-color-input-swatch"})
-    assert "background:#5b4bd6" in swatch["style"]
+    assert "--sb-swatch:#5b4bd6" in swatch["style"]  # a value, not inline paint
     (field,) = find(island.initial, "input", **{"class": "sb-color-input-text"})
     assert field["value"] == "#5b4bd6"
     assert field["aria-label"] == "Accent"
@@ -221,7 +220,7 @@ def test_color_picker_renders_swatch_spectrum_and_field() -> None:
         if "sb-color-picker-swatch" in b.get("class", "")
     ]
     assert len(swatch) == 1
-    assert "background:#5b4bd6" in swatch[0]["style"]
+    assert "--sb-swatch:#5b4bd6" in swatch[0]["style"]  # a value, not inline paint
     assert swatch[0]["aria-label"] == "Accent"
     sliders = {s["class"]: s for s in find(html, "div", role="slider")}
     assert "sb-color-picker-area" in sliders
@@ -405,7 +404,7 @@ def test_preview_renders_a_token_exercising_sample() -> None:
     assert find(html, "button")
     assert find(html, "table", **{"class": "sb-preview-table"})
     (swatch,) = find(html, "span", **{"class": "sb-preview-swatch"})
-    assert "var(--sb-color-accent)" in swatch["style"]
+    assert "style" not in swatch  # the accent fill is the theme's, not inline paint
 
 
 def test_preview_pins_the_scheme_when_given() -> None:
@@ -1116,7 +1115,7 @@ def _component_sheets() -> list[tuple[str, str]]:
 def test_component_css_declares_only_geometry() -> None:
     """A component sheet declares only layout properties — no paint, no box-spacing."""
     for name, css in _component_sheets():
-        non_layout = _declared_properties(css) - _LAYOUT_PROPERTIES
+        non_layout = ownership.declared_properties(css) - ownership.LAYOUT_PROPERTIES
         assert not non_layout, (
             f"{name} declares non-layout properties: {sorted(non_layout)}"
         )
@@ -1125,24 +1124,25 @@ def test_component_css_declares_only_geometry() -> None:
 def test_component_css_selects_only_sb_classes() -> None:
     """A component sheet styles only its own ``.sb-*`` hooks, never host elements."""
     for name, css in _component_sheets():
-        foreign = [s for s in _selectors(css) if not s.startswith(".sb-")]
+        foreign = [s for s in ownership.selectors(css) if not s.startswith(".sb-")]
         assert not foreign, f"{name} selects non-sb elements: {foreign}"
 
 
 def test_component_css_carries_no_paint_tokens_or_magic_numbers() -> None:
     """A component sheet stays token-free (only ``--sb-fit-*``) with no bare length."""
     for name, css in _component_sheets():
-        body = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
-        assert "light-dark(" not in body, (
+        assert "light-dark(" not in css, (
             f"{name} consumes theming (a cause, not structure)"
         )
-        tokens = re.findall(r"var\(\s*(--[\w-]+)", body)
-        non_contract = sorted({t for t in tokens if not t.startswith("--sb-fit-")})
+        non_contract = sorted(
+            {
+                t
+                for t in ownership.referenced_tokens(css)
+                if not t.startswith(ownership.CONTRACT_TOKEN_PREFIX)
+            }
+        )
         assert not non_contract, f"{name} references non-contract tokens {non_contract}"
-        stripped = re.sub(r"var\([^)]*\)", "", body)
-        bodies = " ".join(re.findall(r"\{([^{}]*)\}", stripped))
-        lengths = re.findall(r"(\d*\.?\d+)(px|rem|em|cm|mm|pt|pc|in)\b", bodies)
-        magic = sorted({f"{n}{unit}" for n, unit in lengths if float(n) != 0})
+        magic = sorted(ownership.magic_lengths(css))
         assert not magic, (
             f"{name} has bare absolute lengths {magic}; use a token or keyword"
         )

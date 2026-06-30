@@ -176,7 +176,10 @@ def color_input(*, topic: str, value: str, label: str) -> Island:
         {
             "class": "sb-color-input-swatch",
             "aria-hidden": "true",
-            "style": f"background:{value}",
+            # The live colour as a per-instance value, not an inline paint
+            # declaration: the theme paints `background: var(--sb-swatch)` from it,
+            # so paint stays the theme's and only the value crosses the boundary.
+            "style": f"--sb-swatch:{value}",
         },
     )
     initial = element(
@@ -359,7 +362,9 @@ def color_picker(*, topic: str, value: str, label: str) -> Island:
         panel_id=panel_id,
         trigger_class="sb-color-picker-swatch",
         trigger_label=label,
-        trigger_style=f"background:{value}",
+        # The live colour as a per-instance --sb-swatch value (not inline paint);
+        # the theme paints the swatch background from it.
+        trigger_style=f"--sb-swatch:{value}",
     )
     initial = element(
         "div",
@@ -519,12 +524,13 @@ def preview_items() -> tuple[str, ...]:
         [escape_text("Body text in the prose family, sized and coloured by tokens.")],
     )
     button = element("button", {"type": "button"}, [escape_text("Primary")])
+    # The accent fill is static theme paint (.sb-preview-swatch), not declared
+    # inline: the swatch carries the hook, the theme owns the colour.
     swatch = element(
         "span",
         {
             "class": "sb-preview-swatch",
             "aria-hidden": "true",
-            "style": "background:var(--sb-color-accent)",
         },
     )
     header = element(

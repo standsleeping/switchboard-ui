@@ -6,24 +6,16 @@ structure's coordinate-system concern, and transforms are the classic
 visual-alignment hack (this also discharges the deferred alignment-anchor rule,
 plan step 10). The companion structural guard ("structure carries no magic
 numbers") lives with the layer it guards, in ``test_layout_css.py``.
+
+The CSS reader is the shared :mod:`switchboard_ui.ownership` engine; the forbidden
+set is the theme's paint-side policy in :mod:`ownership_policy`.
 """
 
-import re
-
 import switchboard_theme as themes
+from switchboard_ui import ownership
 from switchboard_ui.assets import read_asset
 
-
-def _declared_properties(css: str) -> list[str]:
-    """Every property name declared across all rule bodies."""
-    css = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
-    props: list[str] = []
-    for body in re.findall(r"\{([^{}]*)\}", css):
-        for decl in body.split(";"):
-            name, sep, _ = decl.partition(":")
-            if sep:
-                props.append(name.strip().lower())
-    return props
+from .ownership_policy import is_forbidden
 
 
 def _theme_sheets() -> list[tuple[str, str]]:
@@ -37,9 +29,7 @@ def test_theme_does_not_position_or_transform() -> None:
     """The theme paints; it never positions or transforms (structure owns coordinates)."""
     for name, css in _theme_sheets():
         forbidden = sorted(
-            p
-            for p in set(_declared_properties(css))
-            if p == "position" or p == "transform" or p.startswith("transform-")
+            p for p in ownership.declared_properties(css) if is_forbidden(p)
         )
         assert not forbidden, (
             f"theme {name!r} uses {forbidden}; the theme does not position or transform "

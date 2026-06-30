@@ -15,11 +15,11 @@ What makes this hold is the absence of *co-ownership*. When two layers can both 
 | Structure (`layout.css`) | Geometry: the flex tree, sizing, `gap`, overflow, position | Colour, type, any appearance |
 | Theme | Paint: colour, background, border paint, type, the token values | `position`, `transform` (the coordinate system is structure's) |
 | The component geometry contract (`--sb-fit-*`) | The one sanctioned channel from theme to structure: the theme projects its causes (inset, type, border) into a sizing obligation, and structure consumes that obligation as a floor | The reverse flow; structure never defines an obligation, the theme never reads one back |
-| A box | Its own inset (`padding`), where it is an allowlisted control or surface | The space outside itself |
+| A box | Its own inset (`padding`), as a control or content surface — never a layout, mount, or region hook | The space outside itself |
 | A container | The rhythm between its children (`gap`) | Reaching into a child's box |
 | An interactive state (`:hover`, `:focus`) | Repaint | Geometry; a state never reshapes the box |
 
-Two consequences are worth stating directly. Rhythm between siblings is the container's `gap`, never a child's `margin`: `margin` is banned outright, because it is the property a child would use to claim space that belongs to its parent. And a box's inset is its own `padding`, applied only to the controls and content surfaces that inset their own content, never to a layout or region hook.
+Two consequences are worth stating directly. Rhythm between siblings is the container's `gap`, never a child's `margin`: `margin` is banned outright, because it is the property a child would use to claim space that belongs to its parent. And a box's inset is its own `padding`, applied only to the controls and content surfaces that inset their own content, never to a layout, mount, or region hook.
 
 ## Composability: a theme you can replace
 
@@ -39,9 +39,9 @@ Correctness decisions are fixed. The ownership boundaries, the rule that rhythm 
 
 Each layer is granted only the authority its job needs, and an attempt to exceed it is caught as early as possible. The enforcement runs at three levels, strongest first.
 
-- **Made unrepresentable.** The authoring API offers no surface for the forbidden thing. A `Frame` emits a flex stack spaced with `gap`; there is no margin to set, and the structural CSS holds no tokens. The violation cannot be written.
-- **Made explicit.** Where an exception is sometimes legitimate, it is declared rather than forbidden. An island is governed by default: its parent sizes it and the cell clips it. To own its scroll or let paint bleed past its box, it carries a declared escape, rendered onto the element as a `data-` attribute, so the exception is visible and inspectable instead of silent.
-- **Guarded.** Where a rule lives in hand-written CSS, a test parses the stylesheet and asserts it: every property in the structural sheet is a layout property, padding appears only on an allowlisted subject, no state rule changes geometry, and no tiled cell draws an all-sides border. The guard keeps an edit made by eye from regressing the rule.
+- **Made unrepresentable.** The authoring API offers no surface for the forbidden thing. A `Frame` emits a flex stack spaced with `gap`; there is no margin to set, and the structural CSS holds no tokens. The violation cannot be written. The same tier holds the layers apart at the package level: the core mechanism declares no dependency on the theme, so it has no path to import it, and the separation is a fact of the package graph rather than a guard that watches for a stray import.
+- **Made explicit.** Where a layer needs a channel into another, or an exception to the default, it is declared in the open rather than left implicit. The component-geometry contract is the one sanctioned channel from theme to structure: the theme publishes a `--sb-fit-*` obligation and structure consumes it, one way, in plain sight. Overflow is a declared policy, not an accident: every frame clips by default so nothing escapes the viewport-locked root, a region opts into owning its scroll by carrying `sb-scroll`, and a component that scrolls its own content (a wide table, a long code line) declares that scroll in its own structural CSS. Each is visible in a stylesheet, never a silent overflow.
+- **Guarded.** Where a rule lives in hand-written CSS, one shared checker parses every stylesheet — and the rendered inline `style` attributes, so paint cannot slip through a `style=` either — and asserts it: every property in the structural sheet is a layout property, an inline style carries only a custom-property value, padding never lands on a layout, mount, or region hook, no state rule changes geometry, and no tiled cell draws an all-sides border. This tier is the weakest of the three by design: it catches the checkable part of each rule, the part a parser can see, and it backstops the layer a host edits most. It keeps an edit made by eye from regressing the rule, but it does not make the rule unwritable the way the first tier does.
 
 ## Diagnosability: a bug you can place
 
@@ -56,7 +56,7 @@ Using this needs no knowledge of the internals. Describe the symptom in plain vi
 | Wrong colour, low contrast, an invisible surface | the theme, or a token value |
 | Something mispositioned or overlapping | structure (the theme cannot position) |
 | A jump or reflow on hover, focus, or selection | a state rule that changed geometry |
-| Content clipped, or it will not scroll | the overflow policy, or a missing declared escape |
+| Content clipped, or it will not scroll | the overflow policy: the frame's clip-by-default and `sb-scroll` opt-in, or the component's own scroll container |
 | Wrong size, will not fill, or overflows the page | a slot's sizing, or the component-geometry contract |
 | A click does nothing, or an event never arrives | the adapter or the bus, not the CSS |
 | Wrong text, missing rows, the wrong markup | the factory that built it, not the CSS |

@@ -10,56 +10,32 @@ owner of the layout's perimeter, so an all-sides border there is single-owned by
 definition. The full invariant (each seam drawn once across every adjacency) is
 not statically checkable; this catches the wholesale-doubling anti-pattern, the
 checkable part.
+
+The CSS reader is the shared :mod:`switchboard_ui.ownership` engine; the tiled-hook
+sets are the theme's paint-side policy in :mod:`ownership_policy`.
 """
 
 import re
 
 import switchboard_theme as themes
+from switchboard_ui import ownership
 from switchboard_ui.assets import read_asset
 
-# Tiled cells and row containers share edges. `.sb-root` (the outer frame) and
-# `.sb-island` (a mount point, not a tiled region) are deliberately absent.
-_REGION_HOOKS = frozenset(
-    f"sb-{row}-{column}"
-    for row in ("head", "body", "foot")
-    for column in ("l", "c", "r")
-)
-_TILED_HOOKS = _REGION_HOOKS | {
-    "sb-frame",
-    "sb-rail",
-    "sb-head-row",
-    "sb-body-row",
-    "sb-foot-row",
-}
+from .ownership_policy import REGION_HOOKS, TILED_HOOKS
 
 
-def _rules(css: str) -> list[tuple[str, str]]:
-    """``(selector-list, body)`` for each rule block, comments stripped."""
-    css = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
-    return re.findall(r"([^{}]+)\{([^{}]*)\}", css)
-
-
-def _declarations(body: str) -> list[tuple[str, str]]:
-    """``(property, value)`` pairs declared in a rule body."""
-    out: list[tuple[str, str]] = []
-    for decl in body.split(";"):
-        name, sep, value = decl.partition(":")
-        if sep:
-            out.append((name.strip().lower(), value.strip().lower()))
-    return out
-
-
-def _subject_classes(selector: str) -> set[str]:
-    """Class names in the rightmost compound selector."""
-    last = re.split(r"\s*[>+~]\s*|\s+", selector.strip())[-1]
-    return set(re.findall(r"\.([_a-zA-Z][\w-]*)", last))
+def _theme_sheets() -> list[tuple[str, str]]:
+    """``(name, css)`` for every shipped theme."""
+    return [
+        (name, read_asset("switchboard_theme", f"{name}.css")) for name in themes.THEMES
+    ]
 
 
 def _targets_a_tiled_hook(selectors: str) -> bool:
-    """Whether any selector in the list targets a tiled region cell."""
+    """Whether any selector in the list targets a tiled region cell (root exempt)."""
     for selector in selectors.split(","):
-        classes = _subject_classes(selector)
-        if "sb-root" not in classes and classes & _TILED_HOOKS:
+        classes = ownership.subject_classes(selector)
+        if "sb-root" not in classes and classes & TILED_HOOKS:
             return True
     return False
 
@@ -67,9 +43,9 @@ def _targets_a_tiled_hook(selectors: str) -> bool:
 def _declarations_for_hook(css: str, hook: str) -> list[tuple[str, str]]:
     """Declarations whose subject carries ``hook``."""
     out: list[tuple[str, str]] = []
-    for selectors, body in _rules(css):
-        if any(hook in _subject_classes(s) for s in selectors.split(",")):
-            out.extend(_declarations(body))
+    for selectors, body in ownership.rules(css):
+        if any(hook in ownership.subject_classes(s) for s in selectors.split(",")):
+            out.extend(ownership.declarations(body))
     return out
 
 
@@ -81,24 +57,17 @@ def _is_all_sides_ring(box_shadow: str) -> bool:
     """
     return any(
         re.match(r"inset\s+0(?:px|rem|em)?\s+0(?:px|rem|em)?\b", shadow.strip())
-        for shadow in box_shadow.split(",")
+        for shadow in box_shadow.lower().split(",")
     )
-
-
-def _theme_sheets() -> list[tuple[str, str]]:
-    """``(name, css)`` for every shipped theme."""
-    return [
-        (name, read_asset("switchboard_theme", f"{name}.css")) for name in themes.THEMES
-    ]
 
 
 def test_tiled_hooks_carry_no_all_sides_border() -> None:
     """A tiled region cell draws seams per edge, never an all-sides border shorthand."""
     for name, css in _theme_sheets():
-        for selectors, body in _rules(css):
+        for selectors, body in ownership.rules(css):
             if not _targets_a_tiled_hook(selectors):
                 continue
-            properties = {p for p, _ in _declarations(body)}
+            properties = {p for p, _ in ownership.declarations(body)}
             offenders = properties & {"border", "border-width", "border-style"}
             assert not offenders, (
                 f"theme {name!r} puts an all-sides {sorted(offenders)} on a tiled hook "
@@ -135,7 +104,7 @@ def test_horizontal_seams_are_owned_by_rows_not_cell_fragments() -> None:
         }
         assert not {p for p, _ in foot} & {"border-block", "border-block-end"}
 
-        for hook in _REGION_HOOKS:
+        for hook in REGION_HOOKS:
             properties = {p for p, _ in _declarations_for_hook(css, hook)}
             fragments = properties & {
                 "border-block",
@@ -153,10 +122,10 @@ def test_horizontal_seams_are_owned_by_rows_not_cell_fragments() -> None:
 def test_tiled_hooks_carry_no_all_sides_box_shadow_ring() -> None:
     """A tiled region cell draws a directional seam shadow, never an all-sides ring."""
     for name, css in _theme_sheets():
-        for selectors, body in _rules(css):
+        for selectors, body in ownership.rules(css):
             if not _targets_a_tiled_hook(selectors):
                 continue
-            for prop, value in _declarations(body):
+            for prop, value in ownership.declarations(body):
                 if prop != "box-shadow":
                     continue
                 assert not _is_all_sides_ring(value), (

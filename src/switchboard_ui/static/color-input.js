@@ -2,10 +2,11 @@
  *
  * The swatch and field are server-rendered (present and sized at first paint);
  * this adapter only enhances the field. On every edit it validates the hex; a
- * valid value repaints the swatch (an inline style — the live data being edited,
- * not a theme token) and publishes on the island's topic, an invalid one flags
- * the field (aria-invalid) and publishes nothing. The control never builds or
- * resizes itself, so first-paint geometry holds.
+ * valid value repaints the swatch by writing the per-instance --sb-swatch value
+ * the theme paints `background` from (a value, not a theme token, and never an
+ * inline paint declaration) and publishes on the island's topic, an invalid one
+ * flags the field (aria-invalid) and publishes nothing. The control never builds
+ * or resizes itself, so first-paint geometry holds.
  *
  * This replaces the native <input type="color"> deliberately: its picker popover
  * is UA-painted and cannot be tokenised (the no-UA-default rule). */
@@ -20,7 +21,7 @@ window.switchboard.register("color-input", function (el, props, bus) {
     var valid = HEX.test(value);
     field.setAttribute("aria-invalid", valid ? "false" : "true");
     if (!valid) return;
-    swatch.style.background = value;
+    swatch.style.setProperty("--sb-swatch", value);
     bus.publish(topic, value);
   }
 

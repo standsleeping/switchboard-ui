@@ -3,86 +3,26 @@
 This is the inverse of the layout.css guards. The theme *may* use appearance,
 tokens, and light/dark theming, and *may* select non-.sb-* elements (it paints
 content). What it may not do is attach box-spacing where it does not belong:
-``padding`` may target only an allowlisted control (the subject of its rule), and
-``margin`` never appears. Padding on a layout, mount, or region
-hook fails the build.
+``padding`` insets a control or content surface and may never land on a layout,
+mount, or region hook, and ``margin`` never appears. Padding a structural hook
+fails the build.
+
+The inset rule is read as a denylist, not an allowlist: a box's inset belongs to a
+control or surface (an open set that grows with the components), so the guard asks
+only that padding never target one of the mechanism's closed set of structural
+hooks (``switchboard_ui.ownership.STRUCTURAL_HOOKS``). It guards the floor (never
+inset a layout hook) and leaves the taste (which control insets) to the author.
 
 Vanilla ``default.css`` stays freely editable (the theme is shaped by sight against
 the showcase); this guard is the backstop that keeps a tweak from regressing the
-rule, the same way ``test_layout_css.py`` backstops the structural layer.
+rule, the same way ``test_layout_css.py`` backstops the structural layer. The CSS
+reader and the structural-hook denylist are the shared :mod:`switchboard_ui.ownership`
+engine.
 """
 
-import re
-
 import switchboard_theme as themes
+from switchboard_ui import ownership
 from switchboard_ui.assets import read_asset
-
-# The only selectors padding may target: controls and content surfaces, where the
-# inset is the element's own. Widen deliberately, and never to a layout / mount /
-# region selector, as real controls and tables arrive (input, select, textarea,
-# td, th).
-# `.sb-segmented-option` is a control (a tab button); the class is its subject
-# because its paint overrides the base `button` rule by specificity.
-# `.sb-color-input-text` is the hex field, a control whose inset is the theme's.
-# `.sb-value-field-text` is the general value field, the same kind of control.
-# `.sb-popover-panel` is a floating content surface that insets its own content.
-# `th` / `td` are table cells, whose inset is the cell's own (the canonical case).
-# `.sb-code-chrome` is the code block's chrome strip (a toolbar surface that insets
-# its language tag and copy action); `.sb-code-pre` is the code content surface
-# that insets its source. They each own their inset because the hairline seam
-# between them is full-bleed, so the container cannot inset them as flow children.
-# `.sb-code-copy` is the copy control, the class its subject for the same reason as
-# `.sb-segmented-option` (its quiet paint overrides the base `button` rule).
-# `.sb-modal-dialog` is the dialog surface that insets its own content (like
-# `.sb-popover-panel`); `.sb-modal-close` is its quiet close control (a button-rule
-# override, like `.sb-code-copy`).
-# `.sb-collapsible-summary` is the disclosure header row (a control), and
-# `.sb-collapsible-body` is the revealed content surface that insets its content.
-_PADDABLE_SUBJECTS = frozenset(
-    {
-        "button",
-        ".sb-segmented-option",
-        ".sb-color-input-text",
-        ".sb-value-field-text",
-        ".sb-popover-panel",
-        "th",
-        "td",
-        ".sb-code-chrome",
-        ".sb-code-pre",
-        ".sb-code-copy",
-        ".sb-modal-dialog",
-        ".sb-modal-close",
-        ".sb-collapsible-summary",
-        ".sb-collapsible-body",
-    }
-)
-
-
-def _rules(css: str) -> list[tuple[str, str]]:
-    """``(selector-list, body)`` for each rule block, comments stripped."""
-    css = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
-    return re.findall(r"([^{}]+)\{([^{}]*)\}", css)
-
-
-def _properties(body: str) -> list[str]:
-    """The property names declared in a rule body."""
-    names: list[str] = []
-    for decl in body.split(";"):
-        name, sep, _ = decl.partition(":")
-        if sep:
-            names.append(name.strip().lower())
-    return names
-
-
-def _declares(properties: list[str], prop: str) -> bool:
-    """Whether ``prop`` or any ``prop-*`` longhand is declared."""
-    return any(p == prop or p.startswith(prop + "-") for p in properties)
-
-
-def _subject(selector: str) -> str:
-    """The rightmost compound selector, stripped of pseudos and attributes."""
-    last = re.split(r"\s*[>+~]\s*|\s+", selector.strip())[-1]
-    return re.split(r"::|:|\[", last)[0]
 
 
 def _theme_sheets() -> list[tuple[str, str]]:
@@ -92,26 +32,27 @@ def _theme_sheets() -> list[tuple[str, str]]:
     ]
 
 
-def test_theme_padding_only_targets_allowlisted_controls() -> None:
-    """Padding appears only on an allowlisted control, never on an .sb-* hook."""
+def test_theme_never_pads_a_structural_hook() -> None:
+    """Padding insets a control or surface; it never lands on a layout/mount/region hook."""
     for name, css in _theme_sheets():
-        rules = _rules(css)
+        rules = ownership.rules(css)
         assert rules, f"no rules parsed from theme {name!r}; the regex or path is wrong"
         for selectors, body in rules:
-            if not _declares(_properties(body), "padding"):
+            if not ownership.declares(ownership.properties(body), "padding"):
                 continue
             for selector in selectors.split(","):
-                subject = _subject(selector)
-                assert subject in _PADDABLE_SUBJECTS, (
-                    f"theme {name!r} pads {selector.strip()!r} (subject {subject!r}); "
-                    f"padding allowlist: {sorted(_PADDABLE_SUBJECTS)}"
+                hooks = ownership.subject_classes(selector) & ownership.STRUCTURAL_HOOKS
+                assert not hooks, (
+                    f"theme {name!r} pads structural hook(s) {sorted(hooks)} via "
+                    f"{selector.strip()!r}; padding insets a control or content surface, "
+                    f"never a layout, mount, or region hook"
                 )
 
 
 def test_theme_uses_no_margin() -> None:
     """The theme never uses margin; rhythm is gap, inset is padding."""
     for name, css in _theme_sheets():
-        for selectors, body in _rules(css):
-            assert not _declares(_properties(body), "margin"), (
+        for selectors, body in ownership.rules(css):
+            assert not ownership.declares(ownership.properties(body), "margin"), (
                 f"theme {name!r} uses margin on {selectors.strip()!r}"
             )

@@ -6,8 +6,8 @@
  * the browser TOP LAYER, so it escapes every ancestor's `overflow: hidden`
  * clipping with NO z-index and no stacking-context juggling. Its on-screen
  * position is set inline by the adapter (runtime data, like the colour swatch's
- * background) from the trigger's rect, which is why no `position` appears here or
- * in the theme — the no-`position`-in-theme guard holds for free. */
+ * --sb-swatch value) from the trigger's rect, which is why no `position` appears
+ * here or in the theme — the no-`position`-in-theme guard holds for free. */
 
 .sb-popover {
   display: inline-flex;
