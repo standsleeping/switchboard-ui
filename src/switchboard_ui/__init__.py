@@ -18,7 +18,6 @@ from switchboard_ui.model import (
     Island,
     Region,
     Slot,
-    SpatialEscape,
 )
 from switchboard_ui.presets import three_column
 from switchboard_ui.render import (
@@ -48,7 +47,6 @@ __all__ = [
     "Region",
     "RuntimeMode",
     "Slot",
-    "SpatialEscape",
     "__version__",
     "render_document",
     "render_frame",

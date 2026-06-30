@@ -41,12 +41,6 @@
   overflow: auto;
 }
 
-/* A clip role: contains overflow at this box's own edge. A frame already clips
- * via `.sb-frame`; this is for a declared island escape that clips its content. */
-.sb-clip {
-  overflow: hidden;
-}
-
 /* A rail (a head/foot row) is content-driven with a floor: it grants at least
  * the obligation the theme publishes (`--sb-fit-rail-block`), and grows past it
  * if its content is taller. `flex: 0 0 auto` keeps the flexible body from either
