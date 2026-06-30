@@ -2,6 +2,8 @@
 
 Render server-side HTML pages that host arbitrarily complex, self-contained interactive **islands**, wired together by a declarative event bus. Built with pure Python and zero runtime dependencies. The output is a string, so any backend can serve it.
 
+Beyond the mechanism, it ships an optional theme and a small set of interactive components with every visual value exposed as a `--sb-*` token: switchboard is a toolkit for building any design system, not an opinionated design system of its own.
+
 ## Installation
 
 ```bash
@@ -48,8 +50,10 @@ Full documentation lives in [`docs/`](docs/index.md):
 **Reference**
 
 - [Page model](docs/reference/page-model.md)
+- [Components](docs/reference/components.md)
 - [Rendering](docs/reference/rendering.md)
 - [The three-column preset](docs/reference/three-column.md)
+- [Theme tokens](docs/reference/tokens.md)
 - [The browser runtime](docs/reference/browser-runtime.md)
 - [The CLI](docs/reference/cli.md)
 - [Glossary](docs/reference/glossary.md)
@@ -59,6 +63,8 @@ Full documentation lives in [`docs/`](docs/index.md):
 - [Architecture](docs/explanation/architecture.md)
 - [Backend independence](docs/explanation/backend-independence.md)
 - [Layout](docs/explanation/layout.md)
+- [Ownership](docs/explanation/ownership.md)
+- [Seams](docs/explanation/seams.md)
 
 ## Examples
 

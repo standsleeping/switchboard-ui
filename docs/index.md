@@ -29,8 +29,10 @@ Information-oriented description of every surface.
 | Doc | Description |
 |---|---|
 | [Page model](reference/page-model.md) | `Island`, `Frame`, `Slot`, `Document`, `Region`, `REGIONS`. |
+| [Components](reference/components.md) | The island component set: controls (segmented, slider, popover, modal, colour input and picker) and surfaces (table, code block, breadcrumb, collapsible). |
 | [Rendering](reference/rendering.md) | `render_document`, `render_frame`, `render_island`, `RuntimeMode`. |
 | [The three-column preset](reference/three-column.md) | The nine-region preset built on `Frame`, and the structural layout CSS. |
+| [Theme tokens](reference/tokens.md) | Every `--sb-*` token: colour, type, space, radius, border, shadow, the `--sb-fit-*` contract, and density. |
 | [The browser runtime](reference/browser-runtime.md) | `window.switchboard`, the bus, the registry, the mount loop. |
 | [The CLI](reference/cli.md) | The `switchboard-ui` command. |
 | [Glossary](reference/glossary.md) | The vocabulary in one table. |
