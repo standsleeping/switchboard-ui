@@ -41,8 +41,9 @@ LinkRewriter = Callable[[str], str]
 class MarkdownError(ValueError):
     """A construct the subset does not cover, raised at the render boundary.
 
-    Carries the 1-based source line so an unsupported construct fails where it is
-    written, the way the component factories fail at their authoring boundary.
+    A line-level construct carries its 1-based source line, so it fails where it
+    is written, the way the component factories fail at their authoring boundary;
+    an inline construct names the offending text instead.
     """
 
 
@@ -54,6 +55,11 @@ _UNORDERED = re.compile(r"^[-*]\s+(.*)$")
 _ORDERED = re.compile(r"^\d+\.\s+(.*)$")
 # A GFM delimiter-row cell: dashes with optional alignment colons (``:--``, ``--:``).
 _DELIM_CELL = re.compile(r"^:?-+:?$")
+# Constructs the subset rejects loudly rather than degrading to a paragraph: a
+# thematic break, and an indented (nested) list marker. Both would otherwise
+# render as prose without a sound.
+_THEMATIC = re.compile(r"^\s*(?:-{3,}|\*{3,}|_{3,})\s*$")
+_INDENTED_MARKER = re.compile(r"^\s+(?:[-*]|\d+\.)\s+")
 
 
 @dataclass(frozen=True)
@@ -128,6 +134,17 @@ def _blocks(source: str) -> list[Block]:
             blocks.append(block)
         elif line.lstrip().startswith(">"):
             raise MarkdownError(f"blockquote is not in the subset (line {i + 1})")
+        elif _THEMATIC.match(line):
+            raise MarkdownError(f"thematic break is not in the subset (line {i + 1})")
+        elif _INDENTED_MARKER.match(line):
+            raise MarkdownError(f"nested list item is not in the subset (line {i + 1})")
+        elif line.lstrip().startswith("```"):
+            # A fence line _FENCE cannot read: indented, or an info string with
+            # non-word characters. Reading it as prose would leak the fence body.
+            raise MarkdownError(
+                f"unsupported code fence (line {i + 1}): a fence starts at column "
+                "one with a single-word info string"
+            )
         else:
             i, block = _take_paragraph(lines, i)
             blocks.append(block)
@@ -207,13 +224,20 @@ def _take_paragraph(lines: list[str], start: int) -> tuple[int, Paragraph]:
 
 
 def _is_block_start(line: str) -> bool:
-    """Whether ``line`` opens a non-paragraph block (so a paragraph run stops)."""
+    """Whether ``line`` opens a non-paragraph block (so a paragraph run stops).
+
+    The rejected constructs count as block starts too: a paragraph must stop
+    before a thematic break, a nested list marker, or a malformed fence, so the
+    tokenizer sees the line and rejects it loudly instead of the paragraph
+    swallowing it.
+    """
     return bool(
         _HEADING.match(line)
-        or _FENCE.match(line)
         or _UNORDERED.match(line)
         or _ORDERED.match(line)
-        or line.lstrip().startswith(("|", ">"))
+        or _THEMATIC.match(line)
+        or _INDENTED_MARKER.match(line)
+        or line.lstrip().startswith(("|", ">", "```"))
     )
 
 
@@ -233,10 +257,22 @@ _LINK = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 
 
 def _render_inline(text: str, rewrite: LinkRewriter) -> str:
-    """Render inline markdown to HTML, escaping every literal run exactly once."""
+    """Render inline markdown to HTML, escaping every literal run exactly once.
+
+    An image (``![alt](url)``) is rejected here rather than at the block stage
+    because it can sit inside any inline run — a paragraph, a list item, a table
+    cell, a heading — and this is the one place they all pass through. Without
+    the check it would degrade to a literal ``!`` followed by a link.
+    """
     out: list[str] = []
     pos = 0
     for match in _INLINE.finditer(text):
+        if (
+            match.lastgroup == "link"
+            and match.start() > 0
+            and text[match.start() - 1] == "!"
+        ):
+            raise MarkdownError(f"image is not in the subset (in {match.group()!r})")
         out.append(escape_text(text[pos : match.start()]))
         out.append(_render_inline_token(match, rewrite))
         pos = match.end()

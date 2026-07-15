@@ -190,3 +190,45 @@ def test_unterminated_fence_is_rejected() -> None:
     """A code fence with no closing fence fails loudly rather than swallowing the rest."""
     with pytest.raises(MarkdownError, match="unterminated code fence"):
         render_markdown("# T\n\n```python\nx = 1")
+
+
+def test_thematic_break_is_rejected() -> None:
+    """A `---` rule is outside the subset; it must not degrade to a paragraph."""
+    with pytest.raises(MarkdownError, match="thematic break is not in the subset"):
+        render_markdown("# T\n\n---")
+
+
+def test_thematic_break_ends_a_paragraph_and_still_fails() -> None:
+    """A rule directly under prose is seen and rejected, never swallowed by the paragraph."""
+    with pytest.raises(MarkdownError, match="thematic break"):
+        render_markdown("# T\n\nsome prose\n---\nmore prose")
+
+
+def test_nested_list_item_is_rejected() -> None:
+    """An indented list marker (a nested list) fails loudly instead of becoming prose."""
+    with pytest.raises(MarkdownError, match="nested list item is not in the subset"):
+        render_markdown("# T\n\n- top\n  - nested")
+
+
+def test_fence_with_a_non_word_info_string_is_rejected() -> None:
+    """A fence line the grammar cannot read must not leak its body as paragraphs."""
+    with pytest.raises(MarkdownError, match="unsupported code fence"):
+        render_markdown("# T\n\n```c++\nint x;\n```")
+
+
+def test_indented_fence_is_rejected() -> None:
+    """An indented fence is outside the subset and fails loudly."""
+    with pytest.raises(MarkdownError, match="unsupported code fence"):
+        render_markdown("# T\n\n  ```python\nx = 1\n```")
+
+
+def test_image_is_rejected() -> None:
+    """An image fails loudly wherever it appears; it must not render as `!` plus a link."""
+    with pytest.raises(MarkdownError, match="image is not in the subset"):
+        render_markdown("# T\n\nsee ![alt text](img.png) here")
+
+
+def test_image_in_a_list_item_is_rejected() -> None:
+    """The image check covers every inline run, not just paragraphs."""
+    with pytest.raises(MarkdownError, match="image is not in the subset"):
+        render_markdown("# T\n\n- an item with ![icon](i.png)")
