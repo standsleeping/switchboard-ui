@@ -10,6 +10,7 @@ mounts into a region and talks to others over a declarative event bus.
 import logging
 from importlib.metadata import PackageNotFoundError, version
 
+from switchboard_ui.analyze import Edge, MountPoint, Wiring, wiring
 from switchboard_ui.model import (
     REGIONS,
     Direction,
@@ -42,14 +43,18 @@ __all__ = [
     "REGIONS",
     "Direction",
     "Document",
+    "Edge",
     "Frame",
     "Island",
+    "MountPoint",
     "Region",
     "RuntimeMode",
     "Slot",
+    "Wiring",
     "__version__",
     "render_document",
     "render_frame",
     "render_island",
     "three_column",
+    "wiring",
 ]
