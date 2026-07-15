@@ -113,6 +113,9 @@ window.switchboard.register("color-picker", function (el, props, bus) {
   function syncVisuals() {
     var hex = hsvToHex(st.h, st.s, st.v);
     trigger.style.setProperty("--sb-swatch", hex);
+    // aria-valuenow carries brightness (the required single value; the up/down
+    // keyboard axis); aria-valuetext carries both readings in full.
+    area.setAttribute("aria-valuenow", String(Math.round(st.v * 100)));
     area.setAttribute(
       "aria-valuetext",
       Math.round(st.s * 100) + "% saturation, " + Math.round(st.v * 100) + "% brightness"

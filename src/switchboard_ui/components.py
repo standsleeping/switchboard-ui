@@ -37,6 +37,7 @@ and selected label), ``--sb-color-accent`` (the underline), ``--sb-color-subtle`
 (the separators), ``--sb-border-width-accent`` (the underline width).
 """
 
+import colorsys
 import re
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -291,7 +292,7 @@ def popover_styles() -> str:
     return read_static("popover.css")
 
 
-def _picker_panel(label: str) -> str:
+def _picker_panel(label: str, value: str) -> str:
     """The picker's popover panel: a saturation/value area over a hue slider.
 
     Both surfaces are ``role="slider"`` so pointer and keyboard both drive them;
@@ -299,7 +300,14 @@ def _picker_panel(label: str) -> str:
     is functional data-viz set inline, the one sanctioned exception to the
     token-only rule). The hex field carries the precise value and is the
     accessible backbone; the spectrum is the visual affordance.
+
+    The initial ARIA values are computed from ``value`` here, so the rendered
+    markup is correct before the adapter mounts (never a placeholder the adapter
+    must fix). The SV area is two-dimensional, but ``role="slider"`` requires a
+    single ``aria-valuenow``: it carries brightness (the up/down keyboard axis),
+    and ``aria-valuetext`` carries both readings in full.
     """
+    hue_deg, saturation, brightness = _hsv(value)
     area = element(
         "div",
         {
@@ -308,7 +316,10 @@ def _picker_panel(label: str) -> str:
             "tabindex": "0",
             "aria-roledescription": "saturation and brightness",
             "aria-label": f"{label} saturation and brightness",
-            "aria-valuetext": "saturation, brightness",
+            "aria-valuemin": "0",
+            "aria-valuemax": "100",
+            "aria-valuenow": str(brightness),
+            "aria-valuetext": f"{saturation}% saturation, {brightness}% brightness",
         },
         [
             element(
@@ -326,8 +337,8 @@ def _picker_panel(label: str) -> str:
             "aria-orientation": "horizontal",
             "aria-valuemin": "0",
             "aria-valuemax": "360",
-            "aria-valuenow": "0",
-            "aria-valuetext": "hue",
+            "aria-valuenow": str(hue_deg),
+            "aria-valuetext": f"{hue_deg} degrees",
         },
         [
             element(
@@ -336,6 +347,13 @@ def _picker_panel(label: str) -> str:
         ],
     )
     return element("div", {"class": "sb-color-picker-controls"}, [area, hue])
+
+
+def _hsv(hex_value: str) -> tuple[int, int, int]:
+    """A six-digit hex colour as rounded HSV readings: (degrees, %, %)."""
+    r, g, b = (int(hex_value[i : i + 2], 16) / 255 for i in (1, 3, 5))
+    h, s, v = colorsys.rgb_to_hsv(r, g, b)
+    return round(h * 360), round(s * 100), round(v * 100)
 
 
 def color_picker(*, topic: str, value: str, label: str) -> Island:
@@ -357,7 +375,7 @@ def color_picker(*, topic: str, value: str, label: str) -> Island:
     panel_id = "sb-cp-" + re.sub(r"[^A-Za-z0-9_-]", "-", topic)
     trigger = popover(
         trigger="",
-        panel=_picker_panel(label),
+        panel=_picker_panel(label, value),
         label=label,
         panel_id=panel_id,
         trigger_class="sb-color-picker-swatch",

@@ -226,6 +226,15 @@ def test_color_picker_renders_swatch_spectrum_and_field() -> None:
     assert "sb-color-picker-area" in sliders
     assert sliders["sb-color-picker-hue"]["aria-valuemin"] == "0"
     assert sliders["sb-color-picker-hue"]["aria-valuemax"] == "360"
+    # Both sliders carry the ARIA-required value trio, computed from the initial
+    # colour (#5b4bd6 is hue 247, saturation 65%, brightness 84%), so the markup
+    # is correct at first paint, before the adapter mounts.
+    assert sliders["sb-color-picker-hue"]["aria-valuenow"] == "247"
+    area = sliders["sb-color-picker-area"]
+    assert area["aria-valuemin"] == "0"
+    assert area["aria-valuemax"] == "100"
+    assert area["aria-valuenow"] == "84"
+    assert area["aria-valuetext"] == "65% saturation, 84% brightness"
     (field,) = find(html, "input", **{"class": "sb-color-input-text"})
     assert field["value"] == "#5b4bd6"
 
