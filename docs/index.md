@@ -34,6 +34,7 @@ Information-oriented description of every surface.
 | [The three-column preset](reference/three-column.md) | The nine-region preset built on `Frame`, and the structural layout CSS. |
 | [Theme tokens](reference/tokens.md) | Every `--sb-*` token: colour, type, space, radius, border, shadow, the `--sb-fit-*` contract, and density. |
 | [The browser runtime](reference/browser-runtime.md) | `window.switchboard`, the bus, the registry, the mount loop. |
+| [The wiring analyzer](reference/analyzer.md) | `wiring`: the declared pub/sub graph recovered from rendered HTML. |
 | [The CLI](reference/cli.md) | The `switchboard-ui` command. |
 | [Glossary](reference/glossary.md) | The vocabulary in one table. |
 

@@ -22,7 +22,7 @@ That single descriptor has three independent consumers.
 
 1. **Python emits it.** The renderer serializes each `Island` into a mount-point `<div>` carrying `data-island`, `data-props`, `data-pub`, and `data-sub`.
 2. **The browser runtime mounts and wires from it.** It reads those attributes to mount the right adapter and connect it to the bus.
-3. **A static analyzer can graph it.** Because the pub/sub topics are declared as data on the mount point, the wiring between islands is recoverable from the HTML alone, without executing anything. The dependency diagram is a property of the page, not of a running session.
+3. **A static analyzer graphs it.** Because the pub/sub topics are declared as data on the mount point, the wiring between islands is recoverable from the HTML alone, without executing anything. The packaged analyzer (`switchboard_ui.analyze`, see [the wiring analyzer](../reference/analyzer.md)) does exactly this: it reads a rendered page back into islands, edges, and dangling topics. The dependency diagram is a property of the page, not of a running session.
 
 The third consumer is why the topics are declared rather than discovered at runtime. Static analyzability is a requirement, and declaring the wiring as data is what satisfies it.
 

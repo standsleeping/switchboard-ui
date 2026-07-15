@@ -80,7 +80,7 @@ Island(name="filter", publishes=("filter:changed",))
 Island(name="results", subscribes=("filter:changed",))
 ```
 
-These become `data-pub` and `data-sub` attributes on the mount points. The runtime does not require them to deliver messages; they are the declared, inspectable record of the wiring. Keep them in agreement with what the adapter actually publishes and subscribes to.
+These become `data-pub` and `data-sub` attributes on the mount points. The runtime does not require them to deliver messages; they are the declared, inspectable record of the wiring, and [the wiring analyzer](../reference/analyzer.md) recovers the pub/sub graph from them. Keep them in agreement with what the adapter actually publishes and subscribes to; a topic the analyzer reports as dangling is the first place to check for drift.
 
 ## Provide server-rendered initial content
 

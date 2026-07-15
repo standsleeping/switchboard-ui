@@ -8,6 +8,7 @@
 | Adapter | The browser-side implementation of an island, registered by name. |
 | Bus | The topic-keyed publish/subscribe channel islands coordinate through. |
 | Topic | A string key on the bus, by convention `subject:event` (for example `count:changed`). |
+| Wiring | The declared pub/sub graph of a page: islands, per-topic edges, and dangling topics, recovered from rendered HTML by the analyzer (`switchboard_ui.analyze`). |
 | Frame | A recursive layout node: a one-dimensional flex stack (`row` or `column`, the `Direction`) of islands or nested frames. The general layout primitive. |
 | Slot | A sized position in a frame: a child plus a fixed (`flex: 0 0 basis`) or flexible (`flex: 1 1 0`) main-axis size. |
 | Document | A full page: a root layout frame plus a title; renders to a complete HTML document. |

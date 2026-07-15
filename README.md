@@ -55,6 +55,7 @@ Full documentation lives in [`docs/`](docs/index.md):
 - [The three-column preset](docs/reference/three-column.md)
 - [Theme tokens](docs/reference/tokens.md)
 - [The browser runtime](docs/reference/browser-runtime.md)
+- [The wiring analyzer](docs/reference/analyzer.md)
 - [The CLI](docs/reference/cli.md)
 - [Glossary](docs/reference/glossary.md)
 
