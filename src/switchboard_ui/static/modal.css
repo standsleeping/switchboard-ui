@@ -8,8 +8,9 @@
  * scrim, the focus trap, and Esc-to-close — so no positioning or z-index lives
  * here. It carries no paint and no box-spacing: the surface, the scrim, the
  * insets, the header gap, and the close control are all the theme's, keyed to
- * these same .sb-* hooks. The max width is the theme's `--sb-fit-modal-inline`
- * obligation (a contract token, the one token structure may consume). */
+ * these same .sb-* hooks. The max width and height are the theme's
+ * `--sb-fit-modal-inline` / `--sb-fit-modal-block` obligations (contract
+ * tokens, the one token family structure may consume). */
 
 .sb-modal {
   display: inline-flex;
@@ -18,7 +19,7 @@
   display: flex;
   flex-direction: column;
   max-inline-size: min(100vw, var(--sb-fit-modal-inline));
-  max-block-size: 90dvb;
+  max-block-size: var(--sb-fit-modal-block);
 }
 .sb-modal-header {
   display: flex;
