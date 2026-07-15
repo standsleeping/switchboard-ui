@@ -14,6 +14,14 @@ A preset is an ordinary function that assembles islands into a frame tree and re
 
 `three_column` is the preset the demo uses: a column of three rows (content-driven head and foot rails around a flexible middle), each a row of three cells (fixed-width sides around a flexible center). Islands are placed by region name, and an omitted region collapses. It is built from `Frame` and `Slot` like any other layout; the side widths are plain CSS lengths the preset owns, while the rail floor comes from the theme's component-geometry contract.
 
+## Why nested flex, not grid
+
+A nine-region tiling is the shape CSS grid exists for: one grid container with named template areas would hold all nine cells under a single parent, and that parent's `gap` could draw every seam at once. The preset builds nested flex rows instead, and the choice is deliberate.
+
+A grid template is a flat construct: it names a fixed set of areas at one level, and a sub-layout inside an area is a different mechanism, not the template again. The `Frame` is recursive: the preset's arrangement and the arrangement inside any of its cells are the same kind of value, so the preset is not special. Anything it builds you can build by hand, extend one cell deeper, or replace entirely, using the one primitive the package has. One mechanism at every level also keeps the enforcement surface small: the structural guards check one kind of rule, and a layout bug is always a flex question, never a which-system question.
+
+The accepted cost is seam ownership. Because the nine cells never share a single parent, no one container can paint every border between them; each seam is assigned to exactly one owner instead. [Seams](seams.md) is the recipe that keeps that assignment single and complete.
+
 ## Style is the host's, not the package's
 
 The packaged stylesheet is layout structure only: the flex rules that make a frame tree render. It sets no color, type, or theming, and no box-spacing either: it distributes space with `gap` and never uses `margin` (banned) or `padding` (a box's inset is a density decision the host owns). It styles only its own `.sb-*` elements, never your `body` or `:root`. A preset may hold opinions about *layout* (three columns, fixed side rails, a flexible center), but visual *style* belongs to the application that hosts the islands; the package stays out of the way. The test suite enforces all of this statically. This division of decisions among layers, and the two things it buys, is the subject of [Ownership](ownership.md).

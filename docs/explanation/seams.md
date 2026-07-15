@@ -12,7 +12,7 @@ Single ownership is not specific to borders. It is the organizing rule across ev
 
 ## The layout is nested flex, not one grid
 
-`three_column` builds nested flex frames: an outer column of three rows, each a row of three cells (see [Layout](layout.md) and [the three-column preset](../reference/three-column.md)). The nine cells never share a single parent, so there is no one grid container whose `gap` could paint every seam at once. Ownership is therefore assigned per edge: each seam is handed to one specific drawer.
+`three_column` builds nested flex frames: an outer column of three rows, each a row of three cells (see [Layout](layout.md) and [the three-column preset](../reference/three-column.md)). The nine cells never share a single parent, so there is no one grid container whose `gap` could paint every seam at once. Ownership is therefore assigned per edge: each seam is handed to one specific drawer. This page is the accepted cost of building the tiling from the recursive frame rather than one grid; [Layout](layout.md#why-nested-flex-not-grid) explains that choice.
 
 ## Three owners
 
