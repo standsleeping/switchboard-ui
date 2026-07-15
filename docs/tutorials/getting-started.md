@@ -43,7 +43,15 @@ An `Island` is a descriptor: a plain data value naming the adapter that will fil
 from switchboard_ui import Island, render_document, three_column
 
 page = three_column(
-    {"body-c": (Island(name="counter", props={"start": 0}),)},
+    {
+        "body-c": (
+            Island(
+                name="counter",
+                props={"start": 0},
+                initial='<button class="demo-btn">count: 0</button>',
+            ),
+        ),
+    },
     title="My first page",
 )
 html = render_document(page)
@@ -53,7 +61,9 @@ html = render_document(page)
 
 `props` is JSON-serializable data handed to the adapter when it mounts.
 
-The renderer turns this island into a `<div data-island="counter" data-props='{"start":0}'>`. Nothing interactive happens yet, because no adapter named `counter` has been registered.
+`initial` is server-rendered HTML placed inside the mount point. The button is already on the page at first paint, correctly sized, before any JavaScript runs; the adapter you write later will bring it to life rather than build it.
+
+The renderer turns this island into a `<div data-island="counter" data-props='{"start":0}'>` holding the button. Nothing interactive happens yet, because no adapter named `counter` has been registered.
 
 ## 4. Declare the wiring
 
@@ -62,8 +72,21 @@ The counter will announce a message; a readout will listen for it. You declare t
 ```python
 page = three_column(
     {
-        "body-c": (Island(name="counter", props={"start": 0}, publishes=("count:changed",)),),
-        "body-r": (Island(name="readout", subscribes=("count:changed",)),),
+        "body-c": (
+            Island(
+                name="counter",
+                props={"start": 0},
+                publishes=("count:changed",),
+                initial='<button class="demo-btn">count: 0</button>',
+            ),
+        ),
+        "body-r": (
+            Island(
+                name="readout",
+                subscribes=("count:changed",),
+                initial='<div class="demo-readout">waiting for a click...</div>',
+            ),
+        ),
     },
     title="My first page",
 )
@@ -79,29 +102,27 @@ Because the wiring is declared as data, the connection from `counter` to `readou
 
 An adapter is browser code that registers under a name and receives the element, the props, and the bus. It returns a teardown function.
 
+The markup already arrived with the page (the `initial` HTML from step 3), so each adapter finds its element and enhances it in place. An adapter wires behavior; it never builds or resizes the markup.
+
 ```javascript
 window.switchboard.register("counter", function (el, props, bus) {
   var n = props.start || 0;
-  var btn = document.createElement("button");
-  function paint() { btn.textContent = "count: " + n; }
-  paint();
-  btn.addEventListener("click", function () {
+  var btn = el.querySelector(".demo-btn");
+  function onClick() {
     n += 1;
-    paint();
+    btn.textContent = "count: " + n;
     bus.publish("count:changed", n);
-  });
-  el.appendChild(btn);
-  return function teardown() { btn.remove(); };
+  }
+  btn.addEventListener("click", onClick);
+  return function teardown() { btn.removeEventListener("click", onClick); };
 });
 
 window.switchboard.register("readout", function (el, props, bus) {
-  var out = document.createElement("div");
-  out.textContent = "waiting for a click...";
-  el.appendChild(out);
+  var out = el.querySelector(".demo-readout");
   var off = bus.subscribe("count:changed", function (n) {
     out.textContent = "latest count: " + n;
   });
-  return function teardown() { off(); out.remove(); };
+  return function teardown() { off(); };
 });
 ```
 
