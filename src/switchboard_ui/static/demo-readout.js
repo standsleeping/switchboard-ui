@@ -1,10 +1,11 @@
 /* Demo island adapter: a readout.
- * Subscribes to count:changed and shows the latest value. */
+ * Subscribes to count:changed and shows the latest value.
+ *
+ * The readout is server-rendered into the island's initial HTML (including its
+ * waiting message), so it is present at first paint; this adapter enhances it
+ * in place. It never builds or resizes the markup. */
 window.switchboard.register("readout", function (el, props, bus) {
-  var out = document.createElement("div");
-  out.className = "sb-demo-readout";
-  out.textContent = "waiting for a click...";
-  el.appendChild(out);
+  var out = el.querySelector(".sb-demo-readout");
 
   var off = bus.subscribe("count:changed", function (n) {
     out.textContent = "latest count: " + n;
@@ -12,6 +13,5 @@ window.switchboard.register("readout", function (el, props, bus) {
 
   return function teardown() {
     off();
-    out.remove();
   };
 });

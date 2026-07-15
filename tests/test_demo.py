@@ -25,3 +25,18 @@ def test_demo_renders_both_islands() -> None:
     html = render_document(build_demo(), extra_scripts=demo_scripts())
     assert find(html, "div", **{"data-island": "counter"})
     assert find(html, "div", **{"data-island": "readout"})
+
+
+def test_demo_islands_are_present_at_first_paint() -> None:
+    """The button and readout are server-rendered; the adapters enhance in place.
+
+    The demo teaches the packaged components' pattern: markup arrives in the
+    island's ``initial`` HTML, correct before any JavaScript runs, and the
+    adapters query it rather than building it.
+    """
+    html = render_document(build_demo())
+    assert '<button class="sb-demo-btn">count: 0</button>' in html
+    assert '<div class="sb-demo-readout">waiting for a click...</div>' in html
+    for script in demo_scripts():
+        assert "createElement" not in script
+        assert "querySelector" in script
