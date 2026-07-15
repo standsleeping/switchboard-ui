@@ -20,10 +20,11 @@ the theme). That is the same opt-in a real host performs.
 
 import re
 from dataclasses import dataclass
+from typing import assert_never
 
 from showcase.chrome import surface_switch, surface_switch_styles
 from switchboard_theme import REGISTRY, Category, Fixed, Themed, Token, ValueType
-from switchboard_ui import Document, Island
+from switchboard_ui import Document, Island, render_island
 from switchboard_ui.components import (
     ArmBinding,
     Binding,
@@ -79,21 +80,85 @@ from switchboard_ui.presets import three_column
 _SELECT_TOPIC = "gallery:select"
 
 
+# --- typed prop descriptors --------------------------------------------------
+#
+# The inspector's props are typed, one frozen dataclass per kind, so the panel can
+# pick a control per prop and illegal states stay unrepresentable: a text prop
+# carries no numeric bounds, a number prop carries its range, an enum carries its
+# choices. This mirrors the core's own `Binding = ArmBinding | ValueBinding` union.
+# An editable kind renders its control (value field / colour input / slider /
+# segmented); a `DisplayProp` renders as read-only text — a structural or
+# descriptive prop only the factory can change, which waits for the server render
+# endpoint. The editable controls publish on `<id>:prop:<name>`, but nothing
+# subscribes yet: the control is live, the edit is a no-op, the specimen unchanged
+# (the wiring is a later phase). Only genuine value props get a control; showing an
+# editable affordance for a prop we cannot yet apply would be a dishonest promise.
+
+
+@dataclass(frozen=True)
+class TextProp:
+    """An editable string prop — a length, a number-as-text, any CSS string."""
+
+    name: str
+    value: str
+
+
+@dataclass(frozen=True)
+class ColorProp:
+    """An editable six-digit-hex colour prop (``#rrggbb``)."""
+
+    name: str
+    value: str
+
+
+@dataclass(frozen=True)
+class NumberProp:
+    """An editable numeric prop bounded to ``[min, max]`` in ``step`` increments."""
+
+    name: str
+    value: float
+    min: float
+    max: float
+    step: float = 1
+
+
+@dataclass(frozen=True)
+class EnumProp:
+    """An editable one-of prop; ``choices`` are ordered ``(value, label)`` pairs."""
+
+    name: str
+    value: str
+    choices: tuple[tuple[str, str], ...]
+
+
+@dataclass(frozen=True)
+class DisplayProp:
+    """A prop shown read-only: structural or descriptive, not yet editable."""
+
+    name: str
+    value: str
+
+
+Prop = TextProp | ColorProp | NumberProp | EnumProp | DisplayProp
+"""One inspector prop row: an editable control chosen by kind, or read-only text."""
+
+
 @dataclass(frozen=True)
 class _Spec:
     """One gallery entry, projected into all three columns.
 
     ``body`` is the specimen island(s) the centre renders (an invisible wiring
     island like ``theme_state`` is carried here too and floated to the end of the
-    column so it adds no gap mid-content). ``props`` and ``tokens`` are the
-    inspector's two sections for this component.
+    column so it adds no gap mid-content). ``props`` (typed descriptors, one per
+    inspector row) and ``tokens`` are the inspector's two sections for this
+    component.
     """
 
     id: str
     name: str
     section: str
     body: tuple[Island, ...]
-    props: tuple[tuple[str, str], ...]
+    props: tuple[Prop, ...]
     tokens: tuple[str, ...]
 
 
@@ -122,7 +187,18 @@ def _gallery_specs() -> tuple[_Spec, ...]:
                     label="View",
                 ),
             ),
-            props=(("topic", "view:changed"), ("options", "overview · api · examples")),
+            props=(
+                EnumProp(
+                    name="value",
+                    value="overview",
+                    choices=(
+                        ("overview", "Overview"),
+                        ("api", "API"),
+                        ("examples", "Examples"),
+                    ),
+                ),
+                DisplayProp("topic", "view:changed"),
+            ),
             tokens=(
                 "--sb-color-accent",
                 "--sb-color-muted",
@@ -143,7 +219,10 @@ def _gallery_specs() -> tuple[_Spec, ...]:
                     label="Weight",
                 ),
             ),
-            props=(("topic", "weight:changed"), ("range", "200-900"), ("step", "10")),
+            props=(
+                NumberProp(name="value", value=400, min=200, max=900, step=10),
+                DisplayProp("topic", "weight:changed"),
+            ),
             tokens=("--sb-color-accent", "--sb-color-border", "--sb-fit-slider-thumb"),
         ),
         _Spec(
@@ -151,7 +230,10 @@ def _gallery_specs() -> tuple[_Spec, ...]:
             name="Colour picker",
             section="Controls",
             body=(color_picker(topic="token:accent", value="#5b4bd6", label="Accent"),),
-            props=(("topic", "token:accent"), ("value", "#5b4bd6")),
+            props=(
+                ColorProp(name="value", value="#5b4bd6"),
+                DisplayProp("topic", "token:accent"),
+            ),
             tokens=("--sb-color-accent", "--sb-color-border", "--sb-color-handle-ring"),
         ),
         _Spec(
@@ -169,7 +251,10 @@ def _gallery_specs() -> tuple[_Spec, ...]:
                     panel_id="demo-popover",
                 ),
             ),
-            props=(("panel_id", "demo-popover"), ("haspopup", "dialog")),
+            props=(
+                DisplayProp("panel_id", "demo-popover"),
+                DisplayProp("haspopup", "dialog"),
+            ),
             tokens=("--sb-color-bg-raised", "--sb-color-border"),
         ),
         _Spec(
@@ -188,7 +273,10 @@ def _gallery_specs() -> tuple[_Spec, ...]:
                     title="Dialog",
                 ),
             ),
-            props=(("dialog_id", "demo-modal"), ("title", "Dialog")),
+            props=(
+                DisplayProp("dialog_id", "demo-modal"),
+                DisplayProp("title", "Dialog"),
+            ),
             tokens=(
                 "--sb-color-modal-scrim",
                 "--sb-color-bg-raised",
@@ -200,7 +288,10 @@ def _gallery_specs() -> tuple[_Spec, ...]:
             name="Value field",
             section="Controls",
             body=(value_field(topic="token:radius", value="0", label="Radius"),),
-            props=(("topic", "token:radius"), ("value", "0")),
+            props=(
+                TextProp(name="value", value="0"),
+                DisplayProp("topic", "token:radius"),
+            ),
             tokens=("--sb-color-fg", "--sb-color-border", "--sb-color-accent"),
         ),
         _Spec(
@@ -222,7 +313,10 @@ def _gallery_specs() -> tuple[_Spec, ...]:
                     ),
                 ),
             ),
-            props=(("scope_id", "preview-1"), ("binds", "accent · radius")),
+            props=(
+                DisplayProp("scope_id", "preview-1"),
+                DisplayProp("binds", "accent · radius"),
+            ),
             tokens=("--sb-color-bg", "--sb-color-fg", "--sb-font-family"),
         ),
         _Spec(
@@ -243,7 +337,7 @@ def _gallery_specs() -> tuple[_Spec, ...]:
                     label="Component set",
                 ),
             ),
-            props=(("columns", "3"), ("rows", "6")),
+            props=(DisplayProp("columns", "3"), DisplayProp("rows", "6")),
             tokens=(
                 "--sb-color-border",
                 "--sb-color-bg-raised",
@@ -269,7 +363,7 @@ def _gallery_specs() -> tuple[_Spec, ...]:
                     language="python",
                 ),
             ),
-            props=(("language", "python"), ("copy", "true")),
+            props=(DisplayProp("language", "python"), DisplayProp("copy", "true")),
             tokens=("--sb-color-bg-raised", "--sb-color-border", "--sb-color-accent"),
         ),
         _Spec(
@@ -281,7 +375,10 @@ def _gallery_specs() -> tuple[_Spec, ...]:
                     trail=(("Showcase", "#"), ("Components", "#")), current="Breadcrumb"
                 ),
             ),
-            props=(("trail", "Showcase / Components"), ("current", "Breadcrumb")),
+            props=(
+                DisplayProp("trail", "Showcase / Components"),
+                DisplayProp("current", "Breadcrumb"),
+            ),
             tokens=("--sb-color-muted", "--sb-color-subtle", "--sb-color-fg"),
         ),
         _Spec(
@@ -299,7 +396,7 @@ def _gallery_specs() -> tuple[_Spec, ...]:
                     open=True,
                 ),
             ),
-            props=(("count", "3"), ("open", "true")),
+            props=(DisplayProp("count", "3"), DisplayProp("open", "true")),
             tokens=("--sb-color-border", "--sb-color-muted", "--sb-color-fg"),
         ),
     )
@@ -357,12 +454,61 @@ def _gallery_nav(specs: tuple[_Spec, ...]) -> Island:
     )
 
 
-def _inspector_panel(spec: _Spec, *, active: bool) -> str:
-    """One inspector panel: the component's name, section, props table, and tokens.
+def _prop_control(spec_id: str, prop: Prop) -> str:
+    """The inspector's editor for one prop, rendered to HTML by the prop's kind.
 
-    The props reuse the `table` component (its rendered ``initial`` markup, so the
-    panel gets the table paint without nesting a second island). Only the active
-    panel is shown at first paint; the adapter swaps them on selection.
+    An editable kind renders its control's full mount point (via
+    :func:`render_island`, so the already-registered adapter mounts it and the
+    control is live), publishing on the prop's ``<id>:prop:<name>`` topic; nothing
+    subscribes yet, so the edit is a no-op and the specimen is unchanged (the
+    wiring is a later phase). A ``DisplayProp`` renders as read-only text — a
+    structural or descriptive prop only the factory can change.
+    """
+    topic = f"{spec_id}:prop:{prop.name}"
+    label = _humanize(prop.name)
+    match prop:
+        case TextProp(value=value):
+            return render_island(value_field(topic=topic, value=value, label=label))
+        case ColorProp(value=value):
+            return render_island(color_input(topic=topic, value=value, label=label))
+        case NumberProp(value=value, min=low, max=high, step=step):
+            return render_island(
+                slider(
+                    topic=topic, min=low, max=high, value=value, step=step, label=label
+                )
+            )
+        case EnumProp(value=value, choices=choices):
+            return render_island(
+                segmented(topic=topic, options=choices, value=value, label=label)
+            )
+        case DisplayProp(value=value):
+            return element(
+                "div",
+                {"class": "sb-gallery-inspector-prop-value"},
+                [escape_text(value)],
+            )
+    assert_never(prop)  # pragma: no cover
+
+
+def _prop_row(spec_id: str, prop: Prop) -> str:
+    """One inspector prop: the prop's name over its control (or read-only value)."""
+    label = element(
+        "div", {"class": "sb-gallery-inspector-prop-label"}, [escape_text(prop.name)]
+    )
+    return element(
+        "div",
+        {"class": "sb-gallery-inspector-prop"},
+        [label, _prop_control(spec_id, prop)],
+    )
+
+
+def _inspector_panel(spec: _Spec, *, active: bool) -> str:
+    """One inspector panel: the component's name, section, prop controls, and tokens.
+
+    The props render as a column of controls, one per prop, chosen by the prop's
+    type: an editable value prop is a live control (unwired for now), a structural
+    or descriptive prop is read-only text. Only the active panel is shown at first
+    paint; the adapter swaps them on selection.
     """
     title = element(
         "div", {"class": "sb-gallery-inspector-title"}, [escape_text(spec.name)]
@@ -373,9 +519,11 @@ def _inspector_panel(spec: _Spec, *, active: bool) -> str:
     props_label = element(
         "div", {"class": "sb-gallery-inspector-label"}, [escape_text("Props")]
     )
-    props = table(
-        columns=("Prop", "Value"), rows=spec.props, label=f"{spec.name} props"
-    ).initial
+    props = element(
+        "div",
+        {"class": "sb-gallery-inspector-props"},
+        [_prop_row(spec.id, prop) for prop in spec.props],
+    )
     tokens_label = element(
         "div", {"class": "sb-gallery-inspector-label"}, [escape_text("Tokens")]
     )
@@ -461,6 +609,7 @@ def showcase_scripts() -> tuple[str, ...]:
         segmented_scripts()
         + popover_scripts()
         + color_picker_scripts()
+        + color_input_scripts()
         + slider_scripts()
         + value_field_scripts()
         + theme_state_scripts()
@@ -604,6 +753,23 @@ _GALLERY_CSS = """
   flex-direction: column;
   gap: var(--sb-space-2xs);
 }
+.sb-gallery-inspector-props {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sb-space-sm);
+}
+.sb-gallery-inspector-prop {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sb-space-2xs);
+}
+.sb-gallery-inspector-prop-label {
+  color: var(--sb-color-muted);
+  font-size: var(--sb-font-size-sm);
+}
+.sb-gallery-inspector-prop-value {
+  color: var(--sb-color-fg);
+}
 """
 
 
@@ -614,6 +780,7 @@ def showcase_styles() -> str:
             segmented_styles(),
             popover_styles(),
             color_picker_styles(),
+            color_input_styles(),
             slider_styles(),
             value_field_styles(),
             preview_styles(),

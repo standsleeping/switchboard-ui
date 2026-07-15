@@ -1,9 +1,9 @@
 """The dogfood showcase visualizes layout without changing application topology."""
 
-from showcase.build import build_showcase, showcase_styles
+from showcase.build import DisplayProp, _gallery_specs, build_showcase, showcase_styles
 from switchboard_ui import render_document
 from switchboard_ui.model import Frame, Slot
-from tests.htmlprobe import find
+from tests.htmlprobe import elements, find
 
 
 def test_showcase_keeps_corner_regions_empty() -> None:
@@ -85,3 +85,38 @@ def test_showcase_content_anchors_match_the_nav_targets() -> None:
     html = render_document(build_showcase())
     headings = find(html, "div", **{"class": "sb-gallery-heading"})
     assert [h["id"] for h in headings] == [f"sec-{i}" for i in _EXPECTED_IDS]
+
+
+def test_inspector_editable_props_render_live_controls() -> None:
+    """Each control specimen exposes its value prop as a live inspector control
+    publishing on `<id>:prop:value` (a full mount point, so its adapter mounts)."""
+    html = render_document(build_showcase())
+    expected = {
+        "slider": "slider:prop:value",
+        "segmented": "segmented:prop:value",
+        "color-input": "color-picker:prop:value",
+        "value-field": "value-field:prop:value",
+    }
+    for island, topic in expected.items():
+        controls = find(html, "div", **{"data-island": island})
+        assert any(c.get("data-pub") == topic for c in controls), (island, topic)
+
+
+def test_inspector_renders_one_row_per_prop_with_display_props_as_text() -> None:
+    """Every prop yields one inspector row; a DisplayProp renders as read-only text."""
+    specs = _gallery_specs()
+    html = render_document(build_showcase())
+    rows = find(html, "div", **{"class": "sb-gallery-inspector-prop"})
+    assert len(rows) == sum(len(spec.props) for spec in specs)
+    values = find(html, "div", **{"class": "sb-gallery-inspector-prop-value"})
+    displays = sum(
+        1 for spec in specs for prop in spec.props if isinstance(prop, DisplayProp)
+    )
+    assert len(values) == displays
+
+
+def test_inspector_prop_controls_are_unwired() -> None:
+    """No island subscribes to a `:prop:` topic yet — the edits are no-ops (phase 2)."""
+    html = render_document(build_showcase())
+    subs = [attrs.get("data-sub", "") for _, attrs in elements(html)]
+    assert not any(":prop:" in sub for sub in subs)
