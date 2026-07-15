@@ -53,6 +53,9 @@ def test_theme_focus_ring_stays_inside_the_box() -> None:
                     continue
                 acceptable = (
                     value.startswith("-")
+                    # A negated token (calc(-1 * var(...))) is inset by the same
+                    # reading: the leading term makes the whole expression negative.
+                    or value.startswith("calc(-")
                     or re.fullmatch(r"0(px|rem|em)?", value) is not None
                     or "var(--sb-fit-paint-outset" in value
                 )

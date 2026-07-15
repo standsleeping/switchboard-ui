@@ -196,6 +196,11 @@ REGISTRY: tuple[Token, ...] = (
         ),
     ),
     Token(Category.FIT, "control-inline", ValueType.LENGTH, Fixed("6rem")),
+    # The minimum pointer-target square (24px): the block-size floor an
+    # interactive control's hit area must grant even when its visual reads
+    # smaller. Interaction geometry is an obligation like any other, so it is
+    # published here rather than guessed per control.
+    Token(Category.FIT, "hit-target", ValueType.LENGTH, Fixed("1.5rem")),
     Token(
         Category.FIT,
         "rail-block",
@@ -213,12 +218,17 @@ REGISTRY: tuple[Token, ...] = (
         Derived("var(--sb-fit-control-block)"),
     ),
     Token(Category.FIT, "color-handle", ValueType.LENGTH, Fixed("0.75rem")),
-    # Slider geometry: the thumb is a square this tall, and the input is the same
-    # height so the thumb centres with no margin (banned) or transform (forbidden).
+    # Slider geometry: the thumb's inline size. Its block size is the hit-target
+    # obligation — the input is exactly that tall and the thumb fills the height,
+    # so it centres with no margin (banned) or transform (forbidden) while the
+    # whole control grants the minimum pointer target.
     Token(Category.FIT, "slider-thumb", ValueType.LENGTH, Fixed("0.875rem")),
     # Modal geometry: the dialog's max width (it caps at this or the viewport,
-    # whichever is smaller; the height caps at the viewport in the structural CSS).
+    # whichever is smaller) and its max height. The block cap stops short of the
+    # full viewport so a band of scrim stays visible around the dialog — it reads
+    # as an overlay on the page, never as a page itself.
     Token(Category.FIT, "modal-inline", ValueType.LENGTH, Fixed("32rem")),
+    Token(Category.FIT, "modal-block", ValueType.LENGTH, Fixed("90dvb")),
 )
 
 
@@ -301,7 +311,7 @@ button {
 }
 button:focus-visible {
   outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
-  outline-offset: -2px;
+  outline-offset: calc(-1 * var(--sb-border-width-accent));
 }
 
 /* Segmented toggle: a small-set selector. Mono tabs over a transparent ground;
@@ -368,7 +378,7 @@ button:focus-visible {
 }
 .sb-color-input-text:focus-visible {
   outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
-  outline-offset: -2px;
+  outline-offset: calc(-1 * var(--sb-border-width-accent));
 }
 .sb-color-input-text[aria-invalid="true"] {
   border-color: var(--sb-color-danger);
@@ -398,7 +408,7 @@ button:focus-visible {
 }
 .sb-value-field-text:focus-visible {
   outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
-  outline-offset: -2px;
+  outline-offset: calc(-1 * var(--sb-border-width-accent));
 }
 
 /* Popover: a non-modal floating panel rendered in the top layer. Flat by the
@@ -440,7 +450,7 @@ button:focus-visible {
 .sb-color-picker-area:focus-visible,
 .sb-color-picker-hue:focus-visible {
   outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
-  outline-offset: -2px;
+  outline-offset: calc(-1 * var(--sb-border-width-accent));
 }
 .sb-color-picker-area-handle,
 .sb-color-picker-hue-thumb {
@@ -450,9 +460,10 @@ button:focus-visible {
 
 /* Slider: a native range, fully restyled off the UA accent (no-UA-default). The
  * track groove is a thin centred line drawn on the input's own background; the
- * track pseudo is transparent at full height, so the square accent thumb — itself
- * the full input height — centres with no margin (banned) and no transform
- * (forbidden). `appearance: none` strips the UA chrome. */
+ * track pseudo is transparent at full height, so the accent thumb — itself the
+ * full input height, the published hit-target obligation — centres with no
+ * margin (banned) and no transform (forbidden). `appearance: none` strips the
+ * UA chrome. */
 .sb-slider {
   gap: var(--sb-space-sm);
 }
@@ -480,20 +491,20 @@ button:focus-visible {
   appearance: none;
   -webkit-appearance: none;
   inline-size: var(--sb-fit-slider-thumb);
-  block-size: var(--sb-fit-slider-thumb);
+  block-size: var(--sb-fit-hit-target);
   background: var(--sb-color-accent);
   border-radius: var(--sb-radius-base);
 }
 .sb-slider-input::-moz-range-thumb {
   inline-size: var(--sb-fit-slider-thumb);
-  block-size: var(--sb-fit-slider-thumb);
+  block-size: var(--sb-fit-hit-target);
   background: var(--sb-color-accent);
   border: none;
   border-radius: var(--sb-radius-base);
 }
 .sb-slider-input:focus-visible {
   outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
-  outline-offset: -2px;
+  outline-offset: calc(-1 * var(--sb-border-width-accent));
 }
 .sb-slider-value {
   font: inherit;
@@ -623,7 +634,7 @@ button:focus-visible {
 }
 .sb-code-copy:focus-visible {
   outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
-  outline-offset: -2px;
+  outline-offset: calc(-1 * var(--sb-border-width-accent));
 }
 .sb-code-status {
   color: var(--sb-color-muted);
@@ -677,7 +688,7 @@ button:focus-visible {
 }
 .sb-modal-close:focus-visible {
   outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
-  outline-offset: -2px;
+  outline-offset: calc(-1 * var(--sb-border-width-accent));
 }
 
 /* Breadcrumb: a trail of muted ancestor links and subtle separators ending at the
@@ -695,7 +706,7 @@ button:focus-visible {
 }
 .sb-breadcrumb-link:focus-visible {
   outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
-  outline-offset: -2px;
+  outline-offset: calc(-1 * var(--sb-border-width-accent));
 }
 .sb-breadcrumb-sep {
   color: var(--sb-color-subtle);
@@ -728,7 +739,7 @@ button:focus-visible {
 }
 .sb-collapsible-summary:focus-visible {
   outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
-  outline-offset: -2px;
+  outline-offset: calc(-1 * var(--sb-border-width-accent));
 }
 .sb-collapsible-label {
   gap: var(--sb-space-sm);
