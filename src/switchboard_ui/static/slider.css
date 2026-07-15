@@ -1,9 +1,10 @@
 /* switchboard-ui: structural CSS for the slider.
  *
  * Geometry only, the same contract as layout.css. A native range input sits in a
- * row with an optional value readout. The input's block size is the thumb size
- * (`--sb-fit-slider-thumb`): the thumb fills that height, so it is centred with
- * no negative-margin trick (margin is banned) and no transform (forbidden in the
+ * row with an optional value readout. The input's block size is the hit-target
+ * obligation (`--sb-fit-hit-target`), so the whole control grants the minimum
+ * pointer target; the theme's thumb fills that height, so it is centred with no
+ * negative-margin trick (margin is banned) and no transform (forbidden in the
  * theme). The track groove, the thumb's accent fill, the gap, and the readout
  * colour are all the theme's, keyed to these same .sb-* hooks. */
 
@@ -12,5 +13,5 @@
   align-items: center;
 }
 .sb-slider-input {
-  block-size: var(--sb-fit-slider-thumb);
+  block-size: var(--sb-fit-hit-target);
 }
