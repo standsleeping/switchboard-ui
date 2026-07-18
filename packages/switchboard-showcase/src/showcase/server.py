@@ -53,6 +53,7 @@ WATCH_SUFFIXES = (".py", ".css", ".js")
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 9015
 LIVERELOAD_PATH = "/__livereload"
+FONT_PATH = "/fonts/recursive.woff2"
 
 # One token per process. A browser whose livereload stream reconnects and sees a
 # *different* token knows the server re-exec'd, and reloads itself.
@@ -81,13 +82,16 @@ _RELOAD_CLIENT = """
 def _render(document: Document, styles: str, scripts: tuple[str, ...]) -> str:
     """Render a document themed, with the live-reload client attached.
 
-    ``extra_head`` carries the components' structural CSS then the theme's paint
+    ``extra_head`` carries the theme's ``@font-face`` (naming the URL this server
+    serves the face at), the components' structural CSS, then the theme's paint
     (structure before paint, so the cascade resolves correctly); ``extra_scripts``
     carries the island adapters and the live-reload client.
     """
     return render_document(
         document,
-        extra_head=styles + switchboard_theme.head("default"),
+        extra_head=switchboard_theme.font_head(FONT_PATH)
+        + styles
+        + switchboard_theme.head("default"),
         extra_scripts=(*scripts, _RELOAD_CLIENT),
     )
 
@@ -160,10 +164,12 @@ class Handler(BaseHTTPRequestHandler):
     """Serve the rendered showcase page and the live-reload event stream."""
 
     def do_GET(self) -> None:
-        """Route the gallery, the builder, the docs, the live-reload stream, else 404."""
+        """Route the gallery, builder, docs, font, live-reload stream, else 404."""
         path = urlparse(self.path).path
         if path == LIVERELOAD_PATH:
             self._serve_livereload()
+        elif path == FONT_PATH:
+            self._serve_font()
         elif path in {"/", "/index.html"}:
             self._serve_html(render_page())
         elif path == "/builder":
@@ -185,6 +191,15 @@ class Handler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", "0"))
         status, payload = render_island_response(self.rfile.read(length))
         self._serve_html(payload, status=status)
+
+    def _serve_font(self) -> None:
+        """Serve the theme's packaged typeface at the URL font_head names."""
+        body = switchboard_theme.font_bytes()
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "font/woff2")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     def _serve_html(self, html: str, status: HTTPStatus = HTTPStatus.OK) -> None:
         body = html.encode()
