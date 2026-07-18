@@ -74,6 +74,8 @@ def popover(*, trigger: str, panel: str, label: str, panel_id: str,
 
 A trigger button that reveals a floating panel using the native `[popover]` attribute, so the browser supplies the top layer (the panel escapes any ancestor's clipping with no `z-index`), light-dismiss, and Esc. `panel_id` wires the trigger to the panel and must be a valid HTML id. `haspopup` is the `aria-haspopup` value (`HasPopup` is a `Literal` of `"dialog"`, `"menu"`, `"listbox"`, `"grid"`, `"tree"`, `"true"`). Pass `open_topic` to echo `{"open": bool}` on the bus when it opens or closes; without it the popover publishes nothing. Raises `ValueError` if `label` is blank, `panel_id` is not a valid id, `panel` is empty, or `trigger` is empty with no `trigger_label`. Companions: `popover.js`, `popover.css`.
 
+The adapter anchors the panel under its trigger with inline styles and keeps that placement current while the panel is open: it repositions on open, on viewport resize, on any scroll (a capture-phase listener sees every scroll container, so a trigger inside a scrolling column carries its panel with it), and when the open panel itself changes size (a `ResizeObserver`; a density switch grows the panel in place). A panel clamped against the viewport keeps an 8px clearance from every edge, so its own border stays visible. This hand placement stands in for CSS anchor positioning, which the toolkit's target browsers do not all support yet; the full invalidation ledger — each covered source and the one accepted residue — lives at the top of `popover.js`.
+
 ### `modal`
 
 ```python
@@ -82,7 +84,7 @@ def modal(*, trigger: str, body: str, label: str, dialog_id: str,
           trigger_label: str | None = None, open_topic: str | None = None) -> Island
 ```
 
-The modal sibling of `popover`: a trigger that opens a centred native `<dialog>` with `showModal()`, so the browser supplies the top layer, the `::backdrop`, the focus trap, Esc, and the inert background. Dismissal is the close button or Esc, deliberately not a backdrop click, so the dialog is not lost to a stray outside click. `open_topic` behaves as on `popover`. Raises `ValueError` if `label` is blank, `dialog_id` is not a valid id, `body` is empty, or `trigger` is empty with no `trigger_label`. Companions: `modal.js`, `modal.css`.
+The modal sibling of `popover`: a trigger that opens a centered native `<dialog>` with `showModal()`, so the browser supplies the top layer, the `::backdrop`, the focus trap, Esc, and the inert background. Dismissal is the close button or Esc, deliberately not a backdrop click, so the dialog is not lost to a stray outside click. `open_topic` behaves as on `popover`. Raises `ValueError` if `label` is blank, `dialog_id` is not a valid id, `body` is empty, or `trigger` is empty with no `trigger_label`. Companions: `modal.js`, `modal.css`.
 
 ### `theme_state`
 
@@ -110,7 +112,7 @@ Static surfaces. Most have no adapter; the two that do use it only for a copy ac
 def preview(*, scope_id: str, scheme: Literal["light", "dark"] | None = None) -> Island
 ```
 
-A representative sample of components inside a scope wrapper (`data-sb-scope`) that repaints as tokens change, so a sibling `theme_state` can show edits live; it is also a plain gallery specimen. Pass `scheme` to pin the pane to one colour scheme. Raises `ValueError` if `scope_id` is blank. Companion: `preview.css`. `preview_items() -> tuple[str, ...]` returns the same sample surfaces individually, for laying light and dark out side by side.
+A representative sample of components inside a scope wrapper (`data-sb-scope`) that repaints as tokens change, so a sibling `theme_state` can show edits live; it is also a plain gallery specimen. Pass `scheme` to pin the pane to one color scheme. Raises `ValueError` if `scope_id` is blank. Companion: `preview.css`. `preview_items() -> tuple[str, ...]` returns the same sample surfaces individually, for laying light and dark out side by side.
 
 ### `table`
 
@@ -151,7 +153,7 @@ Public types in `switchboard_ui.components` used by the factories above:
 | Type | Used by | Meaning |
 |---|---|---|
 | `Cell(html: str)` | `table` | A trusted, already-rendered inline-HTML table cell. |
-| `ArmBinding(topic, token, arm)` | `theme_state`, `theme_export` | Edits one scheme arm (`"light"` or `"dark"`) of a colour token, re-declaring its `light-dark()`. |
+| `ArmBinding(topic, token, arm)` | `theme_state`, `theme_export` | Edits one scheme arm (`"light"` or `"dark"`) of a color token, re-declaring its `light-dark()`. |
 | `ValueBinding(topic, token)` | `theme_state`, `theme_export` | Sets a scheme-invariant token directly. |
 | `Binding` | the two above | `ArmBinding | ValueBinding`. |
 | `HasPopup` | `popover` | `Literal["dialog", "menu", "listbox", "grid", "tree", "true"]`. |
@@ -161,8 +163,8 @@ Public types in `switchboard_ui.components` used by the factories above:
 | Component | Factory | Bus | Adapter | Structural CSS |
 |---|---|---|---|---|
 | Segmented toggle | `segmented` | publishes `topic`, follows `listen` | `segmented.js` | `segmented.css` |
-| Colour input | `color_input` | publishes `topic`, follows `listen` | `color-input.js` | `color-input.css` |
-| Colour picker | `color_picker` | publishes `topic`, follows `listen` | `color-picker.js` (+ popover) | `color-picker.css` (+ popover) |
+| Color input | `color_input` | publishes `topic`, follows `listen` | `color-input.js` | `color-input.css` |
+| Color picker | `color_picker` | publishes `topic`, follows `listen` | `color-picker.js` (+ popover) | `color-picker.css` (+ popover) |
 | Slider | `slider` | publishes `topic`, follows `listen` | `slider.js` | `slider.css` |
 | Value field | `value_field` | publishes `topic`, follows `listen` | `value-field.js` | `value-field.css` |
 | Popover | `popover` | `open_topic` (optional) | `popover.js` | `popover.css` |

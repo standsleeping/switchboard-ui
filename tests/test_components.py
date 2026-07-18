@@ -17,6 +17,7 @@ from importlib.resources import files
 import pytest
 
 from switchboard_ui import ownership
+from switchboard_ui.assets import read_static
 from switchboard_ui.components import (
     ArmBinding,
     Cell,
@@ -251,7 +252,7 @@ def test_color_picker_builds_a_color_picker_island() -> None:
 
 
 def test_color_picker_renders_swatch_spectrum_and_field() -> None:
-    """The chip trigger holds the live colour; the spectrum and hex field are present."""
+    """The chip trigger holds the live color; the spectrum and hex field are present."""
     html = color_picker(topic="token:accent", value="#5b4bd6", label="Accent").initial
     swatch = [
         b
@@ -266,7 +267,7 @@ def test_color_picker_renders_swatch_spectrum_and_field() -> None:
     assert sliders["sb-color-picker-hue"]["aria-valuemin"] == "0"
     assert sliders["sb-color-picker-hue"]["aria-valuemax"] == "360"
     # Both sliders carry the ARIA-required value trio, computed from the initial
-    # colour (#5b4bd6 is hue 247, saturation 65%, brightness 84%), so the markup
+    # color (#5b4bd6 is hue 247, saturation 65%, brightness 84%), so the markup
     # is correct at first paint, before the adapter mounts.
     assert sliders["sb-color-picker-hue"]["aria-valuenow"] == "247"
     area = sliders["sb-color-picker-area"]
@@ -279,7 +280,7 @@ def test_color_picker_renders_swatch_spectrum_and_field() -> None:
 
 
 def test_color_picker_shares_the_hex_field_with_the_color_input() -> None:
-    """Both colour controls render the identical hex field (one shared authoring)."""
+    """Both color controls render the identical hex field (one shared authoring)."""
     field = '<input class="sb-color-input-text" type="text" value="#5b4bd6"'
     assert field in color_input(topic="t", value="#5b4bd6", label="Accent").initial
     assert field in color_picker(topic="t", value="#5b4bd6", label="Accent").initial
@@ -456,7 +457,7 @@ def test_preview_renders_a_token_exercising_sample() -> None:
 
 
 def test_preview_pins_the_scheme_when_given() -> None:
-    """A ``scheme`` stamps the scheme class so the pane can pin one colour scheme."""
+    """A ``scheme`` stamps the scheme class so the pane can pin one color scheme."""
     (scope,) = find(
         preview(scope_id="p", scheme="dark").initial, "div", **{"data-sb-scope": "p"}
     )
@@ -1194,3 +1195,16 @@ def test_component_css_carries_no_paint_tokens_or_magic_numbers() -> None:
         assert not magic, (
             f"{name} has bare absolute lengths {magic}; use a token or keyword"
         )
+
+
+def test_popover_adapter_subscribes_its_invalidation_ledger() -> None:
+    """The popover's hand placement stays current: every covered invalidation
+    source in the adapter's ledger has its subscription in the code — open
+    (toggle), viewport resize, ancestor scroll (capture phase), and panel
+    growth. The written position is derived state; a ledger row without its
+    subscription is a stale-position bug."""
+    js = read_static("popover.js")
+    assert 'addEventListener("toggle"' in js
+    assert 'addEventListener("resize"' in js
+    assert 'addEventListener("scroll", onResize, true)' in js  # capture phase
+    assert "new ResizeObserver" in js
