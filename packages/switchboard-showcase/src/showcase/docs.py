@@ -351,6 +351,7 @@ _DOCS_CSS = f"""
   font-variation-settings: "MONO" var(--sb-font-axis-mono-prose), "CASL" var(--sb-font-axis-casual-prose);
   line-height: var(--sb-font-line-height);
   color: var(--sb-color-fg);
+  max-inline-size: var(--sb-font-measure);
 }}
 .sb-doc-code {{
   font-family: var(--sb-font-family);
@@ -371,6 +372,7 @@ _DOCS_CSS = f"""
   display: flex;
   flex-direction: column;
   gap: var(--sb-space-sm);
+  max-inline-size: var(--sb-font-measure);
 }}
 .sb-doc-item {{
   display: flex;
