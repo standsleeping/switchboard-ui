@@ -79,6 +79,10 @@
   --sb-font-line-height: 1.5;
   --sb-font-tracking: 0;
   --sb-font-tracking-wide: 0.04em;
+  --sb-font-size-display: 1.9rem;
+  --sb-font-weight-display: 800;
+  --sb-font-line-height-display: 1.12;
+  --sb-font-tracking-tight: -0.02em;
 
   /* Space. */
   --sb-space-2xs: 0.125rem;
@@ -410,7 +414,10 @@ button:focus-visible {
   gap: var(--sb-space-lg);
 }
 .sb-preview-heading {
-  font-weight: var(--sb-font-weight-bold);
+  font-size: var(--sb-font-size-display);
+  font-weight: var(--sb-font-weight-display);
+  line-height: var(--sb-font-line-height-display);
+  letter-spacing: var(--sb-font-tracking-tight);
 }
 .sb-preview-prose {
   font-family: var(--sb-font-family-prose);

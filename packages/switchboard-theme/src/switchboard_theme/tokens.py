@@ -173,6 +173,14 @@ REGISTRY: tuple[Token, ...] = (
     _num("line-height", "1.5"),
     _len(Category.FONT, "tracking", "0"),
     _len(Category.FONT, "tracking-wide", "0.04em"),
+    # Display type: the page-title role. A size well clear of body, the weight
+    # step past bold, and the tight leading and slight negative tracking that
+    # large sizes need; consumed together so an h1 reads as display, not as a
+    # bolder body line.
+    _len(Category.FONT, "size-display", "1.9rem"),
+    _num("weight-display", "800"),
+    _num("line-height-display", "1.12"),
+    _len(Category.FONT, "tracking-tight", "-0.02em"),
     # Space: a step scale plus the control inset (a semantic token the density modes
     # reassign, distinct from the scale so density does not move every md use).
     _len(Category.SPACE, "2xs", "0.125rem"),
@@ -555,7 +563,10 @@ button:focus-visible {
   gap: var(--sb-space-lg);
 }
 .sb-preview-heading {
-  font-weight: var(--sb-font-weight-bold);
+  font-size: var(--sb-font-size-display);
+  font-weight: var(--sb-font-weight-display);
+  line-height: var(--sb-font-line-height-display);
+  letter-spacing: var(--sb-font-tracking-tight);
 }
 .sb-preview-prose {
   font-family: var(--sb-font-family-prose);
