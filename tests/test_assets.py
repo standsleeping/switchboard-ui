@@ -1,6 +1,6 @@
 """Tests for the static-asset reader."""
 
-from switchboard_ui.assets import read_static
+from switchboard_ui.assets import read_asset_bytes, read_static
 
 
 def test_read_static_returns_asset_text() -> None:
@@ -11,3 +11,10 @@ def test_read_static_returns_asset_text() -> None:
 def test_read_static_is_memoized() -> None:
     """Repeated reads return the same cached object."""
     assert read_static("switchboard.js") is read_static("switchboard.js")
+
+
+def test_read_asset_bytes_returns_asset_bytes() -> None:
+    """A packaged asset is read as bytes, uninterpreted."""
+    text = read_static("layout.css")
+    data = read_asset_bytes("switchboard_ui", "layout.css")
+    assert data == text.encode()
