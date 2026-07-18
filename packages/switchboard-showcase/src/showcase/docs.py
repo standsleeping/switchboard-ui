@@ -335,8 +335,13 @@ _DOCS_CSS = f"""
   font-weight: var(--sb-font-weight-bold);
   line-height: 1.2;
 }}
-.sb-doc-h1 {{ font-size: var(--sb-font-size-lg); }}
-.sb-doc-h2 {{ font-size: var(--sb-font-size-base); }}
+.sb-doc-h1 {{
+  font-size: var(--sb-font-size-display);
+  font-weight: var(--sb-font-weight-display);
+  line-height: var(--sb-font-line-height-display);
+  letter-spacing: var(--sb-font-tracking-tight);
+}}
+.sb-doc-h2 {{ font-size: var(--sb-font-size-lg); }}
 .sb-doc-h3 {{
   font-size: var(--sb-font-size-base);
   font-weight: var(--sb-font-weight-medium);

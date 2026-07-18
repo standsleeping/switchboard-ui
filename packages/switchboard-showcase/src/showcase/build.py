@@ -970,6 +970,7 @@ _GALLERY_CSS = """
   letter-spacing: var(--sb-font-tracking-wide);
 }
 .sb-gallery-heading {
+  font-size: var(--sb-font-size-lg);
   font-weight: var(--sb-font-weight-bold);
 }
 .sb-gallery-inspector {
