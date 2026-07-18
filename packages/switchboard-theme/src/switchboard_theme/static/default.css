@@ -64,8 +64,12 @@
   --sb-color-handle-ring: light-dark(var(--sb-color-handle-ring-light), var(--sb-color-handle-ring-dark));
 
   /* Type. */
-  --sb-font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
-  --sb-font-family-prose: ui-sans-serif, system-ui, sans-serif;
+  --sb-font-family: "Recursive", ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  --sb-font-family-prose: "Recursive", ui-sans-serif, system-ui, sans-serif;
+  --sb-font-axis-mono: 1;
+  --sb-font-axis-casual: 0;
+  --sb-font-axis-mono-prose: 0;
+  --sb-font-axis-casual-prose: 0.36;
   --sb-font-size-sm: 0.8125rem;
   --sb-font-size-base: 0.9375rem;
   --sb-font-size-lg: 1.125rem;
@@ -128,12 +132,22 @@
   --sb-space-inset: 1rem;
 }
 
+/* Scheme pinning: stamping data-scheme on the root pins every light-dark()
+ * token to one arm; removing it returns to the OS scheme. */
+:root[data-scheme="light"] {
+  color-scheme: light;
+}
+:root[data-scheme="dark"] {
+  color-scheme: dark;
+}
+
 /* The viewport surface: the mechanism's root frame fills it (position: fixed;
  * inset: 0), so the surface paint belongs here, not on body. */
 .sb-root {
   background: var(--sb-color-bg);
   color: var(--sb-color-fg);
   font-family: var(--sb-font-family);
+  font-variation-settings: "MONO" var(--sb-font-axis-mono), "CASL" var(--sb-font-axis-casual);
   font-size: var(--sb-font-size-base);
   line-height: var(--sb-font-line-height);
 }
@@ -174,9 +188,9 @@ button:focus-visible {
  * the selected tab carries the accent underline. The class beats the base
  * `button` paint by specificity, so an option is not an accent button. Every
  * option reserves the underline as a transparent accent-width block-end border,
- * recoloured only when selected, so moving the selection never shifts layout
+ * recolored only when selected, so moving the selection never shifts layout
  * (state-stable geometry: the width is on the base rule,
- * the selected rule only recolours). */
+ * the selected rule only recolors). */
 .sb-segmented {
   gap: var(--sb-space-sm);
 }
@@ -204,9 +218,9 @@ button:focus-visible {
  * (a value, not a registry token, and not an inline paint declaration) and the
  * theme paints `background` from it here, so paint stays the theme's. The field
  * is a standard control — square inset, the bg surface, a hairline border, the
- * accent caret, and an inset focus ring. An invalid hex recolours the border to
- * danger (a state recolour, never a reshape). The non-default form surfaces
- * (caret, placeholder, selection) are tokenised so no UA colour leaks (the
+ * accent caret, and an inset focus ring. An invalid hex recolors the border to
+ * danger (a state recolor, never a reshape). The non-default form surfaces
+ * (caret, placeholder, selection) are tokenised so no UA color leaks (the
  * no-UA-default rule). */
 .sb-color-input {
   gap: var(--sb-space-xs);
@@ -241,10 +255,10 @@ button:focus-visible {
 }
 
 /* Value field: the general single-line editor for a scheme-invariant token
- * (length, number, font family, shadow). The same field look as the colour
+ * (length, number, font family, shadow). The same field look as the color
  * input's hex field — square inset, the bg surface, a hairline border, the accent
  * caret and an inset focus ring — with the non-default form surfaces (caret,
- * placeholder, selection) tokenised so no UA colour leaks (the no-UA-default
+ * placeholder, selection) tokenised so no UA color leaks (the no-UA-default
  * rule). */
 .sb-value-field-text {
   font: inherit;
@@ -285,12 +299,12 @@ button:focus-visible {
 }
 
 /* Color picker: the swatch is a chip trigger (the base button paint, re-bordered
- * to a hairline; its colour is the live value the factory carries as the
+ * to a hairline; its color is the live value the factory carries as the
  * per-instance `--sb-swatch` value, painted here, not declared inline — the
  * background overrides the base button fill by class specificity). The spectrum
  * surfaces carry a hairline frame and an inset focus ring; their gradients are
  * adapter-set data-viz, not theme paint. The handle/thumb carry a near-white ring
- * that reads over any spectrum colour. */
+ * that reads over any spectrum color. */
 .sb-color-picker-swatch {
   background: var(--sb-swatch);
   border-color: var(--sb-color-border);
@@ -315,9 +329,9 @@ button:focus-visible {
 }
 
 /* Slider: a native range, fully restyled off the UA accent (no-UA-default). The
- * track groove is a thin centred line drawn on the input's own background; the
+ * track groove is a thin centered line drawn on the input's own background; the
  * track pseudo is transparent at full height, so the accent thumb — itself the
- * full input height, the published hit-target obligation — centres with no
+ * full input height, the published hit-target obligation — centers with no
  * margin (banned) and no transform (forbidden). `appearance: none` strips the
  * UA chrome. */
 .sb-slider {
@@ -370,7 +384,7 @@ button:focus-visible {
 /* Live preview pane: a sample surface separated from the editing chrome by a
  * hairline. `color-scheme` on the scheme variants pins a pane to one arm (a
  * side-by-side light/dark preview). The scope re-establishes the full token
- * context — colour and the type base (family / size / line-height) — rather than
+ * context — color and the type base (family / size / line-height) — rather than
  * inheriting computed values from the root, so a scoped edit to *any* of those
  * tokens reprojects inside the pane (the live theme builder depends on this). The
  * table is the canonical display surface: collapsed hairline cells with a raised
@@ -382,6 +396,7 @@ button:focus-visible {
   background: var(--sb-color-bg);
   color: var(--sb-color-fg);
   font-family: var(--sb-font-family);
+  font-variation-settings: "MONO" var(--sb-font-axis-mono), "CASL" var(--sb-font-axis-casual);
   font-size: var(--sb-font-size-base);
   line-height: var(--sb-font-line-height);
 }
@@ -399,6 +414,7 @@ button:focus-visible {
 }
 .sb-preview-prose {
   font-family: var(--sb-font-family-prose);
+  font-variation-settings: "MONO" var(--sb-font-axis-mono-prose), "CASL" var(--sb-font-axis-casual-prose);
   color: var(--sb-color-muted);
 }
 .sb-preview-swatch {
@@ -504,13 +520,14 @@ button:focus-visible {
 }
 .sb-code-text {
   font-family: var(--sb-font-family);
+  font-variation-settings: "MONO" var(--sb-font-axis-mono), "CASL" var(--sb-font-axis-casual);
 }
 
-/* Modal: a centred dialog over a dimming scrim. The surface is the raised colour
+/* Modal: a centered dialog over a dimming scrim. The surface is the raised color
  * with a hairline border and square corners (flat by the house default; the scrim
  * supplies the elevation, not a shadow). The header lays a bold title against a
  * quiet close control. The trigger keeps the base button paint. The browser owns
- * the centring, the focus trap, and Esc through `showModal()`; the theme paints
+ * the centering, the focus trap, and Esc through `showModal()`; the theme paints
  * only the surfaces. */
 .sb-modal-dialog {
   background: var(--sb-color-bg-raised);
@@ -548,7 +565,7 @@ button:focus-visible {
 }
 
 /* Breadcrumb: a trail of muted ancestor links and subtle separators ending at the
- * current page — the one crumb in the foreground colour, and not a link. Links
+ * current page — the one crumb in the foreground color, and not a link. Links
  * recede until hovered, when they take the accent. */
 .sb-breadcrumb {
   gap: var(--sb-space-sm);

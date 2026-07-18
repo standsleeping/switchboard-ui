@@ -15,9 +15,13 @@ uses through ``extra_scripts``; the host wires a theme into a page itself:
     import switchboard_theme
 
     render_document(doc, extra_head=switchboard_theme.head("default"))
+
+The typeface travels the same seam: the host serves ``font_bytes()`` at a URL it
+owns and prepends ``font_head(url)`` to ``extra_head``; without it the family
+tokens fall back to the system stacks.
 """
 
-from switchboard_theme.api import THEMES, head
+from switchboard_theme.api import THEMES, font_bytes, font_head, head
 from switchboard_theme.tokens import (
     MODES,
     REGISTRY,
@@ -42,5 +46,7 @@ __all__ = [
     "Themed",
     "Token",
     "ValueType",
+    "font_bytes",
+    "font_head",
     "head",
 ]

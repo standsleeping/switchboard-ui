@@ -126,30 +126,44 @@ REGISTRY: tuple[Token, ...] = (
     _color("danger-fg", "#ffffff", "#16181d"),
     # The popover backdrop. Transparent by default (a non-modal popover does not
     # dim the page); arms so a host can opt into a faint scrim per scheme without
-    # leaking the UA ::backdrop colour (no-UA-default).
+    # leaking the UA ::backdrop color (no-UA-default).
     _color("popover-scrim", "rgb(0 0 0 / 0)", "rgb(0 0 0 / 0)"),
     # The modal backdrop. Unlike the popover scrim it dims the page (a modal is
     # the sole focus); darker in the dark scheme so the dimming reads against the
-    # darker ground. Arms keep it off the UA ::backdrop colour (no-UA-default).
+    # darker ground. Arms keep it off the UA ::backdrop color (no-UA-default).
     _color("modal-scrim", "rgb(0 0 0 / 0.4)", "rgb(0 0 0 / 0.6)"),
-    # The colour-picker handle ring. Near-white so the drag handle stays visible
-    # over any spectrum colour beneath it, in either scheme (holding contrast
+    # The color-picker handle ring. Near-white so the drag handle stays visible
+    # over any spectrum color beneath it, in either scheme (holding contrast
     # against an unknown ground).
     _color("handle-ring", "#ffffff", "#f6f7f9"),
-    # Type. A UI family + a prose family, a small size scale, weights, line-height,
-    # and tracking. Recursive's variable-font axes are a builder extension, not core.
+    # Type. One variable typeface (Recursive) carries every role; the UI and prose
+    # families differ only in their fallback stacks, because the real distinction is
+    # the axis tokens below. The face itself ships in this distribution's static/
+    # (recursive.woff2, OFL) and is delivered by the host via font_head(); a page
+    # without it degrades to the system stacks.
     Token(
         Category.FONT,
         "family",
         ValueType.FONT_FAMILY,
-        Fixed('ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace'),
+        Fixed(
+            '"Recursive", ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas,'
+            " monospace"
+        ),
     ),
     Token(
         Category.FONT,
         "family-prose",
         ValueType.FONT_FAMILY,
-        Fixed("ui-sans-serif, system-ui, sans-serif"),
+        Fixed('"Recursive", ui-sans-serif, system-ui, sans-serif'),
     ),
+    # Variable-font axis positions: MONO (proportional 0 to monospace 1) and CASL
+    # (linear 0 to casual 1). The UI arm is strict mono; the prose arm is
+    # proportional with a warm cast. Weight stays on font-weight (the registered
+    # wght axis follows it), so these settings never fight the weight tokens.
+    _num("axis-mono", "1"),
+    _num("axis-casual", "0"),
+    _num("axis-mono-prose", "0"),
+    _num("axis-casual-prose", "0.36"),
     _len(Category.FONT, "size-sm", "0.8125rem"),
     _len(Category.FONT, "size-base", "0.9375rem"),
     _len(Category.FONT, "size-lg", "1.125rem"),
@@ -207,7 +221,7 @@ REGISTRY: tuple[Token, ...] = (
         ValueType.LENGTH,
         Derived("var(--sb-fit-control-block)"),
     ),
-    # Colour-picker geometry: the square saturation/value surface, its slim hue
+    # Color-picker geometry: the square saturation/value surface, its slim hue
     # track (one control-block tall, so it reads as a control row and reprojects
     # under density), and the drag handle.
     Token(Category.FIT, "color-area", ValueType.LENGTH, Fixed("12rem")),
@@ -220,7 +234,7 @@ REGISTRY: tuple[Token, ...] = (
     Token(Category.FIT, "color-handle", ValueType.LENGTH, Fixed("0.75rem")),
     # Slider geometry: the thumb's inline size. Its block size is the hit-target
     # obligation — the input is exactly that tall and the thumb fills the height,
-    # so it centres with no margin (banned) or transform (forbidden) while the
+    # so it centers with no margin (banned) or transform (forbidden) while the
     # whole control grants the minimum pointer target.
     Token(Category.FIT, "slider-thumb", ValueType.LENGTH, Fixed("0.875rem")),
     # Modal geometry: the dialog's max width (it caps at this or the viewport,
@@ -278,6 +292,7 @@ _PAINT = """\
   background: var(--sb-color-bg);
   color: var(--sb-color-fg);
   font-family: var(--sb-font-family);
+  font-variation-settings: "MONO" var(--sb-font-axis-mono), "CASL" var(--sb-font-axis-casual);
   font-size: var(--sb-font-size-base);
   line-height: var(--sb-font-line-height);
 }
@@ -318,9 +333,9 @@ button:focus-visible {
  * the selected tab carries the accent underline. The class beats the base
  * `button` paint by specificity, so an option is not an accent button. Every
  * option reserves the underline as a transparent accent-width block-end border,
- * recoloured only when selected, so moving the selection never shifts layout
+ * recolored only when selected, so moving the selection never shifts layout
  * (state-stable geometry: the width is on the base rule,
- * the selected rule only recolours). */
+ * the selected rule only recolors). */
 .sb-segmented {
   gap: var(--sb-space-sm);
 }
@@ -348,9 +363,9 @@ button:focus-visible {
  * (a value, not a registry token, and not an inline paint declaration) and the
  * theme paints `background` from it here, so paint stays the theme's. The field
  * is a standard control — square inset, the bg surface, a hairline border, the
- * accent caret, and an inset focus ring. An invalid hex recolours the border to
- * danger (a state recolour, never a reshape). The non-default form surfaces
- * (caret, placeholder, selection) are tokenised so no UA colour leaks (the
+ * accent caret, and an inset focus ring. An invalid hex recolors the border to
+ * danger (a state recolor, never a reshape). The non-default form surfaces
+ * (caret, placeholder, selection) are tokenised so no UA color leaks (the
  * no-UA-default rule). */
 .sb-color-input {
   gap: var(--sb-space-xs);
@@ -385,10 +400,10 @@ button:focus-visible {
 }
 
 /* Value field: the general single-line editor for a scheme-invariant token
- * (length, number, font family, shadow). The same field look as the colour
+ * (length, number, font family, shadow). The same field look as the color
  * input's hex field — square inset, the bg surface, a hairline border, the accent
  * caret and an inset focus ring — with the non-default form surfaces (caret,
- * placeholder, selection) tokenised so no UA colour leaks (the no-UA-default
+ * placeholder, selection) tokenised so no UA color leaks (the no-UA-default
  * rule). */
 .sb-value-field-text {
   font: inherit;
@@ -429,12 +444,12 @@ button:focus-visible {
 }
 
 /* Color picker: the swatch is a chip trigger (the base button paint, re-bordered
- * to a hairline; its colour is the live value the factory carries as the
+ * to a hairline; its color is the live value the factory carries as the
  * per-instance `--sb-swatch` value, painted here, not declared inline — the
  * background overrides the base button fill by class specificity). The spectrum
  * surfaces carry a hairline frame and an inset focus ring; their gradients are
  * adapter-set data-viz, not theme paint. The handle/thumb carry a near-white ring
- * that reads over any spectrum colour. */
+ * that reads over any spectrum color. */
 .sb-color-picker-swatch {
   background: var(--sb-swatch);
   border-color: var(--sb-color-border);
@@ -459,9 +474,9 @@ button:focus-visible {
 }
 
 /* Slider: a native range, fully restyled off the UA accent (no-UA-default). The
- * track groove is a thin centred line drawn on the input's own background; the
+ * track groove is a thin centered line drawn on the input's own background; the
  * track pseudo is transparent at full height, so the accent thumb — itself the
- * full input height, the published hit-target obligation — centres with no
+ * full input height, the published hit-target obligation — centers with no
  * margin (banned) and no transform (forbidden). `appearance: none` strips the
  * UA chrome. */
 .sb-slider {
@@ -514,7 +529,7 @@ button:focus-visible {
 /* Live preview pane: a sample surface separated from the editing chrome by a
  * hairline. `color-scheme` on the scheme variants pins a pane to one arm (a
  * side-by-side light/dark preview). The scope re-establishes the full token
- * context — colour and the type base (family / size / line-height) — rather than
+ * context — color and the type base (family / size / line-height) — rather than
  * inheriting computed values from the root, so a scoped edit to *any* of those
  * tokens reprojects inside the pane (the live theme builder depends on this). The
  * table is the canonical display surface: collapsed hairline cells with a raised
@@ -526,6 +541,7 @@ button:focus-visible {
   background: var(--sb-color-bg);
   color: var(--sb-color-fg);
   font-family: var(--sb-font-family);
+  font-variation-settings: "MONO" var(--sb-font-axis-mono), "CASL" var(--sb-font-axis-casual);
   font-size: var(--sb-font-size-base);
   line-height: var(--sb-font-line-height);
 }
@@ -543,6 +559,7 @@ button:focus-visible {
 }
 .sb-preview-prose {
   font-family: var(--sb-font-family-prose);
+  font-variation-settings: "MONO" var(--sb-font-axis-mono-prose), "CASL" var(--sb-font-axis-casual-prose);
   color: var(--sb-color-muted);
 }
 .sb-preview-swatch {
@@ -648,13 +665,14 @@ button:focus-visible {
 }
 .sb-code-text {
   font-family: var(--sb-font-family);
+  font-variation-settings: "MONO" var(--sb-font-axis-mono), "CASL" var(--sb-font-axis-casual);
 }
 
-/* Modal: a centred dialog over a dimming scrim. The surface is the raised colour
+/* Modal: a centered dialog over a dimming scrim. The surface is the raised color
  * with a hairline border and square corners (flat by the house default; the scrim
  * supplies the elevation, not a shadow). The header lays a bold title against a
  * quiet close control. The trigger keeps the base button paint. The browser owns
- * the centring, the focus trap, and Esc through `showModal()`; the theme paints
+ * the centering, the focus trap, and Esc through `showModal()`; the theme paints
  * only the surfaces. */
 .sb-modal-dialog {
   background: var(--sb-color-bg-raised);
@@ -692,7 +710,7 @@ button:focus-visible {
 }
 
 /* Breadcrumb: a trail of muted ancestor links and subtle separators ending at the
- * current page — the one crumb in the foreground colour, and not a link. Links
+ * current page — the one crumb in the foreground color, and not a link. Links
  * recede until hovered, when they take the accent. */
 .sb-breadcrumb {
   gap: var(--sb-space-sm);
@@ -812,6 +830,24 @@ def _render_modes() -> str:
     return "\n\n".join(rules)
 
 
+# Scheme pinning: the page follows the OS (the :root `color-scheme: light dark`)
+# until the host stamps `data-scheme`, which pins every light-dark() token to one
+# arm; removing the attribute returns to auto. The attribute contract mirrors the
+# density modes' `data-density`: one root attribute per mode axis.
+_SCHEME_PIN = """\
+/* Scheme pinning: stamping data-scheme on the root pins every light-dark()
+ * token to one arm; removing it returns to the OS scheme. */
+:root[data-scheme="light"] {
+  color-scheme: light;
+}
+:root[data-scheme="dark"] {
+  color-scheme: dark;
+}"""
+
+
 def render_css() -> str:
     """Render the full default theme CSS from the registry."""
-    return "\n\n".join((_HEADER, _render_root(), _render_modes(), _PAINT)) + "\n"
+    return (
+        "\n\n".join((_HEADER, _render_root(), _render_modes(), _SCHEME_PIN, _PAINT))
+        + "\n"
+    )

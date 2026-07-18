@@ -37,3 +37,25 @@ def test_a_theme_enters_a_page_through_extra_head() -> None:
     html = render_document(three_column(title="t"), extra_head=themes.head("default"))
     assert "<style>" in html
     assert "--sb-color-accent" in html
+
+
+def test_font_bytes_is_the_packaged_woff2() -> None:
+    """font_bytes returns the shipped face, identified by the woff2 magic."""
+    assert themes.font_bytes().startswith(b"wOF2")
+
+
+def test_font_head_declares_the_face_at_the_supplied_url() -> None:
+    """font_head wraps an @font-face naming the host's URL and the full weight range."""
+    out = themes.font_head("/fonts/recursive.woff2")
+    assert out.startswith("<style>")
+    assert out.endswith("</style>")
+    assert "@font-face" in out
+    assert 'src: url("/fonts/recursive.woff2") format("woff2");' in out
+    assert "font-weight: 300 1000;" in out
+
+
+def test_family_tokens_lead_with_the_packaged_face() -> None:
+    """The theme's family tokens name the packaged face before the system stacks."""
+    css = themes.head("default")
+    assert '--sb-font-family: "Recursive", ui-monospace' in css
+    assert '--sb-font-family-prose: "Recursive", ui-sans-serif' in css

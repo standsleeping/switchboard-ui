@@ -53,3 +53,27 @@ def test_density_rules_reassign_only_tokens() -> None:
     assert found_density_rule, (
         "no theme defines a density mode; ship one as proof of the axis"
     )
+
+
+def test_scheme_pinning_sets_only_color_scheme() -> None:
+    """A ``[data-scheme]`` rule pins ``color-scheme`` to its arm and nothing else.
+
+    The scheme axis mirrors the density axis: one root attribute selects the
+    mode. Pinning must flow through ``color-scheme`` (which flips every
+    ``light-dark()`` token at once), never restate individual colors.
+    """
+    for name, css in _theme_sheets():
+        arms: set[str] = set()
+        for selectors, body in _rules(css):
+            if "[data-scheme" not in selectors:
+                continue
+            arm = re.search(r'\[data-scheme="(\w+)"\]', selectors)
+            assert arm, f"theme {name!r} scheme rule {selectors.strip()!r} names no arm"
+            arms.add(arm.group(1))
+            assert _properties(body) == ["color-scheme"], (
+                f"theme {name!r} scheme rule {selectors.strip()!r} must set exactly "
+                f"color-scheme; pinning flows through the arm model, not colors"
+            )
+        assert arms == {"light", "dark"}, (
+            f"theme {name!r} must pin both arms; found {sorted(arms)}"
+        )
