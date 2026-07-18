@@ -189,6 +189,10 @@ REGISTRY: tuple[Token, ...] = (
     _len(Category.SPACE, "md", "0.75rem"),
     _len(Category.SPACE, "lg", "1rem"),
     _len(Category.SPACE, "xl", "1.5rem"),
+    # The generous end of the scale: document-surface insets, so a reading
+    # column gets real breathing room rather than a control-sized gap.
+    _len(Category.SPACE, "2xl", "2rem"),
+    _len(Category.SPACE, "3xl", "3rem"),
     _len(Category.SPACE, "inset", "0.75rem"),
     # Radius: base is 0 (square default, the common token); steps for opt-in rounding.
     _len(Category.RADIUS, "base", "0"),

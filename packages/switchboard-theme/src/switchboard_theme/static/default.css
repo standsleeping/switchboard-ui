@@ -91,6 +91,8 @@
   --sb-space-md: 0.75rem;
   --sb-space-lg: 1rem;
   --sb-space-xl: 1.5rem;
+  --sb-space-2xl: 2rem;
+  --sb-space-3xl: 3rem;
   --sb-space-inset: 0.75rem;
 
   /* Radius. */
