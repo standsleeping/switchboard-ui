@@ -119,11 +119,23 @@ REGISTRY: tuple[Token, ...] = (
     _color("fg", "#1b1d22", "#e6e8ec"),
     _color("muted", "#6b7280", "#9aa1ad"),
     _color("subtle", "#9ca3af", "#6b7280"),
+    # The third gray tier: the label chrome that recedes furthest — uppercase
+    # group labels, counts, faint annotations. Muted stays secondary text;
+    # subtle stays separator glyphs.
+    _color("faint", "#8b919c", "#666d79"),
     _color("border", "#e3e5e9", "#2b2f37"),
     _color("accent", "#5b4bd6", "#9d8bff"),
     _color("accent-fg", "#ffffff", "#16181d"),
+    # The accent's tinted surface: the ground of a callout that should read as
+    # marked, not interactive — pale enough that fg stays the text color on it.
+    _color("accent-soft", "#efedfb", "#23203a"),
     _color("danger", "#c2334b", "#ff6b81"),
     _color("danger-fg", "#ffffff", "#16181d"),
+    # The diagnostic pair, scoped to before/after code annotation (a removed
+    # line, its replacement). Not control states: destructive UI stays on
+    # danger, and nothing else may take these.
+    _color("diag-bad", "#b4252e", "#ff8a8f"),
+    _color("diag-good", "#1f7a4d", "#69d49a"),
     # The popover backdrop. Transparent by default (a non-modal popover does not
     # dim the page); arms so a host can opt into a faint scrim per scheme without
     # leaking the UA ::backdrop color (no-UA-default).
@@ -598,6 +610,24 @@ button:focus-visible {
   background: var(--sb-color-bg-raised);
   font-weight: var(--sb-font-weight-bold);
 }
+.sb-preview-callout {
+  background: var(--sb-color-accent-soft);
+  border-inline-start: var(--sb-border-width-accent) solid var(--sb-color-accent);
+  padding: var(--sb-space-sm);
+}
+.sb-preview-diff {
+  background: var(--sb-color-bg-raised);
+  border: var(--sb-border-width-thin) solid var(--sb-color-border);
+  padding: var(--sb-space-sm);
+  font-size: var(--sb-font-size-sm);
+  white-space: pre;
+}
+.sb-preview-diff-del {
+  color: var(--sb-color-diag-bad);
+}
+.sb-preview-diff-add {
+  color: var(--sb-color-diag-good);
+}
 
 /* Export control: the button carries the base button paint; the status note
  * beside it is muted, set off by a gap. */
@@ -651,7 +681,7 @@ button:focus-visible {
   border-block-end: var(--sb-border-width-thin) solid var(--sb-color-border);
 }
 .sb-code-lang {
-  color: var(--sb-color-muted);
+  color: var(--sb-color-faint);
   font-size: var(--sb-font-size-sm);
   text-transform: uppercase;
   letter-spacing: var(--sb-font-tracking-wide);
