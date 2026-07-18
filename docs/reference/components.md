@@ -21,12 +21,12 @@ All factory arguments are keyword-only and validated at construction: bad input 
 
 ## Controls
 
-Interactive components. Each publishes its value on a `topic` you choose, so other islands react over the [bus](browser-runtime.md).
+Interactive components. Each publishes its value on a `topic` you choose, so other islands react over the [bus](browser-runtime.md). Each also takes an optional `listen` topic it follows: a value published there is applied in place — the selection moves, the thumb slides, the swatch repaints — without stealing focus and without republishing. An applied value is synced state, not user input, so two controls may follow each other (each listening to the other's `topic`) with no echo loop. The subscription is declared on the island (`data-sub`), so the analyzer sees the edge.
 
 ### `segmented`
 
 ```python
-def segmented(*, topic: str, options: Sequence[tuple[str, str]], value: str, label: str) -> Island
+def segmented(*, topic: str, options: Sequence[tuple[str, str]], value: str, label: str, listen: str | None = None) -> Island
 ```
 
 Pick one of `options` (each a `(value, label)` pair) and publish its value on `topic`. The markup is a radio group (`role="radiogroup"` of `role="radio"` options with roving `tabindex`), not a tab list, because a single-select that emits a value owns no `tabpanel` to control. `label` is the group's required accessible name. Raises `ValueError` if `options` is empty, `label` is blank, or `value` is not among the options. Companions: `segmented.js`, `segmented.css`.
@@ -34,7 +34,7 @@ Pick one of `options` (each a `(value, label)` pair) and publish its value on `t
 ### `color_input`
 
 ```python
-def color_input(*, topic: str, value: str, label: str) -> Island
+def color_input(*, topic: str, value: str, label: str, listen: str | None = None) -> Island
 ```
 
 A tokenised replacement for `<input type="color">`: a swatch plus a `#rrggbb` hex field, publishing the hex on `topic`. Raises `ValueError` if `value` is not a six-digit hex or `label` is blank. Companions: `color-input.js`, `color-input.css`.
@@ -42,7 +42,7 @@ A tokenised replacement for `<input type="color">`: a swatch plus a `#rrggbb` he
 ### `color_picker`
 
 ```python
-def color_picker(*, topic: str, value: str, label: str) -> Island
+def color_picker(*, topic: str, value: str, label: str, listen: str | None = None) -> Island
 ```
 
 A visual picker: a swatch that opens a spectrum popover (a saturation/brightness area plus a hue slider) alongside the inline hex field, all publishing the chosen `#rrggbb` on `topic`. It composes [`popover`](#popover), so include `popover_scripts()` and `popover_styles()` as well as its own. Same validation as `color_input`. Companions: `color-picker.js`, `color-picker.css` (plus the popover's).
@@ -50,7 +50,7 @@ A visual picker: a swatch that opens a spectrum popover (a saturation/brightness
 ### `slider`
 
 ```python
-def slider(*, topic: str, min: float, max: float, value: float, label: str, step: float = 1, readout: bool = True) -> Island
+def slider(*, topic: str, min: float, max: float, value: float, label: str, step: float = 1, readout: bool = True, listen: str | None = None) -> Island
 ```
 
 A restyled `<input type="range">` over `[min, max]`, publishing the numeric value on `topic`. Emits integers when `min`, `max`, `step`, and `value` are all whole, otherwise floats. `readout` shows the current value beside the track. Raises `ValueError` if `min >= max`, `step <= 0`, `value` is out of range, or `label` is blank. Companions: `slider.js`, `slider.css`.
@@ -58,7 +58,7 @@ A restyled `<input type="range">` over `[min, max]`, publishing the numeric valu
 ### `value_field`
 
 ```python
-def value_field(*, topic: str, value: str, label: str) -> Island
+def value_field(*, topic: str, value: str, label: str, listen: str | None = None) -> Island
 ```
 
 A labelled text field for any scheme-invariant CSS value (a length, number, font family, or shadow), publishing the raw string on `topic`. It validates nothing about the value, since any string is a candidate; raises `ValueError` only if `label` is blank. Companions: `value-field.js`, `value-field.css`.
@@ -160,11 +160,11 @@ Public types in `switchboard_ui.components` used by the factories above:
 
 | Component | Factory | Bus | Adapter | Structural CSS |
 |---|---|---|---|---|
-| Segmented toggle | `segmented` | publishes `topic` | `segmented.js` | `segmented.css` |
-| Colour input | `color_input` | publishes `topic` | `color-input.js` | `color-input.css` |
-| Colour picker | `color_picker` | publishes `topic` | `color-picker.js` (+ popover) | `color-picker.css` (+ popover) |
-| Slider | `slider` | publishes `topic` | `slider.js` | `slider.css` |
-| Value field | `value_field` | publishes `topic` | `value-field.js` | `value-field.css` |
+| Segmented toggle | `segmented` | publishes `topic`, follows `listen` | `segmented.js` | `segmented.css` |
+| Colour input | `color_input` | publishes `topic`, follows `listen` | `color-input.js` | `color-input.css` |
+| Colour picker | `color_picker` | publishes `topic`, follows `listen` | `color-picker.js` (+ popover) | `color-picker.css` (+ popover) |
+| Slider | `slider` | publishes `topic`, follows `listen` | `slider.js` | `slider.css` |
+| Value field | `value_field` | publishes `topic`, follows `listen` | `value-field.js` | `value-field.css` |
 | Popover | `popover` | `open_topic` (optional) | `popover.js` | `popover.css` |
 | Modal | `modal` | `open_topic` (optional) | `modal.js` | `modal.css` |
 | Theme state | `theme_state` | subscribes bindings | `theme-state.js` | — |

@@ -9,7 +9,11 @@
  * or resizes itself, so first-paint geometry holds.
  *
  * This replaces the native <input type="color"> deliberately: its picker popover
- * is UA-painted and cannot be tokenised (the no-UA-default rule). */
+ * is UA-painted and cannot be tokenised (the no-UA-default rule).
+ *
+ * The optional `listen` prop names a topic the control follows: a valid hex
+ * published there updates the field and swatch in place, without republishing —
+ * synced state, not user input, so followers never echo. */
 window.switchboard.register("color-input", function (el, props, bus) {
   var topic = props.topic;
   var field = el.querySelector(".sb-color-input-text");
@@ -27,7 +31,18 @@ window.switchboard.register("color-input", function (el, props, bus) {
 
   field.addEventListener("input", onInput);
 
+  var off = null;
+  if (props.listen) {
+    off = bus.subscribe(props.listen, function (value) {
+      if (typeof value !== "string" || !HEX.test(value)) return;
+      field.value = value;
+      field.setAttribute("aria-invalid", "false");
+      swatch.style.setProperty("--sb-swatch", value);
+    });
+  }
+
   return function teardown() {
     field.removeEventListener("input", onInput);
+    if (off) off();
   };
 });

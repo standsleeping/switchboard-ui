@@ -11,7 +11,11 @@
  * cannot come from the token palette, so they are set inline as live data — the
  * one sanctioned exception to the no-UA-default / token-only rule (philosophy
  * §17). Everything else — the swatch fill (painted from the --sb-swatch value this
- * writes), borders, the handle ring, the gap — is the theme's. */
+ * writes), borders, the handle ring, the gap — is the theme's.
+ *
+ * The optional `listen` prop names a topic the picker follows: a valid hex
+ * published there resyncs the HSV model, swatch, spectrum, and field in place,
+ * without republishing — synced state, not user input, so followers never echo. */
 window.switchboard.register("color-picker", function (el, props, bus) {
   var topic = props.topic;
   var trigger = el.querySelector(".sb-color-picker-swatch");
@@ -215,6 +219,18 @@ window.switchboard.register("color-picker", function (el, props, bus) {
   paintArea();
   syncVisuals();
 
+  var off = null;
+  if (props.listen) {
+    off = bus.subscribe(props.listen, function (value) {
+      if (typeof value !== "string" || !HEX.test(value)) return;
+      st = hexToHsv(value);
+      paintArea();
+      syncVisuals();
+      field.value = value;
+      field.setAttribute("aria-invalid", "false");
+    });
+  }
+
   area.addEventListener("pointerdown", onSvDown);
   area.addEventListener("pointermove", onSvMove);
   area.addEventListener("pointerup", onSvUp);
@@ -237,5 +253,6 @@ window.switchboard.register("color-picker", function (el, props, bus) {
     hue.removeEventListener("keydown", onHueKey);
     field.removeEventListener("input", onFieldInput);
     panel.removeEventListener("toggle", onToggle);
+    if (off) off();
   };
 });

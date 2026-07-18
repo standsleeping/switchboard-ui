@@ -9,7 +9,12 @@
  * keys move to the previous / next option (wrapping) and check it, Home / End
  * jump to the first / last, and a click or native Space / Enter checks the
  * pressed option. Every selection moves aria-checked, moves the tab stop, and
- * publishes the value on the island's topic. */
+ * publishes the value on the island's topic.
+ *
+ * The optional `listen` prop names a topic the group follows: a value published
+ * there moves the selection in place — no focus steal, no republish. An applied
+ * value is synced state, not user input, so two controls may follow each other
+ * without echoing. */
 window.switchboard.register("segmented", function (el, props, bus) {
   var topic = props.topic;
   var radios = Array.prototype.slice.call(
@@ -23,12 +28,16 @@ window.switchboard.register("segmented", function (el, props, bus) {
     return 0;
   }
 
-  function select(radio) {
+  function check(radio) {
     radios.forEach(function (r) {
       var on = r === radio;
       r.setAttribute("aria-checked", on ? "true" : "false");
       r.tabIndex = on ? 0 : -1;
     });
+  }
+
+  function select(radio) {
+    check(radio);
     radio.focus();
     bus.publish(topic, radio.dataset.value);
   }
@@ -59,10 +68,24 @@ window.switchboard.register("segmented", function (el, props, bus) {
     r.addEventListener("keydown", onKeydown);
   });
 
+  var off = null;
+  if (props.listen) {
+    off = bus.subscribe(props.listen, function (value) {
+      if (typeof value !== "string") return;
+      for (var i = 0; i < radios.length; i++) {
+        if (radios[i].dataset.value === value) {
+          check(radios[i]);
+          return;
+        }
+      }
+    });
+  }
+
   return function teardown() {
     radios.forEach(function (r) {
       r.removeEventListener("click", onClick);
       r.removeEventListener("keydown", onKeydown);
     });
+    if (off) off();
   };
 });

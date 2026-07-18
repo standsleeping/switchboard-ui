@@ -57,6 +57,23 @@ _SEPARATOR = element(
 )
 
 
+def _control_props(topic: str, listen: str | None) -> dict[str, Json]:
+    """The props shared by every value control: its publish topic, plus the
+    optional ``listen`` topic it follows.
+
+    A control that listens applies an incoming value in place and never
+    republishes it: an applied value is synced state, not user input, so two
+    controls may follow each other without echoing. The empty string is rejected
+    here so every control fails the same way at the authoring boundary.
+    """
+    if listen == "":
+        raise ValueError("listen must be a non-empty topic (or None)")
+    props: dict[str, Json] = {"topic": topic}
+    if listen is not None:
+        props["listen"] = listen
+    return props
+
+
 def _option(value: str, label: str, *, checked: bool) -> str:
     """One radio option, server-rendered so it is present and focus-ordered at first paint.
 
@@ -83,16 +100,20 @@ def segmented(
     options: Sequence[tuple[str, str]],
     value: str,
     label: str,
+    listen: str | None = None,
 ) -> Island:
     """A segmented toggle: pick one of ``options``, publish its value on ``topic``.
 
     ``options`` is an ordered sequence of ``(value, label)`` pairs; ``value`` is
     the initially-selected option's value and must be one of them; ``label`` names
     the group for assistive tech (a radio group's required accessible name).
-    Selecting an option publishes its value on ``topic``. Raises :class:`ValueError`
-    at the authoring boundary if ``options`` is empty, ``value`` is not among them,
-    or ``label`` is blank — so a bad call fails where it is written, not at render
-    or in the browser.
+    Selecting an option publishes its value on ``topic``. ``listen`` names an
+    optional topic the control follows: a value published there moves the
+    selection in place — without stealing focus and without republishing, so
+    another island can drive this one over the bus with no echo. Raises
+    :class:`ValueError` at the authoring boundary if ``options`` is empty,
+    ``value`` is not among them, or ``label`` is blank — so a bad call fails
+    where it is written, not at render or in the browser.
     """
     if not options:
         raise ValueError("segmented requires at least one option")
@@ -114,8 +135,9 @@ def segmented(
     )
     return Island(
         name=_ADAPTER,
-        props={"topic": topic},
+        props=_control_props(topic, listen),
         publishes=(topic,),
+        subscribes=(listen,) if listen else (),
         initial=initial,
     )
 
@@ -156,16 +178,20 @@ def _hex_field(value: str, label: str) -> str:
     )
 
 
-def color_input(*, topic: str, value: str, label: str) -> Island:
+def color_input(
+    *, topic: str, value: str, label: str, listen: str | None = None
+) -> Island:
     """A themed colour input: a swatch plus a hex field that publishes ``value``.
 
     A tokenised replacement for the native ``<input type="color">`` (whose picker
     popover is UA-painted and cannot be themed). ``value`` is the initial colour
     as a six-digit hex (``#rrggbb``); ``label`` is the field's accessible name.
     Editing the field to a valid hex repaints the swatch and publishes the colour
-    on ``topic``. Raises :class:`ValueError` at the authoring boundary if ``value``
-    is not a six-digit hex or ``label`` is blank, so a bad call fails where it is
-    written, not at render or in the browser.
+    on ``topic``. ``listen`` names an optional topic the control follows: a valid
+    hex published there updates the field and swatch in place, without
+    republishing. Raises :class:`ValueError` at the authoring boundary if
+    ``value`` is not a six-digit hex or ``label`` is blank, so a bad call fails
+    where it is written, not at render or in the browser.
     """
     if not _HEX.match(value):
         msg = f"color_input value {value!r} is not a six-digit hex colour (#rrggbb)"
@@ -187,7 +213,11 @@ def color_input(*, topic: str, value: str, label: str) -> Island:
         "div", {"class": "sb-color-input"}, [swatch, _hex_field(value, label)]
     )
     return Island(
-        name="color-input", props={"topic": topic}, publishes=(topic,), initial=initial
+        name="color-input",
+        props=_control_props(topic, listen),
+        publishes=(topic,),
+        subscribes=(listen,) if listen else (),
+        initial=initial,
     )
 
 
@@ -356,7 +386,9 @@ def _hsv(hex_value: str) -> tuple[int, int, int]:
     return round(h * 360), round(s * 100), round(v * 100)
 
 
-def color_picker(*, topic: str, value: str, label: str) -> Island:
+def color_picker(
+    *, topic: str, value: str, label: str, listen: str | None = None
+) -> Island:
     """A visual colour picker: a swatch that opens a spectrum popover, plus a hex field.
 
     Augments :func:`color_input`: the swatch becomes a popover trigger that
@@ -364,8 +396,10 @@ def color_picker(*, topic: str, value: str, label: str) -> Island:
     as the precise, fully-accessible control. The swatch, the spectrum, and the
     field stay in sync and all publish the chosen ``#rrggbb`` on ``topic``.
     ``value`` is the initial colour (six-digit hex) and ``label`` names the
-    control. Raises :class:`ValueError` at the authoring boundary if ``value`` is
-    not a six-digit hex or ``label`` is blank.
+    control. ``listen`` names an optional topic the picker follows: a valid hex
+    published there resyncs the swatch, spectrum, and field in place, without
+    republishing. Raises :class:`ValueError` at the authoring boundary if
+    ``value`` is not a six-digit hex or ``label`` is blank.
     """
     if not _HEX.match(value):
         msg = f"color_picker value {value!r} is not a six-digit hex colour (#rrggbb)"
@@ -390,7 +424,11 @@ def color_picker(*, topic: str, value: str, label: str) -> Island:
         [render_island(trigger), _hex_field(value, label)],
     )
     return Island(
-        name="color-picker", props={"topic": topic}, publishes=(topic,), initial=initial
+        name="color-picker",
+        props=_control_props(topic, listen),
+        publishes=(topic,),
+        subscribes=(listen,) if listen else (),
+        initial=initial,
     )
 
 
@@ -420,6 +458,7 @@ def slider(
     label: str,
     step: float = 1,
     readout: bool = True,
+    listen: str | None = None,
 ) -> Island:
     """A slider: drag a numeric value in ``[min, max]``, publishing it on ``topic``.
 
@@ -428,7 +467,9 @@ def slider(
     ``readout`` shows the live value beside the track. Dragging publishes the
     value as a number — an ``int`` when ``min``/``max``/``step``/``value`` are all
     whole, else a ``float`` (decided here and carried as the ``integer`` prop).
-    Raises :class:`ValueError` at the authoring boundary if ``min >= max``,
+    ``listen`` names an optional topic the slider follows: a number published
+    there moves the thumb and readout in place, without republishing. Raises
+    :class:`ValueError` at the authoring boundary if ``min >= max``,
     ``step <= 0``, ``value`` is out of range, or ``label`` is blank.
     """
     if min >= max:
@@ -467,8 +508,9 @@ def slider(
     initial = element("div", {"class": "sb-slider"}, children)
     return Island(
         name="slider",
-        props={"topic": topic, "integer": integer},
+        props={**_control_props(topic, listen), "integer": integer},
         publishes=(topic,),
+        subscribes=(listen,) if listen else (),
         initial=initial,
     )
 
@@ -483,7 +525,9 @@ def slider_styles() -> str:
     return read_static("slider.css")
 
 
-def value_field(*, topic: str, value: str, label: str) -> Island:
+def value_field(
+    *, topic: str, value: str, label: str, listen: str | None = None
+) -> Island:
     """A labelled text field that publishes its value on ``topic``.
 
     The general single-line editor for a scheme-invariant token whose value is a
@@ -492,8 +536,10 @@ def value_field(*, topic: str, value: str, label: str) -> Island:
     Editing it publishes the raw string on ``topic`` — a :func:`theme_state`
     :class:`ValueBinding` writes that string straight onto the bound token, so the
     preview repaints. Unlike :func:`color_input` it validates nothing: any string
-    is a candidate CSS value and the live preview is the feedback. Raises
-    :class:`ValueError` at the authoring boundary if ``label`` is blank.
+    is a candidate CSS value and the live preview is the feedback. ``listen``
+    names an optional topic the field follows: a string published there replaces
+    the field's text in place, without republishing. Raises :class:`ValueError`
+    at the authoring boundary if ``label`` is blank.
     """
     if not label:
         raise ValueError("value_field requires a non-empty label (the field's name)")
@@ -513,7 +559,11 @@ def value_field(*, topic: str, value: str, label: str) -> Island:
     )
     initial = element("div", {"class": "sb-value-field"}, [field])
     return Island(
-        name="value-field", props={"topic": topic}, publishes=(topic,), initial=initial
+        name="value-field",
+        props=_control_props(topic, listen),
+        publishes=(topic,),
+        subscribes=(listen,) if listen else (),
+        initial=initial,
     )
 
 

@@ -142,6 +142,45 @@ def test_segmented_rejects_value_outside_options() -> None:
         )
 
 
+def _listening_controls() -> dict[str, Island]:
+    """Every value control built with ``listen="follow:me"``, keyed by name."""
+    return {
+        "segmented": segmented(
+            topic="t",
+            options=_OPTIONS,
+            value="overview",
+            label=_LABEL,
+            listen="follow:me",
+        ),
+        "slider": slider(
+            topic="t", min=0, max=10, value=5, label="Size", listen="follow:me"
+        ),
+        "value-field": value_field(
+            topic="t", value="0", label="Radius", listen="follow:me"
+        ),
+        "color-input": color_input(
+            topic="t", value="#5b4bd6", label="Accent", listen="follow:me"
+        ),
+        "color-picker": color_picker(
+            topic="t", value="#5b4bd6", label="Accent", listen="follow:me"
+        ),
+    }
+
+
+def test_controls_declare_the_listen_topic() -> None:
+    """A control given ``listen`` carries it in props and declares the subscription,
+    so the adapter can follow the topic and the analyzer sees the edge."""
+    for name, island in _listening_controls().items():
+        assert island.props.get("listen") == "follow:me", name
+        assert island.subscribes == ("follow:me",), name
+
+
+def test_controls_reject_a_blank_listen_topic() -> None:
+    """An empty ``listen`` would declare a subscription nothing can publish to."""
+    with pytest.raises(ValueError, match="listen"):
+        value_field(topic="t", value="0", label="Radius", listen="")
+
+
 def test_segmented_scripts_returns_the_adapter() -> None:
     """The adapter ships and registers under the segmented name (the runtime's dispatch key)."""
     (adapter,) = segmented_scripts()
