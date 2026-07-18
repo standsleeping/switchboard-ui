@@ -625,7 +625,29 @@ def preview_items() -> tuple[str, ...]:
         {"class": "sb-preview-table"},
         [element("thead", {}, [header]), element("tbody", {}, body)],
     )
-    return (heading, prose, button, swatch, table)
+    callout = element(
+        "p",
+        {"class": "sb-preview-callout"},
+        [escape_text("A callout on the accent's tinted surface.")],
+    )
+    diff = element(
+        "pre",
+        {"class": "sb-preview-diff"},
+        [
+            element(
+                "code",
+                {"class": "sb-preview-diff-del"},
+                [escape_text("- padding: 12px")],
+            ),
+            escape_text("\n"),
+            element(
+                "code",
+                {"class": "sb-preview-diff-add"},
+                [escape_text("+ padding: var(--sb-space-inset)")],
+            ),
+        ],
+    )
+    return (heading, prose, button, swatch, table, callout, diff)
 
 
 def _preview_sample() -> str:
