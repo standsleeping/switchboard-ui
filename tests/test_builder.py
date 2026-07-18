@@ -54,22 +54,23 @@ def test_builder_renders_each_preview_item_in_a_light_and_dark_cell() -> None:
     assert len(dark) == len(items)
 
 
-def test_builder_wires_a_density_toggle_to_the_controls_column() -> None:
-    """The header carries a density toggle that publishes ``builder:density`` and an
-    invisible applier that subscribes it and flips the controls column's density —
-    a view control, not a token edit (it touches no token)."""
+def test_builder_carries_the_shared_mode_switch() -> None:
+    """The header carries the shared scheme and density toggles, and the mode-state
+    applier subscribes both — view controls, not token edits (they touch no token)."""
     html = render_document(build_theme_builder())
-    toggle = find(
-        html, "div", **{"data-island": "segmented", "data-pub": "builder:density"}
+    scheme = find(
+        html, "div", **{"data-island": "segmented", "data-pub": "scheme:changed"}
     )
-    assert len(toggle) == 1
+    density = find(
+        html, "div", **{"data-island": "segmented", "data-pub": "density:changed"}
+    )
+    assert len(scheme) == 1 and len(density) == 1
     applier = find(
         html,
         "div",
-        **{"data-island": "builder-density", "data-sub": "builder:density"},
+        **{"data-island": "mode-state", "data-sub": "scheme:changed,density:changed"},
     )
     assert len(applier) == 1
-    assert ".sb-builder-controls" in applier[0]["data-props"]
 
 
 def test_builder_nav_links_each_category_to_a_real_section_anchor() -> None:

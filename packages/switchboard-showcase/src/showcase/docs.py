@@ -22,7 +22,15 @@ construct a future doc introduces before the renderer gains it.
 from dataclasses import dataclass
 from pathlib import Path
 
-from showcase.chrome import surface_switch, surface_switch_styles
+from showcase.chrome import (
+    mode_stamp_head,
+    mode_state,
+    mode_switch,
+    mode_switch_scripts,
+    mode_switch_styles,
+    surface_switch,
+    surface_switch_styles,
+)
 from showcase.markdown import (
     Heading,
     MarkdownError,
@@ -36,6 +44,10 @@ from switchboard_ui.components import (
     breadcrumb_styles,
     code_block_scripts,
     code_block_styles,
+    popover_scripts,
+    popover_styles,
+    segmented_scripts,
+    segmented_styles,
     table_styles,
 )
 from switchboard_ui.html import element, escape_text
@@ -208,9 +220,12 @@ def _shell(
     content: tuple[Island, ...],
 ) -> Document:
     """Assemble the docs three-column shell around a doc's rendered content."""
-    body_c = (_breadcrumb(relpath, title), *content)
+    # The mode-state island is invisible wiring at the column's tail (no gap
+    # mid-content, and it mounts after the head-rail toggles it syncs).
+    body_c = (_breadcrumb(relpath, title), *content, mode_state())
     regions: dict[Region, tuple[Island, ...]] = {
         "head-c": (surface_switch("docs"),),
+        "head-r": (mode_switch(),),
         "body-l": (_nav(relpath),),
         "body-c": body_c,
         "body-r": (_toc(headings),),
@@ -281,13 +296,19 @@ def build_doc(relpath: str) -> Document:
 
 
 def docs_scripts() -> tuple[str, ...]:
-    """The adapters the docs register: the code block's copy action (nav is static)."""
-    return code_block_scripts()
+    """The adapters the docs register: the code block's copy action and the mode
+    switch (nav is static)."""
+    return (
+        code_block_scripts()
+        + popover_scripts()
+        + segmented_scripts()
+        + mode_switch_scripts()
+    )
 
 
 # The docs' own page chrome (host CSS, not the core's structure or the theme's
 # paint): the content prose styles, the nav, the on-this-page TOC, and the header.
-# It reads the theme's --sb-* tokens because the theme is loaded. The centre column
+# It reads the theme's --sb-* tokens because the theme is loaded. The center column
 # owns both inline seams (single owner; the side columns draw neither). Content
 # children share one reading measure so prose and code align to one column edge.
 _DOC_MEASURE = "60rem"
@@ -310,6 +331,7 @@ _DOCS_CSS = f"""
 }}
 .sb-doc-h {{
   font-family: var(--sb-font-family);
+  font-variation-settings: "MONO" var(--sb-font-axis-mono), "CASL" var(--sb-font-axis-casual);
   font-weight: var(--sb-font-weight-bold);
   line-height: 1.2;
 }}
@@ -321,11 +343,13 @@ _DOCS_CSS = f"""
 }}
 .sb-doc-p {{
   font-family: var(--sb-font-family-prose);
+  font-variation-settings: "MONO" var(--sb-font-axis-mono-prose), "CASL" var(--sb-font-axis-casual-prose);
   line-height: var(--sb-font-line-height);
   color: var(--sb-color-fg);
 }}
 .sb-doc-code {{
   font-family: var(--sb-font-family);
+  font-variation-settings: "MONO" var(--sb-font-axis-mono), "CASL" var(--sb-font-axis-casual);
   font-size: var(--sb-font-size-sm);
   background: var(--sb-color-bg-raised);
   padding: var(--sb-space-2xs);
@@ -347,6 +371,7 @@ _DOCS_CSS = f"""
   display: flex;
   gap: var(--sb-space-sm);
   font-family: var(--sb-font-family-prose);
+  font-variation-settings: "MONO" var(--sb-font-axis-mono-prose), "CASL" var(--sb-font-axis-casual-prose);
   line-height: var(--sb-font-line-height);
 }}
 .sb-doc-marker {{
@@ -438,5 +463,16 @@ _DOCS_CSS = f"""
 
 def docs_styles() -> str:
     """The components' structural CSS plus the docs' page chrome, for ``extra_head``."""
-    sheets = "\n".join((code_block_styles(), breadcrumb_styles(), table_styles()))
-    return f"<style>{sheets}</style><style>{_DOCS_CSS}</style>{surface_switch_styles()}"
+    sheets = "\n".join(
+        (
+            code_block_styles(),
+            breadcrumb_styles(),
+            popover_styles(),
+            segmented_styles(),
+            table_styles(),
+        )
+    )
+    return (
+        f"<style>{sheets}</style><style>{_DOCS_CSS}</style>"
+        f"{surface_switch_styles()}{mode_switch_styles()}{mode_stamp_head()}"
+    )

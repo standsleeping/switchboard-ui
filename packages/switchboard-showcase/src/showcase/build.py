@@ -6,7 +6,7 @@ two pages:
 
 - :func:`build_showcase` — the component gallery: each island and preset rendered
   on a self-rendered page, the forcing function the theme and components are shaped
-  against (the segmented toggle, popover, colour picker, slider, value field, and a
+  against (the segmented toggle, popover, color picker, slider, value field, and a
   live preview).
 - :func:`build_theme_builder` — the capstone dogfood: a control panel generated
   from the theme's token registry beside a live light/dark preview, with a
@@ -23,7 +23,15 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
 from typing import assert_never
 
-from showcase.chrome import surface_switch, surface_switch_styles
+from showcase.chrome import (
+    mode_stamp_head,
+    mode_state,
+    mode_switch,
+    mode_switch_scripts,
+    mode_switch_styles,
+    surface_switch,
+    surface_switch_styles,
+)
 from switchboard_theme import REGISTRY, Category, Fixed, Themed, Token, ValueType
 from switchboard_ui import Document, Island, render_island
 from switchboard_ui.components import (
@@ -75,7 +83,7 @@ from switchboard_ui.presets import three_column
 
 # The gallery is a nav | content | inspector tool, the three columns of the
 # three_column preset used for what they mean. All three are projections of one
-# registry (`_gallery_specs`): the nav lists each component, the centre renders it,
+# registry (`_gallery_specs`): the nav lists each component, the center renders it,
 # and the inspector shows its props and tokens. So a column placement is never
 # arbitrary — it is the component's row read in a different direction.
 _SELECT_TOPIC = "gallery:select"
@@ -87,7 +95,7 @@ _SELECT_TOPIC = "gallery:select"
 # pick a control per prop and illegal states stay unrepresentable: a text prop
 # carries no numeric bounds, a number prop carries its range, an enum carries its
 # choices. This mirrors the core's own `Binding = ArmBinding | ValueBinding` union.
-# An editable kind renders its control (value field / colour input / slider /
+# An editable kind renders its control (value field / color input / slider /
 # segmented); a `DisplayProp` renders as read-only text — a structural or
 # descriptive prop only the factory can change, which waits for the server render
 # endpoint. The wiring is symmetric and lives entirely on the bus: the inspector
@@ -113,7 +121,7 @@ class TextProp:
 
 @dataclass(frozen=True)
 class ColorProp:
-    """An editable six-digit-hex colour prop (``#rrggbb``).
+    """An editable six-digit-hex color prop (``#rrggbb``).
 
     ``follows`` optionally names the specimen's publish topic, so the control
     tracks the live component's own edits.
@@ -191,7 +199,7 @@ def _prop_topic(spec_id: str, name: str) -> str:
 class _Spec:
     """One gallery entry, projected into all three columns.
 
-    ``body`` is the specimen island(s) the centre renders (an invisible wiring
+    ``body`` is the specimen island(s) the center renders (an invisible wiring
     island like ``theme_state`` is carried here too and floated to the end of the
     column so it adds no gap mid-content). ``props`` (typed descriptors, one per
     inspector row) and ``tokens`` are the inspector's two sections for this
@@ -267,7 +275,7 @@ def _collapsible_specimen(edits: Mapping[str, str]) -> Island:
 def _gallery_specs() -> tuple[_Spec, ...]:
     """The component registry the three columns are projected from.
 
-    The colour picker and value field publish the same topics the preview's
+    The color picker and value field publish the same topics the preview's
     ``theme_state`` subscribes to, so editing either live-restyles the preview even
     though they sit in different sections — the bus crossing the gallery, which is
     the showcase's whole point.
@@ -339,7 +347,7 @@ def _gallery_specs() -> tuple[_Spec, ...]:
         ),
         _Spec(
             id="color-picker",
-            name="Colour picker",
+            name="Color picker",
             section="Controls",
             body=(
                 color_picker(
@@ -444,7 +452,7 @@ def _gallery_specs() -> tuple[_Spec, ...]:
                     columns=("Component", "Section", "Adapter"),
                     rows=(
                         ("segmented", "control", "yes"),
-                        ("colour picker", "control", "yes"),
+                        ("color picker", "control", "yes"),
                         ("slider", "control", "yes"),
                         ("preview", "display", "no"),
                         ("table", "display", "no"),
@@ -741,12 +749,12 @@ def build_showcase() -> Document:
     """The component gallery as a nav | content | inspector tool.
 
     The three columns are projections of one registry: the nav (body-l) lists each
-    component, the centre (body-c) renders it under a section heading, and the
+    component, the center (body-c) renders it under a section heading, and the
     inspector (body-r) shows its props and tokens. Selecting a nav item publishes
     ``gallery:select``; the inspector subscribes and swaps to that component's
     panel — the bus carrying a selection across regions, the same coordination the
     demo proves with counter → readout. Invisible wiring islands float to the end
-    of the centre column so they add no gap between specimens.
+    of the center column so they add no gap between specimens.
     """
     specs = _gallery_specs()
     content: list[Island] = []
@@ -770,10 +778,12 @@ def build_showcase() -> Document:
             (content if island.initial else trailing).append(island)
     regions: dict[Region, tuple[Island, ...]] = {
         "head-c": (surface_switch("gallery"),),
+        "head-r": (mode_switch(),),
         "body-l": (_gallery_nav(specs),),
-        # The remount island is invisible wiring; it trails the content like the
-        # other zero-initial islands, so it adds no gap mid-column.
-        "body-c": tuple(content + trailing + [_gallery_remount(specs)]),
+        # The remount and mode-state islands are invisible wiring; they trail the
+        # content like the other zero-initial islands, so they add no gap
+        # mid-column (and mode-state mounts after the toggles it syncs).
+        "body-c": tuple(content + trailing + [_gallery_remount(specs), mode_state()]),
         "body-r": (_gallery_inspector(specs),),
         "foot-c": (Island(name="status", initial="component gallery"),),
     }
@@ -794,6 +804,7 @@ def showcase_scripts() -> tuple[str, ...]:
         + theme_state_scripts()
         + code_block_scripts()
         + modal_scripts()
+        + mode_switch_scripts()
         + (_GALLERY_NAV_JS, _GALLERY_INSPECTOR_JS, _GALLERY_REMOUNT_JS)
     )
 
@@ -911,9 +922,9 @@ window.switchboard.register("gallery-inspector", function (el, props, bus) {
 # The gallery's page chrome (host CSS, not the core's structure or the theme's
 # paint): the column seams, the component nav, the content rhythm, and the
 # inspector. It reads the theme's --sb-* tokens because the theme is loaded. The
-# centre column owns both internal seams (single-owner; the side columns draw
+# center column owns both internal seams (single-owner; the side columns draw
 # neither). The nav's active item reserves the accent channel as a transparent
-# inline-start border, recoloured on selection, so the indicator never shifts the
+# inline-start border, recolored on selection, so the indicator never shifts the
 # row (peer edge reservation).
 _GALLERY_CSS = """
 .sb-body-c {
@@ -1034,7 +1045,8 @@ def showcase_styles() -> str:
         )
     )
     return (
-        f"<style>{sheets}</style><style>{_GALLERY_CSS}</style>{surface_switch_styles()}"
+        f"<style>{sheets}</style><style>{_GALLERY_CSS}</style>"
+        f"{surface_switch_styles()}{mode_switch_styles()}{mode_stamp_head()}"
     )
 
 
@@ -1043,7 +1055,7 @@ def showcase_styles() -> str:
 # The capstone dogfood: an SBUI page that edits the theme's own token registry
 # live. It iterates switchboard_theme's REGISTRY to generate one control per
 # editable token, grouped by category, and binds each to a shared preview scope
-# through a single theme_state island. A scheme-varying colour is edited per arm
+# through a single theme_state island. A scheme-varying color is edited per arm
 # (two controls, two ArmBindings) against a side-by-side light/dark preview; a
 # scheme-invariant token is edited directly (one control, one ValueBinding). The
 # Component Geometry contract (the `fit` category) is structural, not taste, so it
@@ -1051,7 +1063,6 @@ def showcase_styles() -> str:
 # so a new token appears in the builder the moment it lands in tokens.py.
 
 _BUILDER_SCOPE = "builder-preview"
-_DENSITY_TOPIC = "builder:density"
 _HEX = re.compile(r"#[0-9a-fA-F]{6}\Z")
 
 
@@ -1066,9 +1077,9 @@ def _static(name: str, text: str, class_: str) -> Island:
 
 
 def _control(*, type_: ValueType, value: str, topic: str, label: str) -> Island:
-    """The editor for one token value: a swatch + hex colour input for a hex
-    colour, else the general value field (lengths, numbers, families, the rgba
-    scrim that is a colour but not a hex)."""
+    """The editor for one token value: a swatch + hex color input for a hex
+    color, else the general value field (lengths, numbers, families, the rgba
+    scrim that is a color but not a hex)."""
     # color_input (swatch + hex), not the richer color_picker: the builder shows
     # one control per token, so the denser input keeps the palette compact.
     if type_ is ValueType.COLOR and _HEX.match(value):
@@ -1199,8 +1210,8 @@ def _builder_matrix() -> Island:
     boxes: list[str] = []
     for item in preview_items():
         # sb-preview-scope (beyond data-sb-scope) re-establishes the full token
-        # context on each cell (colour plus the type base), so a font edit
-        # repaints here too, not only colour edits.
+        # context on each cell (color plus the type base), so a font edit
+        # repaints here too, not only color edits.
         cells = [
             element(
                 "div",
@@ -1219,22 +1230,6 @@ def _builder_matrix() -> Island:
     return Island(name="preview-matrix", initial=matrix)
 
 
-def _builder_density() -> Island:
-    """An invisible wiring island: flip the controls column's density on the bus.
-
-    Subscribes the topic the header's density toggle publishes and writes the
-    chosen value (``comfortable`` / ``compact``) to ``data-density`` on the
-    controls column, where the CSS reads it to tighten the row rhythm. Paint only:
-    no control is added or removed, so the column's topology and seams are
-    unchanged. Mirrors how ``theme_state`` applies a bus value to a scoped target.
-    """
-    return Island(
-        name="builder-density",
-        props={"topic": _DENSITY_TOPIC, "target": ".sb-builder-controls"},
-        subscribes=(_DENSITY_TOPIC,),
-    )
-
-
 def build_theme_builder() -> Document:
     """The theme builder page: a generated control panel beside a live light/dark
     preview, all wired to the registry's tokens through one theme_state island."""
@@ -1249,17 +1244,10 @@ def build_theme_builder() -> Document:
         class_="sb-builder-preview sb-scroll",
     )
     # The surface switch stands alone flush-left (as in head-c on the gallery and
-    # docs); the page-local controls — the density toggle and the export — group
-    # flush-right, at the opposite end from Gallery · Docs · Builder, so the toggle
-    # reads as a setting of this page rather than a fourth surface tab. No brand
-    # label — the active Builder tab and the page title name the surface, as the
-    # gallery and docs do.
-    density = segmented(
-        topic=_DENSITY_TOPIC,
-        options=(("comfortable", "Comfortable"), ("compact", "Compact")),
-        value="comfortable",
-        label="Density",
-    )
+    # docs); the shared mode switch and the page-local export group flush-right,
+    # at the opposite end from Gallery · Docs · Builder, so the toggles read as
+    # settings rather than a fourth surface tab. No brand label — the active
+    # Builder tab and the page title name the surface, as the gallery and docs do.
     header = Frame(
         direction="row",
         children=(
@@ -1267,7 +1255,7 @@ def build_theme_builder() -> Document:
             Frame(
                 direction="row",
                 children=(
-                    density,
+                    mode_switch(),
                     theme_export(scope=scope, bindings=tuple(bindings)),
                 ),
                 class_="sb-builder-header-right",
@@ -1289,50 +1277,28 @@ def build_theme_builder() -> Document:
         ),
         class_="sb-builder-main",
     )
-    # The density applier (invisible) subscribes the toggle's topic and flips the
-    # controls column's compact state; it sits beside the theme-state applier.
+    # The mode-state applier (invisible) sits beside the theme-state applier, at
+    # the body's tail so it mounts after the header toggles it syncs.
     body = Frame(
         direction="column",
-        children=(header, Slot(main), state, _builder_density()),
+        children=(header, Slot(main), state, mode_state()),
     )
     return Document(body=body, title="switchboard-ui theme builder")
 
 
 def theme_builder_scripts() -> tuple[str, ...]:
-    """The adapters the builder registers: the colour input, the value field, the
-    theme-state island that applies every edit, the export control, the density
-    toggle, and the applier that flips the controls column's density."""
+    """The adapters the builder registers: the color input, the value field, the
+    theme-state island that applies every edit, the export control, the mode
+    toggles, and the shared applier that stamps the chosen modes on the root."""
     return (
         color_input_scripts()
         + value_field_scripts()
         + theme_state_scripts()
         + theme_export_scripts()
+        + popover_scripts()
         + segmented_scripts()
-        + (_BUILDER_DENSITY_JS,)
+        + mode_switch_scripts()
     )
-
-
-# The density applier: a builder-local invisible island (host chrome, like the
-# gallery's nav/inspector adapters) that subscribes the header toggle's topic and
-# writes the chosen value onto the controls column's `data-density`, where the CSS
-# reads it. The token names it touches are none — it sets a view attribute, never
-# a value — so it carries no trust surface.
-_BUILDER_DENSITY_JS = """
-window.switchboard.register("builder-density", function (el, props, bus) {
-  var targets = Array.prototype.slice.call(
-    document.querySelectorAll(props.target)
-  );
-  var off = bus.subscribe(props.topic, function (value) {
-    if (typeof value !== "string") return;
-    targets.forEach(function (t) {
-      t.dataset.density = value;
-    });
-  });
-  return function teardown() {
-    off();
-  };
-});
-"""
 
 
 # The builder's own page layout (host CSS, not the core's structure or the theme's
@@ -1351,21 +1317,12 @@ _BUILDER_CSS = """
   border-block-end: var(--sb-border-width-thin) solid var(--sb-color-border);
 }
 /* The surface switch stands alone flush-left (its self-inset keeps the alignment
- * the gallery and docs heads show); the page-local controls — the density toggle,
- * then the export — group flush-right (the header's space-between), at the
- * opposite end from the surface tabs, so the toggle does not read as a fourth. */
+ * the gallery and docs heads show); the modes control, then the export, group
+ * flush-right (the header's space-between), at the opposite end from the surface
+ * tabs, so neither reads as a further surface. */
 .sb-builder-header-right {
   align-items: center;
   gap: var(--sb-space-md);
-}
-/* Align the density toggle's underline with the surface switch beside it. The
- * theme insets each segmented option by --sb-space-sm (a standalone control's
- * density), which drops the active underline below the text, widens it, and makes
- * the option taller than the zero-inset switch links. Here the two tab bars sit
- * side by side, so reset the option inset to zero — the .sb-segmented gap still
- * carries the horizontal rhythm, as the switch's gap does for its own links. */
-.sb-builder-header-right .sb-segmented-option {
-  padding: 0;
 }
 .sb-builder-nav {
   display: flex;
@@ -1391,22 +1348,12 @@ _BUILDER_CSS = """
  * height. The nav and preview draw neither. A side rail that bordered its own
  * <nav> would stop the line where the content stops: island content is
  * display:block and does not stretch to the cell, so the seam would truncate.
- * Mirrors the gallery's centre cell (.sb-body-c) owning both of its seams. */
+ * Mirrors the gallery's center cell (.sb-body-c) owning both of its seams. */
 .sb-builder-controls {
   gap: var(--sb-space-md);
   padding: var(--sb-space-lg);
   border-inline-start: var(--sb-border-width-thin) solid var(--sb-color-border);
   border-inline-end: var(--sb-border-width-thin) solid var(--sb-color-border);
-}
-/* Compact density: the header toggle flips data-density on this column, tightening
- * the inter-row gap, the in-row gap, and the inset. Paint only — no row is added
- * or removed, so the column's topology and its seams are unchanged. */
-.sb-builder-controls[data-density="compact"] {
-  gap: var(--sb-space-xs);
-  padding: var(--sb-space-md);
-}
-.sb-builder-controls[data-density="compact"] .sb-builder-row {
-  gap: var(--sb-space-sm);
 }
 /* A row keeps its natural height: it is an .sb-frame (min-block-size: 0), so
  * without this it would flex-shrink to nothing in the fixed-height scroll column
@@ -1477,10 +1424,12 @@ def theme_builder_styles() -> str:
             value_field_styles(),
             preview_styles(),
             theme_export_styles(),
+            popover_styles(),
             segmented_styles(),
             _MATRIX_CSS,
         )
     )
     return (
-        f"<style>{sheets}</style><style>{_BUILDER_CSS}</style>{surface_switch_styles()}"
+        f"<style>{sheets}</style><style>{_BUILDER_CSS}</style>"
+        f"{surface_switch_styles()}{mode_switch_styles()}{mode_stamp_head()}"
     )

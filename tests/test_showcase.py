@@ -17,14 +17,19 @@ from switchboard_ui.model import Frame, Slot
 from tests.htmlprobe import find
 
 
-def test_showcase_keeps_corner_regions_empty() -> None:
-    """Grid paint must not invent placeholder islands to keep empty cells visible."""
+def test_showcase_keeps_unplaced_corner_regions_empty() -> None:
+    """Grid paint must not invent placeholder islands to keep empty cells visible.
+
+    ``head-r`` holds the mode switch, so the empty corners are ``head-l`` and
+    both foot sides.
+    """
     document = build_showcase()
     head, _, foot = document.body.children
     assert isinstance(head, Frame)
     assert isinstance(foot, Frame)
-    for row in (head, foot):
-        for position in (0, 2):
+    empty = ((head, (0,)), (foot, (0, 2)))
+    for row, positions in empty:
+        for position in positions:
             cell = row.children[position]
             assert isinstance(cell, Slot)
             assert isinstance(cell.child, Frame)
@@ -43,7 +48,7 @@ def test_showcase_keeps_corner_regions_empty() -> None:
 def test_showcase_styles_carry_the_three_column_chrome() -> None:
     """The gallery paints its own column seams, nav, and inspector (host chrome)."""
     css = showcase_styles()
-    assert ".sb-body-c" in css  # the centre column owns both column seams
+    assert ".sb-body-c" in css  # the center column owns both column seams
     assert ".sb-gallery-nav" in css
     assert ".sb-gallery-inspector" in css
 
