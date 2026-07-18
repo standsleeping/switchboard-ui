@@ -19,7 +19,8 @@ the theme). That is the same opt-in a real host performs.
 """
 
 import re
-from dataclasses import dataclass
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass, replace
 from typing import assert_never
 
 from showcase.chrome import surface_switch, surface_switch_styles
@@ -89,58 +90,101 @@ _SELECT_TOPIC = "gallery:select"
 # An editable kind renders its control (value field / colour input / slider /
 # segmented); a `DisplayProp` renders as read-only text — a structural or
 # descriptive prop only the factory can change, which waits for the server render
-# endpoint. The editable controls publish on `<id>:prop:<name>`, but nothing
-# subscribes yet: the control is live, the edit is a no-op, the specimen unchanged
-# (the wiring is a later phase). Only genuine value props get a control; showing an
-# editable affordance for a prop we cannot yet apply would be a dishonest promise.
+# endpoint. The wiring is symmetric and lives entirely on the bus: the inspector
+# control publishes on `<id>:prop:<name>` and the specimen listens there, so an
+# inspector edit updates the live component; an editable descriptor's `follows`
+# names the specimen's own publish topic, so interacting with the specimen moves
+# the inspector control too. Both directions apply silently (an applied value is
+# never republished), which is what makes the cycle loop-free.
 
 
 @dataclass(frozen=True)
 class TextProp:
-    """An editable string prop — a length, a number-as-text, any CSS string."""
+    """An editable string prop — a length, a number-as-text, any CSS string.
+
+    ``follows`` optionally names the specimen's publish topic, so the control
+    tracks the live component's own edits.
+    """
 
     name: str
     value: str
+    follows: str | None = None
 
 
 @dataclass(frozen=True)
 class ColorProp:
-    """An editable six-digit-hex colour prop (``#rrggbb``)."""
+    """An editable six-digit-hex colour prop (``#rrggbb``).
+
+    ``follows`` optionally names the specimen's publish topic, so the control
+    tracks the live component's own edits.
+    """
 
     name: str
     value: str
+    follows: str | None = None
 
 
 @dataclass(frozen=True)
 class NumberProp:
-    """An editable numeric prop bounded to ``[min, max]`` in ``step`` increments."""
+    """An editable numeric prop bounded to ``[min, max]`` in ``step`` increments.
+
+    ``follows`` optionally names the specimen's publish topic, so the control
+    tracks the live component's own edits.
+    """
 
     name: str
     value: float
     min: float
     max: float
     step: float = 1
+    follows: str | None = None
 
 
 @dataclass(frozen=True)
 class EnumProp:
-    """An editable one-of prop; ``choices`` are ordered ``(value, label)`` pairs."""
+    """An editable one-of prop; ``choices`` are ordered ``(value, label)`` pairs.
+
+    ``follows`` optionally names the specimen's publish topic, so the control
+    tracks the live component's own edits.
+    """
 
     name: str
     value: str
     choices: tuple[tuple[str, str], ...]
+    follows: str | None = None
 
 
 @dataclass(frozen=True)
-class DisplayProp:
-    """A prop shown read-only: structural or descriptive, not yet editable."""
+class StructProp:
+    """An editable structural prop: the edit changes the specimen's markup, which
+    only the Python factory can produce.
+
+    Its control publishes on the same ``<id>:prop:<name>`` convention as a value
+    prop, but the subscriber is the remount island, which round-trips the edit
+    through the server render endpoint: the factory re-renders the specimen and
+    the client swaps the returned mount point in place. The browser never
+    re-implements what the factory expresses.
+    """
 
     name: str
     value: str
 
 
-Prop = TextProp | ColorProp | NumberProp | EnumProp | DisplayProp
+@dataclass(frozen=True)
+class DisplayProp:
+    """A prop shown read-only: descriptive, or not yet worth an editing surface."""
+
+    name: str
+    value: str
+
+
+Prop = TextProp | ColorProp | NumberProp | EnumProp | StructProp | DisplayProp
 """One inspector prop row: an editable control chosen by kind, or read-only text."""
+
+
+def _prop_topic(spec_id: str, name: str) -> str:
+    """The bus topic an inspector edit of one prop travels on."""
+    return f"{spec_id}:prop:{name}"
 
 
 @dataclass(frozen=True)
@@ -151,7 +195,9 @@ class _Spec:
     island like ``theme_state`` is carried here too and floated to the end of the
     column so it adds no gap mid-content). ``props`` (typed descriptors, one per
     inspector row) and ``tokens`` are the inspector's two sections for this
-    component.
+    component. ``rebuild``, on a spec with structural props, re-runs the factory
+    with edited prop values — the server render endpoint calls it, so the factory
+    stays the single source of truth for the specimen's markup.
     """
 
     id: str
@@ -160,6 +206,62 @@ class _Spec:
     body: tuple[Island, ...]
     props: tuple[Prop, ...]
     tokens: tuple[str, ...]
+    rebuild: Callable[[Mapping[str, str]], Island] | None = None
+
+
+def _specimen(island: Island, spec_id: str) -> Island:
+    """Mark a rebuildable specimen's mount point (``sb-specimen-<id>``) so the
+    remount island can find and replace it after a structural re-render."""
+    return replace(island, class_=f"sb-specimen-{spec_id}")
+
+
+def _modal_specimen(edits: Mapping[str, str]) -> Island:
+    """The modal specimen; ``edits`` overrides its structural props."""
+    return _specimen(
+        modal(
+            trigger="Open dialog",
+            body=(
+                "<p>A modal dialog in the top layer, with a focus trap and "
+                "Esc to close.</p>"
+            ),
+            label="Example dialog",
+            dialog_id="demo-modal",
+            title=edits.get("title", "Dialog"),
+        ),
+        "modal",
+    )
+
+
+def _breadcrumb_specimen(edits: Mapping[str, str]) -> Island:
+    """The breadcrumb specimen; ``edits`` overrides its structural props."""
+    return _specimen(
+        breadcrumb(
+            trail=(("Showcase", "#"), ("Components", "#")),
+            current=edits.get("current", "Breadcrumb"),
+        ),
+        "breadcrumb",
+    )
+
+
+def _collapsible_specimen(edits: Mapping[str, str]) -> Island:
+    """The collapsible specimen; ``edits`` overrides its structural props.
+
+    ``count`` is parsed here, so a non-numeric edit raises :class:`ValueError`
+    exactly like any factory-rejected value: the endpoint surfaces it and the
+    live specimen stays unchanged.
+    """
+    return _specimen(
+        collapsible(
+            title=edits.get("title", "Grouped items"),
+            body=(
+                "<p>Related items live in a collapsible section with a count "
+                "badge; the disclosure is the native &lt;details&gt;.</p>"
+            ),
+            count=int(edits.get("count", "3")),
+            open=True,
+        ),
+        "collapsible",
+    )
 
 
 def _gallery_specs() -> tuple[_Spec, ...]:
@@ -185,6 +287,7 @@ def _gallery_specs() -> tuple[_Spec, ...]:
                     ),
                     value="overview",
                     label="View",
+                    listen=_prop_topic("segmented", "value"),
                 ),
             ),
             props=(
@@ -196,6 +299,7 @@ def _gallery_specs() -> tuple[_Spec, ...]:
                         ("api", "API"),
                         ("examples", "Examples"),
                     ),
+                    follows="view:changed",
                 ),
                 DisplayProp("topic", "view:changed"),
             ),
@@ -217,10 +321,18 @@ def _gallery_specs() -> tuple[_Spec, ...]:
                     step=10,
                     value=400,
                     label="Weight",
+                    listen=_prop_topic("slider", "value"),
                 ),
             ),
             props=(
-                NumberProp(name="value", value=400, min=200, max=900, step=10),
+                NumberProp(
+                    name="value",
+                    value=400,
+                    min=200,
+                    max=900,
+                    step=10,
+                    follows="weight:changed",
+                ),
                 DisplayProp("topic", "weight:changed"),
             ),
             tokens=("--sb-color-accent", "--sb-color-border", "--sb-fit-slider-thumb"),
@@ -229,9 +341,16 @@ def _gallery_specs() -> tuple[_Spec, ...]:
             id="color-picker",
             name="Colour picker",
             section="Controls",
-            body=(color_picker(topic="token:accent", value="#5b4bd6", label="Accent"),),
+            body=(
+                color_picker(
+                    topic="token:accent",
+                    value="#5b4bd6",
+                    label="Accent",
+                    listen=_prop_topic("color-picker", "value"),
+                ),
+            ),
             props=(
-                ColorProp(name="value", value="#5b4bd6"),
+                ColorProp(name="value", value="#5b4bd6", follows="token:accent"),
                 DisplayProp("topic", "token:accent"),
             ),
             tokens=("--sb-color-accent", "--sb-color-border", "--sb-color-handle-ring"),
@@ -261,35 +380,32 @@ def _gallery_specs() -> tuple[_Spec, ...]:
             id="modal",
             name="Modal",
             section="Controls",
-            body=(
-                modal(
-                    trigger="Open dialog",
-                    body=(
-                        "<p>A modal dialog in the top layer, with a focus trap and "
-                        "Esc to close.</p>"
-                    ),
-                    label="Example dialog",
-                    dialog_id="demo-modal",
-                    title="Dialog",
-                ),
-            ),
+            body=(_modal_specimen({}),),
             props=(
+                StructProp("title", "Dialog"),
                 DisplayProp("dialog_id", "demo-modal"),
-                DisplayProp("title", "Dialog"),
             ),
             tokens=(
                 "--sb-color-modal-scrim",
                 "--sb-color-bg-raised",
                 "--sb-color-border",
             ),
+            rebuild=_modal_specimen,
         ),
         _Spec(
             id="value-field",
             name="Value field",
             section="Controls",
-            body=(value_field(topic="token:radius", value="0", label="Radius"),),
+            body=(
+                value_field(
+                    topic="token:radius",
+                    value="0",
+                    label="Radius",
+                    listen=_prop_topic("value-field", "value"),
+                ),
+            ),
             props=(
-                TextProp(name="value", value="0"),
+                TextProp(name="value", value="0", follows="token:radius"),
                 DisplayProp("topic", "token:radius"),
             ),
             tokens=("--sb-color-fg", "--sb-color-border", "--sb-color-accent"),
@@ -370,34 +486,26 @@ def _gallery_specs() -> tuple[_Spec, ...]:
             id="breadcrumb",
             name="Breadcrumb",
             section="Display",
-            body=(
-                breadcrumb(
-                    trail=(("Showcase", "#"), ("Components", "#")), current="Breadcrumb"
-                ),
-            ),
+            body=(_breadcrumb_specimen({}),),
             props=(
+                StructProp("current", "Breadcrumb"),
                 DisplayProp("trail", "Showcase / Components"),
-                DisplayProp("current", "Breadcrumb"),
             ),
             tokens=("--sb-color-muted", "--sb-color-subtle", "--sb-color-fg"),
+            rebuild=_breadcrumb_specimen,
         ),
         _Spec(
             id="collapsible",
             name="Collapsible",
             section="Display",
-            body=(
-                collapsible(
-                    title="Grouped items",
-                    body=(
-                        "<p>Related items live in a collapsible section with a count "
-                        "badge; the disclosure is the native &lt;details&gt;.</p>"
-                    ),
-                    count=3,
-                    open=True,
-                ),
+            body=(_collapsible_specimen({}),),
+            props=(
+                StructProp("title", "Grouped items"),
+                StructProp("count", "3"),
+                DisplayProp("open", "true"),
             ),
-            props=(DisplayProp("count", "3"), DisplayProp("open", "true")),
             tokens=("--sb-color-border", "--sb-color-muted", "--sb-color-fg"),
+            rebuild=_collapsible_specimen,
         ),
     )
 
@@ -459,28 +567,51 @@ def _prop_control(spec_id: str, prop: Prop) -> str:
 
     An editable kind renders its control's full mount point (via
     :func:`render_island`, so the already-registered adapter mounts it and the
-    control is live), publishing on the prop's ``<id>:prop:<name>`` topic; nothing
-    subscribes yet, so the edit is a no-op and the specimen is unchanged (the
-    wiring is a later phase). A ``DisplayProp`` renders as read-only text — a
-    structural or descriptive prop only the factory can change.
+    control is live), publishing on the prop's ``<id>:prop:<name>`` topic — the
+    topic the specimen listens on, so the edit drives the live component. The
+    control also listens on the descriptor's ``follows`` topic (the specimen's
+    own publish topic), so interacting with the specimen moves this control. A
+    ``DisplayProp`` renders as read-only text — a structural or descriptive prop
+    only the factory can change.
     """
-    topic = f"{spec_id}:prop:{prop.name}"
+    topic = _prop_topic(spec_id, prop.name)
     label = _humanize(prop.name)
     match prop:
-        case TextProp(value=value):
-            return render_island(value_field(topic=topic, value=value, label=label))
-        case ColorProp(value=value):
-            return render_island(color_input(topic=topic, value=value, label=label))
-        case NumberProp(value=value, min=low, max=high, step=step):
+        case TextProp(value=value, follows=follows):
+            return render_island(
+                value_field(topic=topic, value=value, label=label, listen=follows)
+            )
+        case ColorProp(value=value, follows=follows):
+            return render_island(
+                color_input(topic=topic, value=value, label=label, listen=follows)
+            )
+        case NumberProp(value=value, min=low, max=high, step=step, follows=follows):
             return render_island(
                 slider(
-                    topic=topic, min=low, max=high, value=value, step=step, label=label
+                    topic=topic,
+                    min=low,
+                    max=high,
+                    value=value,
+                    step=step,
+                    label=label,
+                    listen=follows,
                 )
             )
-        case EnumProp(value=value, choices=choices):
+        case EnumProp(value=value, choices=choices, follows=follows):
             return render_island(
-                segmented(topic=topic, options=choices, value=value, label=label)
+                segmented(
+                    topic=topic,
+                    options=choices,
+                    value=value,
+                    label=label,
+                    listen=follows,
+                )
             )
+        case StructProp(value=value):
+            # A structural edit's control is the plain value field: it publishes
+            # on the prop topic like any value prop, but the subscriber is the
+            # remount island, which round-trips it through the render endpoint.
+            return render_island(value_field(topic=topic, value=value, label=label))
         case DisplayProp(value=value):
             return element(
                 "div",
@@ -506,7 +637,7 @@ def _inspector_panel(spec: _Spec, *, active: bool) -> str:
     """One inspector panel: the component's name, section, prop controls, and tokens.
 
     The props render as a column of controls, one per prop, chosen by the prop's
-    type: an editable value prop is a live control (unwired for now), a structural
+    type: an editable value prop is a live control driving the specimen, a structural
     or descriptive prop is read-only text. Only the active panel is shown at first
     paint; the adapter swaps them on selection.
     """
@@ -540,6 +671,52 @@ def _inspector_panel(spec: _Spec, *, active: bool) -> str:
             "hidden": None if active else "",
         },
         [title, section, props_label, props, tokens_label, tokens],
+    )
+
+
+RENDER_ENDPOINT = "/render/island"
+"""The URL the remount island POSTs structural edits to; the server routes it."""
+
+
+def render_specimen(spec_id: str, edits: Mapping[str, str]) -> str:
+    """Re-render one rebuildable specimen's mount point with edited structural props.
+
+    The render endpoint's core: the Python factory re-runs with the edits (the
+    single source of truth for the specimen's markup) and the client swaps the
+    returned mount point in place. A spec without structural props, or an unknown
+    id, raises :class:`KeyError`; an edit the factory rejects raises
+    :class:`ValueError` and the live specimen stays unchanged.
+    """
+    for spec in _gallery_specs():
+        if spec.id == spec_id:
+            if spec.rebuild is None:
+                raise KeyError(f"specimen {spec_id!r} has no structural props")
+            return render_island(spec.rebuild(edits))
+    raise KeyError(f"unknown specimen {spec_id!r}")
+
+
+def _gallery_remount(specs: tuple[_Spec, ...]) -> Island:
+    """The invisible round-trip island: structural edits re-render on the server.
+
+    Subscribes every structural prop's ``<id>:prop:<name>`` topic. On an edit it
+    POSTs the spec's full structural prop set to the render endpoint, then swaps
+    the returned mount point over the live specimen (unmount, replace, boot).
+    The factory re-renders; the browser never re-implements markup.
+    """
+    tracked = {
+        spec.id: {p.name: p.value for p in spec.props if isinstance(p, StructProp)}
+        for spec in specs
+        if spec.rebuild is not None
+    }
+    topics = tuple(
+        _prop_topic(spec_id, name)
+        for spec_id, props in tracked.items()
+        for name in props
+    )
+    return Island(
+        name="gallery-remount",
+        props={"endpoint": RENDER_ENDPOINT, "specs": tracked},
+        subscribes=topics,
     )
 
 
@@ -594,7 +771,9 @@ def build_showcase() -> Document:
     regions: dict[Region, tuple[Island, ...]] = {
         "head-c": (surface_switch("gallery"),),
         "body-l": (_gallery_nav(specs),),
-        "body-c": tuple(content + trailing),
+        # The remount island is invisible wiring; it trails the content like the
+        # other zero-initial islands, so it adds no gap mid-column.
+        "body-c": tuple(content + trailing + [_gallery_remount(specs)]),
         "body-r": (_gallery_inspector(specs),),
         "foot-c": (Island(name="status", initial="component gallery"),),
     }
@@ -615,7 +794,7 @@ def showcase_scripts() -> tuple[str, ...]:
         + theme_state_scripts()
         + code_block_scripts()
         + modal_scripts()
-        + (_GALLERY_NAV_JS, _GALLERY_INSPECTOR_JS)
+        + (_GALLERY_NAV_JS, _GALLERY_INSPECTOR_JS, _GALLERY_REMOUNT_JS)
     )
 
 
@@ -645,6 +824,69 @@ window.switchboard.register("gallery-nav", function (el, props, bus) {
   };
 });
 """
+
+# The structural-edit round-trip: subscribe every structural prop topic; on an
+# edit, POST the spec's full structural prop set to the render endpoint and swap
+# the returned mount point over the live specimen (unmount -> replace -> boot,
+# so the old island's bus subscriptions are released and the fresh one mounts).
+# Edits are debounced per spec: a value field publishes per keystroke, and one
+# round-trip per pause is enough. A rejected edit (the factory raised) or an
+# absent server (static render) leaves the specimen unchanged — the factory is
+# the only judge of a structural prop's validity.
+_GALLERY_REMOUNT_JS = """
+window.switchboard.register("gallery-remount", function (el, props, bus) {
+  var offs = [];
+  var timers = {};
+
+  function rerender(id, state) {
+    fetch(props.endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: id, props: state }),
+    })
+      .then(function (res) {
+        return res.ok ? res.text() : null;
+      })
+      .then(function (html) {
+        if (html === null) return;
+        var node = document.querySelector(".sb-specimen-" + id);
+        if (!node) return;
+        window.switchboard.unmount(node);
+        var tpl = document.createElement("template");
+        tpl.innerHTML = html;
+        node.replaceWith(tpl.content);
+        window.switchboard.boot();
+      })
+      .catch(function () {});
+  }
+
+  Object.keys(props.specs).forEach(function (id) {
+    var state = props.specs[id];
+    Object.keys(state).forEach(function (name) {
+      offs.push(
+        bus.subscribe(id + ":prop:" + name, function (value) {
+          if (typeof value !== "string") return;
+          state[name] = value;
+          clearTimeout(timers[id]);
+          timers[id] = setTimeout(function () {
+            rerender(id, state);
+          }, 200);
+        })
+      );
+    });
+  });
+
+  return function teardown() {
+    offs.forEach(function (off) {
+      off();
+    });
+    Object.keys(timers).forEach(function (id) {
+      clearTimeout(timers[id]);
+    });
+  };
+});
+"""
+
 
 _GALLERY_INSPECTOR_JS = """
 window.switchboard.register("gallery-inspector", function (el, props, bus) {

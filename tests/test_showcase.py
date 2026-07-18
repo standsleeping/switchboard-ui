@@ -1,9 +1,20 @@
 """The dogfood showcase visualizes layout without changing application topology."""
 
-from showcase.build import DisplayProp, _gallery_specs, build_showcase, showcase_styles
-from switchboard_ui import render_document
+from http import HTTPStatus
+
+import pytest
+
+from showcase.build import (
+    DisplayProp,
+    _gallery_specs,
+    build_showcase,
+    render_specimen,
+    showcase_styles,
+)
+from showcase.server import render_island_response
+from switchboard_ui import render_document, wiring
 from switchboard_ui.model import Frame, Slot
-from tests.htmlprobe import elements, find
+from tests.htmlprobe import find
 
 
 def test_showcase_keeps_corner_regions_empty() -> None:
@@ -115,8 +126,93 @@ def test_inspector_renders_one_row_per_prop_with_display_props_as_text() -> None
     assert len(values) == displays
 
 
-def test_inspector_prop_controls_are_unwired() -> None:
-    """No island subscribes to a `:prop:` topic yet — the edits are no-ops (phase 2)."""
+def test_inspector_prop_edits_drive_the_specimens() -> None:
+    """Every `:prop:` topic has both a publisher (the inspector control) and a
+    subscriber (the specimen), so an inspector edit updates the live component.
+    The analyzer recovers the whole wiring from the rendered HTML alone."""
     html = render_document(build_showcase())
-    subs = [attrs.get("data-sub", "") for _, attrs in elements(html)]
-    assert not any(":prop:" in sub for sub in subs)
+    graph = wiring(html)
+    prop_topics = [t for t in graph.topics if ":prop:" in t]
+    assert prop_topics == [
+        "breadcrumb:prop:current",
+        "collapsible:prop:count",
+        "collapsible:prop:title",
+        "color-picker:prop:value",
+        "modal:prop:title",
+        "segmented:prop:value",
+        "slider:prop:value",
+        "value-field:prop:value",
+    ]
+    for topic in prop_topics:
+        assert graph.publishers(topic), topic
+        assert graph.subscribers(topic), topic
+
+
+def test_inspector_controls_follow_the_specimens() -> None:
+    """Each wired specimen's own publish topic has a subscriber (the inspector
+    control follows it), so interacting with the specimen moves the control."""
+    graph = wiring(render_document(build_showcase()))
+    for topic in ("view:changed", "weight:changed", "token:accent", "token:radius"):
+        assert graph.subscribers(topic), topic
+
+
+def test_structural_edits_subscribe_the_remount_island() -> None:
+    """Every structural prop topic's subscriber is the remount island, and its
+    tracked state starts from the specs' own initial values."""
+    html = render_document(build_showcase())
+    graph = wiring(html)
+    for topic in (
+        "modal:prop:title",
+        "collapsible:prop:title",
+        "collapsible:prop:count",
+        "breadcrumb:prop:current",
+    ):
+        assert graph.subscribers(topic) == ("gallery-remount",), topic
+    (remount,) = find(html, "div", **{"data-island": "gallery-remount"})
+    assert '"modal":{"title":"Dialog"}' in remount["data-props"]
+
+
+def test_render_specimen_reruns_the_factory_with_edits() -> None:
+    """A structural edit re-renders through the factory: the default render
+    matches the gallery's own body, and an edited title lands in the markup."""
+    (title,) = find(render_specimen("modal", {}), "div", role="heading")
+    assert title["class"] == "sb-modal-title"
+    edited = render_specimen("modal", {"title": "Renamed"})
+    assert ">Renamed</div>" in edited
+    assert 'sb-specimen-modal"' in edited
+
+
+def test_render_specimen_rejects_unknown_and_non_structural_specimens() -> None:
+    """An unknown id and a spec without structural props both fail loudly."""
+    with pytest.raises(KeyError):
+        render_specimen("no-such", {})
+    with pytest.raises(KeyError):
+        render_specimen("slider", {})
+
+
+def test_render_specimen_surfaces_factory_validation() -> None:
+    """A bad edit value fails in the factory (never silently in the browser)."""
+    with pytest.raises(ValueError):
+        render_specimen("collapsible", {"count": "not-a-number"})
+
+
+def test_render_endpoint_maps_failure_modes_onto_statuses() -> None:
+    """The endpoint's envelope: OK returns the fragment; malformed 400; unknown
+    404; a factory-rejected edit 422."""
+    ok, html = render_island_response(b'{"id": "modal", "props": {"title": "Renamed"}}')
+    assert ok == HTTPStatus.OK
+    assert "Renamed" in html
+    assert render_island_response(b"not json")[0] == HTTPStatus.BAD_REQUEST
+    assert render_island_response(b'{"id": "modal"}')[0] == HTTPStatus.BAD_REQUEST
+    assert (
+        render_island_response(b'{"id": "modal", "props": {"title": 3}}')[0]
+        == HTTPStatus.BAD_REQUEST
+    )
+    assert (
+        render_island_response(b'{"id": "no-such", "props": {}}')[0]
+        == HTTPStatus.NOT_FOUND
+    )
+    assert (
+        render_island_response(b'{"id": "collapsible", "props": {"count": "x"}}')[0]
+        == HTTPStatus.UNPROCESSABLE_ENTITY
+    )

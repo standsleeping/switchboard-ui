@@ -18,6 +18,7 @@ modules; a fresh process imports them cleanly.
 """
 
 import argparse
+import json
 import os
 import sys
 import threading
@@ -29,8 +30,10 @@ from urllib.parse import urlparse
 
 import switchboard_theme
 from showcase.build import (
+    RENDER_ENDPOINT,
     build_showcase,
     build_theme_builder,
+    render_specimen,
     showcase_scripts,
     showcase_styles,
     theme_builder_scripts,
@@ -122,6 +125,37 @@ def _docs_relpath(path: str) -> str | None:
     return relpath
 
 
+def render_island_response(body: bytes) -> tuple[HTTPStatus, str]:
+    """The render endpoint's logic: request body in, ``(status, payload)`` out.
+
+    Pure, so it is testable without a socket. The body is a JSON envelope
+    ``{"id": <spec id>, "props": {<name>: <value>, ...}}``; the payload on OK is
+    the re-rendered mount point's HTML. The failure modes map onto statuses: a
+    malformed envelope is 400, an unknown or non-structural specimen 404, and an
+    edit the factory rejects 422 — the factory is the single judge of validity,
+    and its refusal travels back as the status the client leaves the specimen
+    unchanged on.
+    """
+    try:
+        envelope = json.loads(body)
+        spec_id = envelope["id"]
+        edits = envelope["props"]
+    except ValueError, KeyError, TypeError:
+        return HTTPStatus.BAD_REQUEST, "malformed render request"
+    if (
+        not isinstance(spec_id, str)
+        or not isinstance(edits, dict)
+        or not all(isinstance(k, str) and isinstance(v, str) for k, v in edits.items())
+    ):
+        return HTTPStatus.BAD_REQUEST, "malformed render request"
+    try:
+        return HTTPStatus.OK, render_specimen(spec_id, edits)
+    except KeyError:
+        return HTTPStatus.NOT_FOUND, f"unknown specimen {spec_id!r}"
+    except ValueError as exc:
+        return HTTPStatus.UNPROCESSABLE_ENTITY, str(exc)
+
+
 class Handler(BaseHTTPRequestHandler):
     """Serve the rendered showcase page and the live-reload event stream."""
 
@@ -143,9 +177,18 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self.send_error(HTTPStatus.NOT_FOUND)
 
-    def _serve_html(self, html: str) -> None:
+    def do_POST(self) -> None:
+        """Route the render endpoint: a structural prop edit re-renders server-side."""
+        if urlparse(self.path).path != RENDER_ENDPOINT:
+            self.send_error(HTTPStatus.NOT_FOUND)
+            return
+        length = int(self.headers.get("Content-Length", "0"))
+        status, payload = render_island_response(self.rfile.read(length))
+        self._serve_html(payload, status=status)
+
+    def _serve_html(self, html: str, status: HTTPStatus = HTTPStatus.OK) -> None:
         body = html.encode()
-        self.send_response(HTTPStatus.OK)
+        self.send_response(status)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
