@@ -318,7 +318,7 @@ _DOCS_CSS = f"""
   border-inline-start: var(--sb-border-width-thin) solid var(--sb-color-border);
   border-inline-end: var(--sb-border-width-thin) solid var(--sb-color-border);
   gap: var(--sb-space-lg);
-  padding: var(--sb-space-xl);
+  padding: var(--sb-space-3xl);
 }}
 .sb-body-c > .sb-island {{
   inline-size: 100%;
