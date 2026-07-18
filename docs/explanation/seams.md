@@ -4,7 +4,7 @@ A *seam* is the border line between two tiled regions of a layout. The three-col
 
 ## One line, one owner
 
-When tiled cells share an edge, the tempting move is to give every cell a full border. That draws every interior seam *twice*, once by each neighbour, and a doubled hairline is not a thicker line: it is two 1px borders that can disagree on colour, render on a fractional boundary, or stack to an uneven weight. The weight of a seam starts to depend on how many cells happen to meet there, which is not a property a seam should have.
+When tiled cells share an edge, the tempting move is to give every cell a full border. That draws every interior seam *twice*, once by each neighbour, and a doubled hairline is not a thicker line: it is two 1px borders that can disagree on color, render on a fractional boundary, or stack to an uneven weight. The weight of a seam starts to depend on how many cells happen to meet there, which is not a property a seam should have.
 
 The rule that avoids this is **single ownership**: every seam has exactly one owner (the cell, frame, or rule responsible for drawing it), and the neighbour on the other side of that seam draws nothing there. A seam's weight is then a property of the seam itself, never of its neighbourhood.
 
@@ -21,7 +21,7 @@ The page's seams use three ownership patterns:
 | Seam | Owner | Why it stays single |
 |---|---|---|
 | The perimeter (the four outer edges) | the root frame, `.sb-root`, with one all-sides border | no cell sits outside the frame, so nothing shares the outer edge |
-| The two internal column seams | the centre column cells, drawing both their inline-start and inline-end borders; the side columns draw neither | each vertical seam is owned by the centre, never also by the rail beside it |
+| The two internal column seams | the center column cells, drawing both their inline-start and inline-end borders; the side columns draw neither | each vertical seam is owned by the center, never also by the rail beside it |
 | The head/body seam | `.sb-head-row`, with `border-block-end` | one continuous row border replaces three cell-border fragments |
 | The body/foot seam | `.sb-foot-row`, with `border-block-start` | one continuous row border replaces three cell-border fragments |
 
@@ -29,11 +29,11 @@ The horizontal boundaries are *semantic* seams: they separate chrome from conten
 
 ## Seams are borders
 
-A seam is a `border` on the owning box's edge, and nothing else. The border sits outside the content box, so an opaque child surface (a preview pane, a filled island) can never paint over it. The fixed root carries `box-sizing: border-box` so its perimeter draws inside the viewport rather than pushing the frame past the edge. The two bordered rail rows are border-box too, keeping each hairline inside the rail's promised block size. Colour and width come from tokens (`--sb-color-border`, `--sb-border-width-thin`), so a seam tracks the theme in both light and dark.
+A seam is a `border` on the owning box's edge, and nothing else. The border sits outside the content box, so an opaque child surface (a preview pane, a filled island) can never paint over it. The fixed root carries `box-sizing: border-box` so its perimeter draws inside the viewport rather than pushing the frame past the edge. The two bordered rail rows are border-box too, keeping each hairline inside the rail's promised block size. Color and width come from tokens (`--sb-color-border`, `--sb-border-width-thin`), so a seam tracks the theme in both light and dark.
 
 ## Empty regions collapse
 
-An omitted region is an empty cell that collapses (`display: none`), so optional slots leave no gap. The horizontal seams are unaffected because their row owners always render. A cell-owned vertical seam still requires its owner to render. The showcase already has real content in all three centre cells, and a narrowly scoped CSS override reveals its empty corner cells for the 3×3 visualization. No placeholder islands are added: paint changes visibility, not application topology.
+An omitted region is an empty cell that collapses (`display: none`), so optional slots leave no gap. The horizontal seams are unaffected because their row owners always render. A cell-owned vertical seam still requires its owner to render. The showcase already has real content in all three center cells, and a narrowly scoped CSS override reveals its empty corner cells for the 3×3 visualization. No placeholder islands are added: paint changes visibility, not application topology.
 
 ## The guard
 
@@ -57,7 +57,7 @@ The showcase outlines all nine regions so the layout reads as a 3×3. It is pain
   display: flex;
 }
 
-/* Column seams: the centre column owns both; the side columns draw neither. */
+/* Column seams: the center column owns both; the side columns draw neither. */
 .sb-head-c, .sb-body-c, .sb-foot-c {
   border-inline-start: var(--sb-border-width-thin) solid var(--sb-color-border);
   border-inline-end: var(--sb-border-width-thin) solid var(--sb-color-border);

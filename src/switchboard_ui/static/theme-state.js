@@ -4,7 +4,7 @@
  * edit; when a bound topic publishes a value, the edit is written onto the
  * scoping element(s). Two binding kinds:
  *
- *   - "arm":   one scheme arm of a scheme-varying token (a colour). Writes
+ *   - "arm":   one scheme arm of a scheme-varying token (a color). Writes
  *              `<token>-<arm>` (`--sb-color-accent-light` / `-dark`) AND
  *              re-declares the composed `light-dark()` on the scope. The
  *              re-declaration is the crux: the composed token on `:root` is

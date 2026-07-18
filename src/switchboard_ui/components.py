@@ -8,11 +8,11 @@ opts the adapter and CSS in exactly as the demo wires its adapters. All
 appearance comes from the theme's ``--sb-*`` tokens, so a component carries no
 baked visual opinion and re-skins by swapping tokens.
 
-The set spans interactive controls (the segmented toggle, colour input/picker,
+The set spans interactive controls (the segmented toggle, color input/picker,
 popover, modal, slider, value field) and display surfaces (the live preview, the
 :func:`table`, the :func:`code_block`, the :func:`breadcrumb`, and the
 :func:`collapsible` section). A display surface is the same shape
-minus the behaviour: a :func:`table` ships no adapter at all (it is inert markup
+minus the behavior: a :func:`table` ships no adapter at all (it is inert markup
 plus structure plus paint), while a :func:`code_block` ships one only for its
 copy action. Both own their horizontal scroll on their own content element, so a
 wide table or a long code line never pushes the page (the scroll-containment
@@ -51,7 +51,7 @@ from switchboard_ui.render import render_island
 _ADAPTER = "segmented"
 
 # An inert separator between options (a dot), ignored by the adapter and hidden
-# from assistive tech; the theme colours it.
+# from assistive tech; the theme colors it.
 _SEPARATOR = element(
     "span", {"class": "sb-segmented-sep", "aria-hidden": "true"}, ["·"]
 )
@@ -152,7 +152,7 @@ def segmented_styles() -> str:
     return read_static("segmented.css")
 
 
-# A six-digit hex colour (``#rrggbb``); the palette the theme-builder edits is all
+# A six-digit hex color (``#rrggbb``); the palette the theme-builder edits is all
 # six-digit, so the v0 field accepts exactly that.
 _HEX = re.compile(r"#[0-9a-fA-F]{6}\Z")
 
@@ -181,12 +181,12 @@ def _hex_field(value: str, label: str) -> str:
 def color_input(
     *, topic: str, value: str, label: str, listen: str | None = None
 ) -> Island:
-    """A themed colour input: a swatch plus a hex field that publishes ``value``.
+    """A themed color input: a swatch plus a hex field that publishes ``value``.
 
     A tokenised replacement for the native ``<input type="color">`` (whose picker
-    popover is UA-painted and cannot be themed). ``value`` is the initial colour
+    popover is UA-painted and cannot be themed). ``value`` is the initial color
     as a six-digit hex (``#rrggbb``); ``label`` is the field's accessible name.
-    Editing the field to a valid hex repaints the swatch and publishes the colour
+    Editing the field to a valid hex repaints the swatch and publishes the color
     on ``topic``. ``listen`` names an optional topic the control follows: a valid
     hex published there updates the field and swatch in place, without
     republishing. Raises :class:`ValueError` at the authoring boundary if
@@ -194,7 +194,7 @@ def color_input(
     where it is written, not at render or in the browser.
     """
     if not _HEX.match(value):
-        msg = f"color_input value {value!r} is not a six-digit hex colour (#rrggbb)"
+        msg = f"color_input value {value!r} is not a six-digit hex color (#rrggbb)"
         raise ValueError(msg)
     if not label:
         raise ValueError("color_input requires a non-empty label (the field's name)")
@@ -203,7 +203,7 @@ def color_input(
         {
             "class": "sb-color-input-swatch",
             "aria-hidden": "true",
-            # The live colour as a per-instance value, not an inline paint
+            # The live color as a per-instance value, not an inline paint
             # declaration: the theme paints `background: var(--sb-swatch)` from it,
             # so paint stays the theme's and only the value crosses the boundary.
             "style": f"--sb-swatch:{value}",
@@ -380,7 +380,7 @@ def _picker_panel(label: str, value: str) -> str:
 
 
 def _hsv(hex_value: str) -> tuple[int, int, int]:
-    """A six-digit hex colour as rounded HSV readings: (degrees, %, %)."""
+    """A six-digit hex color as rounded HSV readings: (degrees, %, %)."""
     r, g, b = (int(hex_value[i : i + 2], 16) / 255 for i in (1, 3, 5))
     h, s, v = colorsys.rgb_to_hsv(r, g, b)
     return round(h * 360), round(s * 100), round(v * 100)
@@ -389,20 +389,20 @@ def _hsv(hex_value: str) -> tuple[int, int, int]:
 def color_picker(
     *, topic: str, value: str, label: str, listen: str | None = None
 ) -> Island:
-    """A visual colour picker: a swatch that opens a spectrum popover, plus a hex field.
+    """A visual color picker: a swatch that opens a spectrum popover, plus a hex field.
 
     Augments :func:`color_input`: the swatch becomes a popover trigger that
     reveals a saturation/value area and a hue slider; the inline hex field stays
     as the precise, fully-accessible control. The swatch, the spectrum, and the
     field stay in sync and all publish the chosen ``#rrggbb`` on ``topic``.
-    ``value`` is the initial colour (six-digit hex) and ``label`` names the
+    ``value`` is the initial color (six-digit hex) and ``label`` names the
     control. ``listen`` names an optional topic the picker follows: a valid hex
     published there resyncs the swatch, spectrum, and field in place, without
     republishing. Raises :class:`ValueError` at the authoring boundary if
     ``value`` is not a six-digit hex or ``label`` is blank.
     """
     if not _HEX.match(value):
-        msg = f"color_picker value {value!r} is not a six-digit hex colour (#rrggbb)"
+        msg = f"color_picker value {value!r} is not a six-digit hex color (#rrggbb)"
         raise ValueError(msg)
     if not label:
         raise ValueError("color_picker requires a non-empty label (the control's name)")
@@ -414,7 +414,7 @@ def color_picker(
         panel_id=panel_id,
         trigger_class="sb-color-picker-swatch",
         trigger_label=label,
-        # The live colour as a per-instance --sb-swatch value (not inline paint);
+        # The live color as a per-instance --sb-swatch value (not inline paint);
         # the theme paints the swatch background from it.
         trigger_style=f"--sb-swatch:{value}",
     )
@@ -589,11 +589,11 @@ def preview_items() -> tuple[str, ...]:
     prose = element(
         "p",
         {"class": "sb-preview-prose"},
-        [escape_text("Body text in the prose family, sized and coloured by tokens.")],
+        [escape_text("Body text in the prose family, sized and colored by tokens.")],
     )
     button = element("button", {"type": "button"}, [escape_text("Primary")])
     # The accent fill is static theme paint (.sb-preview-swatch), not declared
-    # inline: the swatch carries the hook, the theme owns the colour.
+    # inline: the swatch carries the hook, the theme owns the color.
     swatch = element(
         "span",
         {
@@ -639,7 +639,7 @@ def preview(*, scope_id: str, scheme: Literal["light", "dark"] | None = None) ->
     Renders a representative sample inside a scope wrapper carrying ``scope_id``
     (as ``data-sb-scope``); a sibling :func:`theme_state` island writes token
     overrides onto that wrapper, and everything inside repaints because it reads
-    ``var(--sb-*)``. ``scheme`` pins the pane to one colour scheme (a side-by-side
+    ``var(--sb-*)``. ``scheme`` pins the pane to one color scheme (a side-by-side
     light/dark builder renders two). The preview is a static display surface — no
     adapter — so it is also a plain gallery specimen. Raises :class:`ValueError`
     at the authoring boundary if ``scope_id`` is blank.
@@ -670,7 +670,7 @@ def preview_styles() -> str:
 class ArmBinding:
     """Bind a topic to one scheme arm of a scheme-varying token.
 
-    A scheme-varying token (a colour) is authored per ``-light`` / ``-dark`` arm,
+    A scheme-varying token (a color) is authored per ``-light`` / ``-dark`` arm,
     composed with ``light-dark()``. This binding edits *one* arm: publishing a
     value writes ``<token>-<arm>`` onto the scope and re-declares the
     ``light-dark()`` composition there, so the scoped subtree repaints in that
@@ -715,7 +715,7 @@ def theme_state(*, scope: str, bindings: Sequence[Binding]) -> Island:
 
     ``scope`` is a CSS selector for the override target(s) (e.g. a preview's
     ``[data-sb-scope]`` wrapper); ``bindings`` lists the token edits to apply.
-    Each is an :class:`ArmBinding` (one scheme arm of a colour) or a
+    Each is an :class:`ArmBinding` (one scheme arm of a color) or a
     :class:`ValueBinding` (a scheme-invariant length/number/family). When a bound
     topic publishes a value, the adapter writes it onto every scoped element, so
     the scoped subtree repaints. The token names come from the trusted bindings,
@@ -920,7 +920,7 @@ def modal(
     trigger_label: str | None = None,
     open_topic: str | None = None,
 ) -> Island:
-    """A modal dialog: a trigger that opens a centred, focus-trapping ``<dialog>``.
+    """A modal dialog: a trigger that opens a centered, focus-trapping ``<dialog>``.
 
     The modal sibling of :func:`popover`. ``trigger`` is the open button's content
     and ``body`` the dialog's content (both raw-HTML fragments); ``label`` is the
@@ -999,7 +999,7 @@ def modal_styles() -> str:
 
 
 # A breadcrumb separator (a slash), between crumbs and hidden from assistive tech;
-# the theme colours it.
+# the theme colors it.
 _BREADCRUMB_SEP = element(
     "span", {"class": "sb-breadcrumb-sep", "aria-hidden": "true"}, ["/"]
 )

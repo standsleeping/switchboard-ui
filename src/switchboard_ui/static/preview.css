@@ -6,7 +6,7 @@
  * sits in does — so it composes inside the center content area without nesting
  * scroll containers. The swatch is a control-block square; everything paints from
  * the (scope-overridable) tokens, so the whole sample repaints when a token
- * changes. The surface colour, separators, gap, and table chrome are the
+ * changes. The surface color, separators, gap, and table chrome are the
  * theme's, keyed to these same .sb-* hooks. */
 
 .sb-preview {

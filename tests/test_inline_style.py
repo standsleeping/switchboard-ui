@@ -1,7 +1,7 @@
 """The component layer carries no paint through inline ``style`` — only ``--sb-*`` values.
 
 A factory may legitimately carry a per-instance *value* on a rendered element (a
-user-chosen colour the theme paints from), but never a *declaration* of paint or
+user-chosen color the theme paints from), but never a *declaration* of paint or
 geometry: a ``background`` / ``color`` / ``border`` belongs to the theme, a
 ``flex`` / ``position`` to the structural layer. So every inline ``style`` a
 factory renders must declare only ``--sb-*`` custom properties; the theme owns the
@@ -10,7 +10,7 @@ property that reads them (``.sb-color-input-swatch { background: var(--sb-swatch
 This watches a channel the ``.css`` guards cannot see. ``test_layout_css`` and
 ``test_theme_css`` parse stylesheets, so a ``background`` written into a ``style=``
 attribute from Python would slip past them entirely — exactly the leak the swatch
-factories used to carry. The colour swatch is the live example: its colour is a
+factories used to carry. The color swatch is the live example: its color is a
 per-instance value, carried as ``--sb-swatch`` and painted by the theme, never an
 inline paint declaration. (The structural ``flex`` sizing the render layer applies
 to slots is a separate, sanctioned channel on the mount wrapper, outside the
@@ -95,7 +95,7 @@ def test_factories_carry_only_custom_properties_inline() -> None:
 def test_the_guard_sees_the_swatch_value_channel() -> None:
     """The guard actually inspects inline styles: the swatch carries its --sb-swatch value.
 
-    A guard that found nothing to check would pass vacuously. The colour swatches
+    A guard that found nothing to check would pass vacuously. The color swatches
     are the one factory output that carries an inline ``style`` at all, so their
     presence proves the reader reaches the channel it is meant to watch.
     """

@@ -71,14 +71,14 @@ def test_unsupported_construct_renders_a_notice_keeping_the_shell(
 def test_docs_styles_carry_the_prose_chrome_and_table_css() -> None:
     """The docs paint their own prose, nav, TOC, and load the table component's CSS."""
     css = docs_styles()
-    assert ".sb-body-c" in css  # the centre column owns both column seams
+    assert ".sb-body-c" in css  # the center column owns both column seams
     assert ".sb-doc-p" in css and ".sb-doc-code" in css  # prose styles
     assert ".sb-docs-nav" in css and ".sb-docs-toc" in css
     assert ".sb-table-grid" in css  # the table component's structural CSS is loaded
 
 
 def test_docs_scripts_include_the_code_block_copy_adapter() -> None:
-    """The only behaviour the docs need is the code block's copy action."""
+    """The only behavior the docs need is the code block's copy action."""
     assert any("code-block" in script for script in docs_scripts())
 
 

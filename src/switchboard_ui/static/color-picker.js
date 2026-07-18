@@ -4,10 +4,10 @@
  * surfaces are server-rendered; this adapter wires the interaction. One HSV model
  * is the source of truth: the SV area sets saturation/value, the hue slider sets
  * hue, the hex field sets all three; each change repaints the swatch + the
- * spectrum and publishes the colour on the island's topic. It never builds or
+ * spectrum and publishes the color on the island's topic. It never builds or
  * resizes anything.
  *
- * The two spectrum gradients are functional DATA-VIZ: a full colour-space surface
+ * The two spectrum gradients are functional DATA-VIZ: a full color-space surface
  * cannot come from the token palette, so they are set inline as live data — the
  * one sanctioned exception to the no-UA-default / token-only rule (philosophy
  * §17). Everything else — the swatch fill (painted from the --sb-swatch value this
@@ -27,7 +27,7 @@ window.switchboard.register("color-picker", function (el, props, bus) {
   var panel = el.querySelector(".sb-popover-panel");
   var HEX = /^#[0-9a-fA-F]{6}$/;
 
-  // --- colour maths --------------------------------------------------------
+  // --- color maths --------------------------------------------------------
   function clamp(n, lo, hi) {
     return n < lo ? lo : n > hi ? hi : n;
   }

@@ -12,8 +12,8 @@ What makes this hold is the absence of *co-ownership*. When two layers can both 
 
 | Layer | Owns | May never touch |
 |---|---|---|
-| Structure (`layout.css`) | Geometry: the flex tree, sizing, `gap`, overflow, position | Colour, type, any appearance |
-| Theme | Paint: colour, background, border paint, type, the token values | `position`, `transform` (the coordinate system is structure's) |
+| Structure (`layout.css`) | Geometry: the flex tree, sizing, `gap`, overflow, position | Color, type, any appearance |
+| Theme | Paint: color, background, border paint, type, the token values | `position`, `transform` (the coordinate system is structure's) |
 | The component geometry contract (`--sb-fit-*`) | The one sanctioned channel from theme to structure: the theme projects its causes (inset, type, border) into a sizing obligation, and structure consumes that obligation as a floor | The reverse flow; structure never defines an obligation, the theme never reads one back |
 | A box | Its own inset (`padding`), as a control or content surface — never a layout, mount, or region hook | The space outside itself |
 | A container | The rhythm between its children (`gap`) | Reaching into a child's box |
@@ -23,15 +23,15 @@ Two consequences are worth stating directly. Rhythm between siblings is the cont
 
 ## Composability: a theme you can replace
 
-The division buys *orthogonality*: structure and paint become independent axes, so one can vary while the other holds still. A host can override every visual token, down to the last colour and length, and the layout still holds, because the structural layer was never allowed to encode appearance and the theme was never allowed to encode geometry. The substitution is fearless. You can replace the theme in full, knowing it could not have reached into the structure to begin with.
+The division buys *orthogonality*: structure and paint become independent axes, so one can vary while the other holds still. A host can override every visual token, down to the last color and length, and the layout still holds, because the structural layer was never allowed to encode appearance and the theme was never allowed to encode geometry. The substitution is fearless. You can replace the theme in full, knowing it could not have reached into the structure to begin with.
 
-This is why the structural stylesheet declares no tokens of its own: it sets layout properties and consumes only the `--sb-fit-*` obligations the theme publishes (the contract row above), never a colour or a paint value. Paint and geometry stay disjoint: the theme paints but never positions, structure positions but never paints, and the test suite checks that the structural sheet admits nothing but layout properties and those contract tokens.
+This is why the structural stylesheet declares no tokens of its own: it sets layout properties and consumes only the `--sb-fit-*` obligations the theme publishes (the contract row above), never a color or a paint value. Paint and geometry stay disjoint: the theme paints but never positions, structure positions but never paints, and the test suite checks that the structural sheet admits nothing but layout properties and those contract tokens.
 
 ## The floor and the surface
 
 The boundaries divide into two kinds, and the difference is what makes the package both strict and open.
 
-Taste decisions are open to the bone. Colour, type, the spacing scale, border weight, radius, shadow, and density are all tokens. None is fixed, and a host overrides any of them. This is the surface, and it is meant to be replaced.
+Taste decisions are open to the bone. Color, type, the spacing scale, border weight, radius, shadow, and density are all tokens. None is fixed, and a host overrides any of them. This is the surface, and it is meant to be replaced.
 
 Correctness decisions are fixed. The ownership boundaries, the rule that rhythm is `gap` and never `margin`, geometry that stays stable across interactive state, and the contracts that keep one layer out of another's decisions are not configurable. This is the floor. It is small and rigid on purpose, and the rigidity is what makes the surface safe to vary: a theme can change everything that is taste precisely because it can change nothing that is correctness.
 
@@ -45,7 +45,7 @@ Each layer is granted only the authority its job needs, and an attempt to exceed
 
 ## Diagnosability: a bug you can place
 
-The same boundaries that let you replace a layer let you blame one. Because no two layers own the same decision, a visual symptom has a single suspect, and the bans actively clear the layers that could not have caused it. Something in the wrong place is structure's coordinate system, never the theme, which is forbidden to position. A wrong colour is the theme or a token, never the structural sheet, which declares no colour. A box that jumps on hover is a state rule that changed geometry, which the guard names exactly.
+The same boundaries that let you replace a layer let you blame one. Because no two layers own the same decision, a visual symptom has a single suspect, and the bans actively clear the layers that could not have caused it. Something in the wrong place is structure's coordinate system, never the theme, which is forbidden to position. A wrong color is the theme or a token, never the structural sheet, which declares no color. A box that jumps on hover is a state rule that changed geometry, which the guard names exactly.
 
 Using this needs no knowledge of the internals. Describe the symptom in plain visual terms, and the description already points at the owner.
 
@@ -53,7 +53,7 @@ Using this needs no knowledge of the internals. Describe the symptom in plain vi
 |---|---|
 | Uneven or wrong spacing between things | the container's `gap` (rhythm is the parent's; a child's `margin` is banned) |
 | Wrong inset inside one box | that box's own `padding` |
-| Wrong colour, low contrast, an invisible surface | the theme, or a token value |
+| Wrong color, low contrast, an invisible surface | the theme, or a token value |
 | Something mispositioned or overlapping | structure (the theme cannot position) |
 | A jump or reflow on hover, focus, or selection | a state rule that changed geometry |
 | Content clipped, or it will not scroll | the overflow policy: the frame's clip-by-default and `sb-scroll` opt-in, or the component's own scroll container |

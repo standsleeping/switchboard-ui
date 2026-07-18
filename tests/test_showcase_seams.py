@@ -13,7 +13,7 @@ its block children size to their content). A seam placed on island content stops
 where the content stops, leaving the lower part of the column unbordered. The
 guard bans exactly that: no element carrying a vertical seam may sit inside an
 island. The accent-channel reservation (a `transparent` inline-start border on a
-nav row) is not a seam and is excluded by its colour.
+nav row) is not a seam and is excluded by its color.
 """
 
 import re

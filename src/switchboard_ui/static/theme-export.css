@@ -2,7 +2,7 @@
  *
  * Geometry only, the same contract as layout.css: the button and its status note
  * sit in a row. It carries no paint and no box-spacing — the button's look is the
- * theme's base button paint, the gap and the status colour are the theme's, keyed
+ * theme's base button paint, the gap and the status color are the theme's, keyed
  * to the .sb-export hooks. The guard in tests/test_components.py holds this file to
  * the geometry-only contract. */
 

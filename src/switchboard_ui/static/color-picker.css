@@ -1,4 +1,4 @@
-/* switchboard-ui: structural CSS for the colour picker.
+/* switchboard-ui: structural CSS for the color picker.
  *
  * Geometry only, the same contract as layout.css. The swatch-trigger is a
  * control-block square chip; the popover panel stacks a square saturation/value
@@ -6,7 +6,7 @@
  * surfaces; the adapter sets their `left`/`top` inline (runtime data, pre-offset
  * by half the handle so no `transform` is needed). All sizes are `--sb-fit-*`
  * obligations, so there are no magic numbers; the spectrum gradients, swatch
- * colour, gap, and borders are the theme's (or, for the spectrum, adapter-set
+ * color, gap, and borders are the theme's (or, for the spectrum, adapter-set
  * data-viz). `touch-action` is set inline by the adapter beside the pointer
  * wiring. */
 

@@ -1,4 +1,4 @@
-/* Color input adapter: a swatch plus a hex field that publishes the colour.
+/* Color input adapter: a swatch plus a hex field that publishes the color.
  *
  * The swatch and field are server-rendered (present and sized at first paint);
  * this adapter only enhances the field. On every edit it validates the hex; a

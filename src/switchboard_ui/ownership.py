@@ -221,7 +221,7 @@ itself to ``--sb-fit-rail-block``), never paint causes."""
 
 INLINE_VALUE_PREFIX = "--sb-"
 """The prefix an inline ``style`` declaration must carry. A factory may carry a
-per-instance ``--sb-*`` custom-property *value* on an element (a swatch's colour);
+per-instance ``--sb-*`` custom-property *value* on an element (a swatch's color);
 the property that paints from it is the theme's. Anything else in an inline
 ``style`` is paint or geometry leaking through a channel the ``.css`` guards never
 see."""

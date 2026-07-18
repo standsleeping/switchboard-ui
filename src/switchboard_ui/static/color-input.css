@@ -6,7 +6,7 @@
  * the swatch and the field stand the same height by construction, no magic
  * number. `box-sizing: border-box` keeps the swatch's own border inside that
  * height so it matches the field exactly. It carries no paint and no box-spacing
- * — the gap, the swatch border, and the field's colour, inset, caret, and focus
+ * — the gap, the swatch border, and the field's color, inset, caret, and focus
  * ring are all the theme's, keyed to these same .sb-* hooks. The guard in
  * tests/test_components.py holds this file to the geometry-only contract. */
 
