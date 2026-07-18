@@ -393,7 +393,7 @@ _DOCS_CSS = f"""
   padding: var(--sb-space-md);
 }}
 .sb-docs-nav-group {{
-  color: var(--sb-color-muted);
+  color: var(--sb-color-faint);
   font-weight: var(--sb-font-weight-bold);
   text-transform: uppercase;
   letter-spacing: var(--sb-font-tracking-wide);
@@ -423,7 +423,7 @@ _DOCS_CSS = f"""
   padding: var(--sb-space-md);
 }}
 .sb-docs-toc-label {{
-  color: var(--sb-color-muted);
+  color: var(--sb-color-faint);
   font-weight: var(--sb-font-weight-bold);
   text-transform: uppercase;
   letter-spacing: var(--sb-font-tracking-wide);
@@ -463,7 +463,7 @@ _DOCS_CSS = f"""
   font-weight: var(--sb-font-weight-bold);
   text-transform: uppercase;
   letter-spacing: var(--sb-font-tracking-wide);
-  color: var(--sb-color-muted);
+  color: var(--sb-color-faint);
 }}
 """
 

@@ -333,7 +333,7 @@ _MODE_CSS = """
   padding: var(--sb-space-md);
 }
 .sb-modes-group {
-  color: var(--sb-color-muted);
+  color: var(--sb-color-faint);
   font-size: var(--sb-font-size-sm);
   text-transform: uppercase;
   letter-spacing: var(--sb-font-tracking-wide);

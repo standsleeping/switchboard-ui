@@ -940,7 +940,7 @@ _GALLERY_CSS = """
   padding: var(--sb-space-md);
 }
 .sb-gallery-nav-group {
-  color: var(--sb-color-muted);
+  color: var(--sb-color-faint);
   font-weight: var(--sb-font-weight-bold);
   text-transform: uppercase;
   letter-spacing: var(--sb-font-tracking-wide);
@@ -964,7 +964,7 @@ _GALLERY_CSS = """
   outline-offset: -2px;
 }
 .sb-gallery-group {
-  color: var(--sb-color-muted);
+  color: var(--sb-color-faint);
   font-weight: var(--sb-font-weight-bold);
   text-transform: uppercase;
   letter-spacing: var(--sb-font-tracking-wide);
@@ -993,7 +993,7 @@ _GALLERY_CSS = """
   font-weight: var(--sb-font-weight-bold);
 }
 .sb-gallery-inspector-kind {
-  color: var(--sb-color-muted);
+  color: var(--sb-color-faint);
   text-transform: uppercase;
   letter-spacing: var(--sb-font-tracking-wide);
   font-size: var(--sb-font-size-sm);
