@@ -83,6 +83,7 @@
   --sb-font-weight-display: 800;
   --sb-font-line-height-display: 1.12;
   --sb-font-tracking-tight: -0.02em;
+  --sb-font-measure: 46rem;
 
   /* Space. */
   --sb-space-2xs: 0.125rem;

@@ -181,6 +181,10 @@ REGISTRY: tuple[Token, ...] = (
     _num("weight-display", "800"),
     _num("line-height-display", "1.12"),
     _len(Category.FONT, "tracking-tight", "-0.02em"),
+    # The prose reading measure: the comfortable line length for running text,
+    # narrower than a content column's cap so paragraphs stay readable while
+    # wide surfaces (tables, code) use the full column.
+    _len(Category.FONT, "measure", "46rem"),
     # Space: a step scale plus the control inset (a semantic token the density modes
     # reassign, distinct from the scale so density does not move every md use).
     _len(Category.SPACE, "2xs", "0.125rem"),
