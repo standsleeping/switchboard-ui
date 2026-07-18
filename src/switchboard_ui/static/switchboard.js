@@ -71,11 +71,40 @@
     mountAll();
   }
 
+  /* Unmount every mounted island at or under `root` (default: the whole page).
+   * Runs each island's teardown — releasing its bus subscriptions and DOM
+   * listeners so a swapped-out island can never fire again — and forgets the
+   * element, so a later boot() would mount it afresh. The inverse of boot(),
+   * for dynamic hosts that replace a server-rendered island in place:
+   * unmount(node) -> swap the HTML -> boot(). */
+  function unmount(root) {
+    var scope = root || document;
+    var nodes = Array.prototype.slice.call(
+      scope.querySelectorAll("[data-island]")
+    );
+    if (scope !== document && scope.matches && scope.matches("[data-island]")) {
+      nodes.unshift(scope);
+    }
+    nodes.forEach(function (el) {
+      if (!mounted.has(el)) return;
+      mounted.delete(el);
+      if (typeof el.__sbTeardown === "function") {
+        el.__sbTeardown();
+        delete el.__sbTeardown;
+      }
+    });
+  }
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", boot);
   } else {
     boot();
   }
 
-  window.switchboard = { bus: bus, register: register, boot: boot };
+  window.switchboard = {
+    bus: bus,
+    register: register,
+    boot: boot,
+    unmount: unmount,
+  };
 })();

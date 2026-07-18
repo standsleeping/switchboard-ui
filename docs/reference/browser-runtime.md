@@ -5,7 +5,7 @@ The runtime is `switchboard_ui/static/switchboard.js`: hand-written vanilla Java
 ## `window.switchboard`
 
 ```javascript
-window.switchboard = { bus: bus, register: register, boot: boot };
+window.switchboard = { bus: bus, register: register, boot: boot, unmount: unmount };
 ```
 
 ### `bus`
@@ -35,6 +35,14 @@ window.switchboard.boot()
 ```
 
 Scans the document and mounts every registered island. It runs automatically: on `DOMContentLoaded` if the document is still loading, otherwise immediately. Call it manually only after injecting new mount points into the DOM.
+
+### `unmount`
+
+```javascript
+window.switchboard.unmount(root)
+```
+
+Unmounts every mounted island at or under `root` (the whole document if omitted). Each island's teardown runs — releasing its bus subscriptions and DOM listeners so a swapped-out island can never fire again — and the element is forgotten, so a later `boot` would mount it afresh. The inverse of `boot`, for a host that replaces a server-rendered island in place: `unmount(node)`, swap the HTML, `boot()`.
 
 ### `debug`
 
