@@ -38,6 +38,20 @@ The third consumer is why the topics are declared rather than discovered at runt
 
 **Distributed as separable packages.** The project is one workspace of three distributions: the core mechanism (zero dependencies, ships only the structural `layout.css`), the theme you opt into (`import switchboard_theme`, which itself depends on the core), and the unpublished development and showcase server. The core declares no dependency on the theme, so the rule that the mechanism never reaches into the theme is a property of the package graph itself, not a test watching for a stray import: the core wheel has no path to the theme's code.
 
+## Deliberate boundaries
+
+Five properties of the design are boundaries rather than omissions. Each is a fact a host can build against.
+
+**The bus is ephemeral.** It stores nothing: no replay, no last value handed to a late subscriber. A message reaches whoever is subscribed at the instant it is published and is gone. An island that needs persistence owns it (for example, writing to localStorage in its own adapter), and a publisher that must reach late subscribers re-announces on a sync topic.
+
+**There is no request/reply.** The bus has one verb: publish. A round trip is composed from two ordinary topics (a `thing:requested`, a `thing:changed`), with both parties as plain publishers and subscribers, so no primitive exists that couples two islands into a call.
+
+**Mounting is eager.** The runtime mounts every island in one scan. There are no hydration directives: no mount-when-visible, mount-when-idle, or media-query deferral.
+
+**The topic namespace is flat and global.** Any island can publish or subscribe to any topic. The `subject:event` naming convention is the collision defense, and the analyzer makes the resulting graph visible; there is no scoping or permission layer.
+
+**Props are a serialization boundary.** They are JSON: validated at construction, embedded in the rendered page, handed to the adapter at mount. Large or live data is never a prop; an island fetches it after mounting. The descriptor carries identity and configuration, not payload.
+
 ## See also
 
 - [Backend independence](backend-independence.md): why rendering returns a string.
