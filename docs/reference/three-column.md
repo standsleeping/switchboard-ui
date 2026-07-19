@@ -58,6 +58,7 @@ The preset is plain frames and slots, so it renders through [`render_document`](
 | `.sb-root` | The document root frame, sized to the viewport. |
 | `.sb-head-row`, `.sb-body-row`, `.sb-foot-row` | Row identity hooks; themes use the head and foot hooks to own full-width horizontal seams. |
 | `.sb-rail` | A content-driven head or foot row with a theme-published minimum block size. |
+| `.sb-scroll` | A scroll owner: overrides a frame's default clip with `overflow: auto`. The preset marks the three body cells. |
 | `.sb-<region>` | A cell's region identity (`sb-head-l` through `sb-foot-r`), a theming hook. |
 | `.sb-island` | A mount point inside a cell. |
 
