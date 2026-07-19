@@ -16,6 +16,7 @@
 | Region | One of the nine placement names the three-column preset accepts (`head`/`body`/`foot` by `l`/`c`/`r`). |
 | Ownership | The rule that every spatial or visual decision has exactly one owning layer, so a theme is replaceable and a visual bug traces to one layer. See [Ownership](../explanation/ownership.md). |
 | Seam | The border line between two tiled regions; drawn exactly once, by a single owner. See [Seams](../explanation/seams.md). |
+| Geometry contract | The `--sb-fit-*` obligations: a themed component *requires* (intrinsic geometry projected from its causes), structure *grants* (a slot floored at the requirement). See [Ownership](../explanation/ownership.md). |
 | Registry | The runtime's name-to-adapter map; dispatch is an explicit registry, not inheritance. |
 | Inline / linked | The two modes for delivering the CSS and runtime (embedded in the document, or referenced by URL). |
 | Hydration | Filling a server-rendered page with interactive islands after load, into boxes that already hold their final geometry. |
