@@ -211,6 +211,11 @@ LAYOUT_PROPERTIES: frozenset[str] = frozenset(
         "inset-block",
         "inset-inline",
         "z-index",
+        # anchor positioning (declarative placement of a top-layer panel
+        # relative to its trigger; the popover's placement contract)
+        "anchor-name",
+        "position-anchor",
+        "position-try-fallbacks",
     }
 )
 
@@ -218,6 +223,12 @@ CONTRACT_TOKEN_PREFIX = "--sb-fit-"
 """The one token family structure may consume: the Component Geometry Contract
 obligations the theme publishes. Structure consumes obligations (a rail floors
 itself to ``--sb-fit-rail-block``), never paint causes."""
+
+STRUCTURAL_LINK_TOKENS: frozenset[str] = frozenset({"--sb-anchor"})
+"""Per-instance link values structure may consume beside the contract: identity
+data a factory carries inline (the popover's anchor name) for the structural
+sheet to read via ``var()``. A link relates two elements; it causes no paint and
+holds no theme value, so consuming one is not a cause-reading breach."""
 
 INLINE_VALUE_PREFIX = "--sb-"
 """The prefix an inline ``style`` declaration must carry. A factory may carry a
