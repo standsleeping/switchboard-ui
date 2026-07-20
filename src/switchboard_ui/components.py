@@ -231,9 +231,12 @@ def color_input_styles() -> str:
     return read_static("color-input.css")
 
 
-# A valid HTML id: the panel id links the trigger to the panel via popovertarget
-# and aria-controls, so a malformed value silently breaks the wiring.
-_ID = re.compile(r"[A-Za-z][\w:.-]*\Z")
+# A valid element id, restricted to CSS-ident-safe characters: the id links the
+# trigger to the panel via popovertarget and aria-controls, and the popover's id
+# also becomes the tail of its per-instance anchor-name ident, so a character
+# that is legal in an HTML id but not in a dashed-ident (a `:` or `.`) would
+# silently break the anchor link. One validator holds both duties.
+_ID = re.compile(r"[A-Za-z][A-Za-z0-9_-]*\Z")
 
 HasPopup = Literal["dialog", "menu", "listbox", "grid", "tree", "true"]
 """The `aria-haspopup` kind the trigger advertises (what the panel contains)."""
@@ -259,21 +262,26 @@ def popover(
     the panel's accessible name and ``panel_id`` links the two (it lands in the
     panel ``id`` and the trigger's ``popovertarget`` / ``aria-controls``). The
     panel is a native ``[popover]``: the UA renders it in the top layer (so it
-    escapes ancestor clipping) and gives light-dismiss and Esc for free; the
-    adapter adds focus management, positioning, and an optional ``open_topic``
+    escapes ancestor clipping) and gives light-dismiss and Esc for free. The
+    structural sheet anchors the panel to its trigger declaratively (CSS anchor
+    positioning, linked through the per-instance anchor name the wrapper
+    carries); the adapter adds focus management and an optional ``open_topic``
     bus echo of ``{"open": bool}``.
 
     ``trigger_class`` adds classes to the trigger button (e.g. to style it as a
     chip), and ``trigger_label`` gives the trigger its own accessible name — which
     a content-less chip trigger needs, and which lets ``trigger`` be empty. Raises
     :class:`ValueError` at the authoring boundary if ``label`` is blank,
-    ``panel_id`` is not a valid HTML id, ``panel`` is empty, or ``trigger`` is
-    empty without a ``trigger_label``.
+    ``panel_id`` is not a valid id (letters, digits, hyphens, underscores),
+    ``panel`` is empty, or ``trigger`` is empty without a ``trigger_label``.
     """
     if not label:
         raise ValueError("popover requires a non-empty label (the panel's name)")
     if not _ID.match(panel_id):
-        raise ValueError(f"popover panel_id {panel_id!r} is not a valid HTML id")
+        raise ValueError(
+            f"popover panel_id {panel_id!r} is not a valid id"
+            " (letters, digits, hyphens, underscores)"
+        )
     if not trigger and not trigger_label:
         raise ValueError("popover requires trigger content or a trigger_label")
     if not panel:
@@ -303,7 +311,15 @@ def popover(
         },
         [panel],
     )
-    initial = element("div", {"class": "sb-popover"}, [trigger_el, panel_el])
+    # The per-instance anchor name rides the wrapper as a custom-property value
+    # (runtime data, like the swatch's --sb-swatch — a value, never a paint or
+    # geometry declaration); trigger and panel inherit it, and the structural
+    # sheet consumes it via anchor-name / position-anchor to link the two.
+    initial = element(
+        "div",
+        {"class": "sb-popover", "style": f"--sb-anchor: --sb-anchor-{panel_id}"},
+        [trigger_el, panel_el],
+    )
     return Island(
         name="popover",
         props={"topic": open_topic} if open_topic else {},
@@ -955,13 +971,17 @@ def modal(
     button or Esc, deliberately not a backdrop click, so a modal is not lost by an
     accidental outside click. ``trigger_class`` / ``trigger_label`` style or name a
     chip trigger, as in :func:`popover`. Raises :class:`ValueError` at the authoring
-    boundary if ``label`` is blank, ``dialog_id`` is not a valid HTML id, ``body``
-    is empty, or ``trigger`` is empty without a ``trigger_label``.
+    boundary if ``label`` is blank, ``dialog_id`` is not a valid id (letters,
+    digits, hyphens, underscores), ``body`` is empty, or ``trigger`` is empty
+    without a ``trigger_label``.
     """
     if not label:
         raise ValueError("modal requires a non-empty label (the dialog's name)")
     if not _ID.match(dialog_id):
-        raise ValueError(f"modal dialog_id {dialog_id!r} is not a valid HTML id")
+        raise ValueError(
+            f"modal dialog_id {dialog_id!r} is not a valid id"
+            " (letters, digits, hyphens, underscores)"
+        )
     if not trigger and not trigger_label:
         raise ValueError("modal requires trigger content or a trigger_label")
     if not body:

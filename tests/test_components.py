@@ -17,7 +17,6 @@ from importlib.resources import files
 import pytest
 
 from switchboard_ui import ownership
-from switchboard_ui.assets import read_static
 from switchboard_ui.components import (
     ArmBinding,
     Cell,
@@ -677,9 +676,12 @@ def test_popover_rejects_a_blank_label() -> None:
 
 
 def test_popover_rejects_an_invalid_panel_id() -> None:
-    """A malformed id would break the trigger/panel wiring; reject it up front."""
-    with pytest.raises(ValueError, match="valid HTML id"):
+    """A malformed id would break the trigger/panel wiring or the anchor-name
+    ident it becomes; reject it up front."""
+    with pytest.raises(ValueError, match="not a valid id"):
         _popover(panel_id="2 bad id")
+    with pytest.raises(ValueError, match="not a valid id"):
+        _popover(panel_id="dot.and:colon")
 
 
 def test_popover_rejects_empty_trigger_or_panel() -> None:
@@ -694,6 +696,34 @@ def test_popover_scripts_returns_the_adapter() -> None:
     """The adapter ships and registers under the popover name (the runtime's dispatch key)."""
     (adapter,) = popover_scripts()
     assert 'register("popover"' in adapter
+
+
+def test_popover_carries_the_anchor_link() -> None:
+    """The wrapper carries the per-instance anchor name as a custom-property
+    value; the structural sheet consumes it on both sides of the link."""
+    island = _popover()
+    (wrapper,) = find(island.initial, "div", **{"class": "sb-popover"})
+    assert wrapper["style"] == "--sb-anchor: --sb-anchor-settings-pop"
+    css = popover_styles()
+    assert "anchor-name: var(--sb-anchor)" in css
+    assert "position-anchor: var(--sb-anchor)" in css
+    assert "position-try-fallbacks" in css
+
+
+def test_popover_adapter_owns_no_geometry() -> None:
+    """Placement is the structural sheet's (anchor positioning); the adapter
+    never measures, writes, or invalidates a position — the retired reposition
+    ledger stays retired."""
+    (adapter,) = popover_scripts()
+    assert 'addEventListener("toggle"' in adapter  # the one subscription left
+    for marker in (
+        "getBoundingClientRect",
+        "ResizeObserver",
+        '"resize"',
+        '"scroll"',
+        ".style.",
+    ):
+        assert marker not in adapter
 
 
 def test_popover_styles_returns_the_structural_css() -> None:
@@ -978,7 +1008,7 @@ def test_modal_rejects_blank_label() -> None:
 
 def test_modal_rejects_an_invalid_dialog_id() -> None:
     """A malformed id silently breaks the trigger/dialog wiring, so it fails early."""
-    with pytest.raises(ValueError, match="not a valid HTML id"):
+    with pytest.raises(ValueError, match="not a valid id"):
         modal(trigger="Open", body="<p>x</p>", label="M", dialog_id="2 bad")
 
 
@@ -1178,7 +1208,8 @@ def test_component_css_selects_only_sb_classes() -> None:
 
 
 def test_component_css_carries_no_paint_tokens_or_magic_numbers() -> None:
-    """A component sheet stays token-free (only ``--sb-fit-*``) with no bare length."""
+    """A component sheet stays token-free (only ``--sb-fit-*`` obligations and
+    the named per-instance link values) with no bare length."""
     for name, css in _component_sheets():
         assert "light-dark(" not in css, (
             f"{name} consumes theming (a cause, not structure)"
@@ -1188,6 +1219,7 @@ def test_component_css_carries_no_paint_tokens_or_magic_numbers() -> None:
                 t
                 for t in ownership.referenced_tokens(css)
                 if not t.startswith(ownership.CONTRACT_TOKEN_PREFIX)
+                and t not in ownership.STRUCTURAL_LINK_TOKENS
             }
         )
         assert not non_contract, f"{name} references non-contract tokens {non_contract}"
@@ -1195,16 +1227,3 @@ def test_component_css_carries_no_paint_tokens_or_magic_numbers() -> None:
         assert not magic, (
             f"{name} has bare absolute lengths {magic}; use a token or keyword"
         )
-
-
-def test_popover_adapter_subscribes_its_invalidation_ledger() -> None:
-    """The popover's hand placement stays current: every covered invalidation
-    source in the adapter's ledger has its subscription in the code — open
-    (toggle), viewport resize, ancestor scroll (capture phase), and panel
-    growth. The written position is derived state; a ledger row without its
-    subscription is a stale-position bug."""
-    js = read_static("popover.js")
-    assert 'addEventListener("toggle"' in js
-    assert 'addEventListener("resize"' in js
-    assert 'addEventListener("scroll", onResize, true)' in js  # capture phase
-    assert "new ResizeObserver" in js

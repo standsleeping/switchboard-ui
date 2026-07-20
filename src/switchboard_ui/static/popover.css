@@ -4,10 +4,24 @@
  * box; the panel sizes to its content and scrolls if it would exceed the
  * viewport. The panel is a native `[popover]`: when shown the UA promotes it to
  * the browser TOP LAYER, so it escapes every ancestor's `overflow: hidden`
- * clipping with NO z-index and no stacking-context juggling. Its on-screen
- * position is set inline by the adapter (runtime data, like the color swatch's
- * --sb-swatch value) from the trigger's rect, which is why no `position` appears
- * here or in the theme — the no-`position`-in-theme guard holds for free. */
+ * clipping with NO z-index and no stacking-context juggling.
+ *
+ * Placement is declarative CSS anchor positioning. The factory carries the
+ * per-instance anchor name on the wrapper as the `--sb-anchor` custom-property
+ * value (runtime data, like the color swatch's `--sb-swatch`); the trigger and
+ * the panel both inherit it, so this sheet links the two without knowing the
+ * name. The panel opens below the trigger, flush with its left edge; when that
+ * placement would overflow the viewport the UA retries with the flipped
+ * placements in `position-try-fallbacks`. The engine re-derives the position
+ * whenever the trigger moves or the panel resizes, which is what retired the
+ * adapter's hand-written reposition ledger (open / viewport resize / panel
+ * growth / capture-phase scroll). The two `auto` insets release the UA's
+ * `inset: 0` popover default, and with one free side per axis the UA's
+ * `margin: auto` centering resolves to zero, so no margin is declared.
+ *
+ * The whole placement block is gated on @supports: in a browser without anchor
+ * positioning nothing here overrides the UA popover style, so the panel falls
+ * back to the UA's centered top-layer placement — degraded, still functional. */
 
 .sb-popover {
   display: inline-flex;
@@ -17,4 +31,18 @@
   max-inline-size: 100vw;
   max-block-size: 100dvb;
   overflow: auto;
+}
+@supports (anchor-name: --sb-probe) {
+  .sb-popover-trigger {
+    anchor-name: var(--sb-anchor);
+  }
+  .sb-popover-panel {
+    position: fixed;
+    position-anchor: var(--sb-anchor);
+    top: anchor(bottom);
+    left: anchor(left);
+    right: auto;
+    bottom: auto;
+    position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+  }
 }
