@@ -19,9 +19,23 @@ uses through ``extra_scripts``; the host wires a theme into a page itself:
 The typeface travels the same seam: the host serves ``font_bytes()`` at a URL it
 owns and prepends ``font_head(url)`` to ``extra_head``; without it the family
 tokens fall back to the system stacks.
+
+The theme's two shipped mode axes (color scheme and density) come with a
+standard control surface (:mod:`switchboard_theme.modes`): the ``Modes`` popover,
+the invisible applier island, and the pre-paint stamp, each riding the same host
+seams as any component.
 """
 
 from switchboard_theme.api import THEMES, font_bytes, font_head, head
+from switchboard_theme.modes import (
+    DENSITY_TOPIC,
+    SCHEME_TOPIC,
+    mode_stamp_head,
+    mode_state,
+    mode_switch,
+    mode_switch_scripts,
+    mode_switch_styles,
+)
 from switchboard_theme.tokens import (
     MODES,
     REGISTRY,
@@ -37,8 +51,10 @@ from switchboard_theme.tokens import (
 # generate one control per editable token, grouped by Category, choosing the
 # control by ValueType and the binding by value kind (Themed arms vs Fixed).
 __all__ = [
+    "DENSITY_TOPIC",
     "MODES",
     "REGISTRY",
+    "SCHEME_TOPIC",
     "THEMES",
     "Category",
     "Derived",
@@ -49,4 +65,9 @@ __all__ = [
     "font_bytes",
     "font_head",
     "head",
+    "mode_stamp_head",
+    "mode_state",
+    "mode_switch",
+    "mode_switch_scripts",
+    "mode_switch_styles",
 ]
