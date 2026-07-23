@@ -23,16 +23,15 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
 from typing import assert_never
 
-from showcase.chrome import (
+from showcase.chrome import surface_switch, surface_switch_styles
+from switchboard_theme import REGISTRY, Category, Fixed, Themed, Token, ValueType
+from switchboard_theme.modes import (
     mode_stamp_head,
     mode_state,
     mode_switch,
     mode_switch_scripts,
     mode_switch_styles,
-    surface_switch,
-    surface_switch_styles,
 )
-from switchboard_theme import REGISTRY, Category, Fixed, Themed, Token, ValueType
 from switchboard_ui import Document, Island, render_island
 from switchboard_ui.components import (
     ArmBinding,

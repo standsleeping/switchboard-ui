@@ -22,21 +22,20 @@ construct a future doc introduces before the renderer gains it.
 from dataclasses import dataclass
 from pathlib import Path
 
-from showcase.chrome import (
-    mode_stamp_head,
-    mode_state,
-    mode_switch,
-    mode_switch_scripts,
-    mode_switch_styles,
-    surface_switch,
-    surface_switch_styles,
-)
+from showcase.chrome import surface_switch, surface_switch_styles
 from showcase.markdown import (
     Heading,
     MarkdownError,
     RenderedDoc,
     internal_link_rewriter,
     render_markdown,
+)
+from switchboard_theme.modes import (
+    mode_stamp_head,
+    mode_state,
+    mode_switch,
+    mode_switch_scripts,
+    mode_switch_styles,
 )
 from switchboard_ui import Document, Island
 from switchboard_ui.components import (
