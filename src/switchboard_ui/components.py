@@ -1153,12 +1153,17 @@ class NavLink:
     ``current`` marks the row as the current page (``aria-current="page"``, the
     theme's reserved accent channel recolored). ``meta`` is an optional short
     annotation at the row's far edge (a count, a status); empty renders nothing.
+    ``nested`` places the row in an indented sublist under the preceding
+    top-level row (a section page under its area), mirroring the toc's model:
+    a run of nested rows is grouped into a sublist that owns the indent
+    structurally, so each row keeps a square inset.
     """
 
     label: str
     href: str
     current: bool = False
     meta: str = ""
+    nested: bool = False
 
 
 @dataclass(frozen=True)
@@ -1191,8 +1196,39 @@ def nav(*, sections: Sequence[NavSection], label: str) -> Island:
         raise ValueError("nav requires a non-empty label (the nav's name)")
     if not sections:
         raise ValueError("nav requires at least one section")
+
+    def row(link: NavLink, index: int) -> str:
+        if not link.label:
+            raise ValueError(f"nav link {index} has a blank label")
+        if not link.href:
+            raise ValueError(f"nav link {index} has a blank href")
+        children = [
+            element("span", {"class": "sb-nav-label"}, [escape_text(link.label)])
+        ]
+        if link.meta:
+            children.append(
+                element("span", {"class": "sb-nav-meta"}, [escape_text(link.meta)])
+            )
+        return element(
+            "a",
+            {
+                "class": "sb-nav-item",
+                "href": link.href,
+                "aria-current": "page" if link.current else "false",
+            },
+            children,
+        )
+
     items: list[str] = []
+    sublist: list[str] = []
+
+    def flush_sublist() -> None:
+        if sublist:
+            items.append(element("div", {"class": "sb-nav-sublist"}, list(sublist)))
+            sublist.clear()
+
     for section in sections:
+        flush_sublist()
         if section.heading:
             items.append(
                 element(
@@ -1202,28 +1238,12 @@ def nav(*, sections: Sequence[NavSection], label: str) -> Island:
                 )
             )
         for index, link in enumerate(section.links):
-            if not link.label:
-                raise ValueError(f"nav link {index} has a blank label")
-            if not link.href:
-                raise ValueError(f"nav link {index} has a blank href")
-            children = [
-                element("span", {"class": "sb-nav-label"}, [escape_text(link.label)])
-            ]
-            if link.meta:
-                children.append(
-                    element("span", {"class": "sb-nav-meta"}, [escape_text(link.meta)])
-                )
-            items.append(
-                element(
-                    "a",
-                    {
-                        "class": "sb-nav-item",
-                        "href": link.href,
-                        "aria-current": "page" if link.current else "false",
-                    },
-                    children,
-                )
-            )
+            if link.nested:
+                sublist.append(row(link, index))
+            else:
+                flush_sublist()
+                items.append(row(link, index))
+    flush_sublist()
     initial = element("nav", {"class": "sb-nav", "aria-label": label}, items)
     return Island(name="nav", initial=initial)
 

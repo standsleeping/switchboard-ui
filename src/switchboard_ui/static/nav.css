@@ -13,6 +13,11 @@
   flex-direction: column;
 }
 
+.sb-nav-sublist {
+  display: flex;
+  flex-direction: column;
+}
+
 .sb-nav-item {
   display: flex;
   justify-content: space-between;

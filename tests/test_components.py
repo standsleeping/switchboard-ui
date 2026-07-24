@@ -67,7 +67,7 @@ from switchboard_ui.components import (
     value_field_styles,
 )
 from switchboard_ui.model import Island
-from tests.htmlprobe import find
+from tests.htmlprobe import elements, find
 
 _OPTIONS = (("overview", "Overview"), ("api", "API"), ("examples", "Examples"))
 _LABEL = "View"
@@ -1238,6 +1238,40 @@ def test_nav_renders_meta_only_where_given() -> None:
     metas = find(island.initial, "span", **{"class": "sb-nav-meta"})
     assert len(metas) == 1
     assert ">17<" in island.initial
+
+
+def test_nav_groups_nested_runs_into_sublists() -> None:
+    """A run of nested links lands in a sublist under the preceding row; the
+    following top-level row closes the run and sits outside it."""
+    island = nav(
+        sections=(
+            NavSection(
+                heading="Projects",
+                links=(
+                    NavLink(label="alpha", href="/p/alpha/"),
+                    NavLink(label="Roadmap", href="/p/alpha/roadmap/", nested=True),
+                    NavLink(label="Docs", href="/p/alpha/docs/", nested=True),
+                    NavLink(label="beta", href="/p/beta/"),
+                ),
+            ),
+        ),
+        label="Site",
+    )
+    order = [
+        (tag, attrs.get("class", ""), attrs.get("href", ""))
+        for tag, attrs in elements(island.initial)
+        if attrs.get("class") in ("sb-nav-item", "sb-nav-sublist")
+    ]
+    assert order == [
+        ("a", "sb-nav-item", "/p/alpha/"),
+        ("div", "sb-nav-sublist", ""),
+        ("a", "sb-nav-item", "/p/alpha/roadmap/"),
+        ("a", "sb-nav-item", "/p/alpha/docs/"),
+        ("a", "sb-nav-item", "/p/beta/"),
+    ]
+    # The sublist closes before the next top-level row opens: beta is outside it.
+    docs_at = island.initial.index("/p/alpha/docs/")
+    assert island.initial.index("</div>", docs_at) < island.initial.index("/p/beta/")
 
 
 def test_nav_rejects_blank_label_sections_and_links() -> None:
