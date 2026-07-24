@@ -16,8 +16,8 @@ def test_build_doc_fills_the_three_columns_with_nav_breadcrumb_content_and_toc()
 ):
     """A rendered doc carries the nav, a breadcrumb over content, and an on-this-page TOC."""
     html = render_document(build_doc("tutorials/getting-started.md"))
-    assert find(html, "div", **{"data-island": "docs-nav"})
-    assert find(html, "div", **{"data-island": "docs-toc"})
+    assert find(html, "div", **{"data-island": "nav"})
+    assert find(html, "div", **{"data-island": "toc"})
     assert find(html, "div", **{"data-island": "breadcrumb"})
     assert find(
         html, "div", **{"data-island": "code-block"}
@@ -28,7 +28,7 @@ def test_build_doc_fills_the_three_columns_with_nav_breadcrumb_content_and_toc()
 def test_nav_marks_the_current_doc() -> None:
     """Exactly the current doc's nav link carries aria-current, pointing at its route."""
     html = render_document(build_doc("tutorials/getting-started.md"))
-    current = find(html, "a", **{"class": "sb-docs-nav-item", "aria-current": "page"})
+    current = find(html, "a", **{"class": "sb-nav-item", "aria-current": "page"})
     assert [a["href"] for a in current] == ["/docs/tutorials/getting-started"]
 
 
@@ -65,7 +65,7 @@ def test_unsupported_construct_renders_a_notice_keeping_the_shell(
     html = render_document(docs.build_doc("note.md"))
     assert "Not yet rendered" in html
     assert "blockquote is not in the subset" in html
-    assert find(html, "div", **{"data-island": "docs-nav"})  # shell survives the notice
+    assert find(html, "div", **{"data-island": "nav"})  # shell survives the notice
 
 
 def test_docs_styles_carry_the_prose_chrome_and_table_css() -> None:
@@ -73,7 +73,7 @@ def test_docs_styles_carry_the_prose_chrome_and_table_css() -> None:
     css = docs_styles()
     assert ".sb-body-c" in css  # the center column owns both column seams
     assert ".sb-doc-p" in css and ".sb-doc-code" in css  # prose styles
-    assert ".sb-docs-nav" in css and ".sb-docs-toc" in css
+    assert ".sb-nav" in css and ".sb-toc" in css  # the shared nav/toc components' CSS
     assert ".sb-table-grid" in css  # the table component's structural CSS is loaded
 
 

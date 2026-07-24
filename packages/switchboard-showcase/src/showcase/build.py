@@ -36,6 +36,9 @@ from switchboard_ui import Document, Island, render_island
 from switchboard_ui.components import (
     ArmBinding,
     Binding,
+    NavLink,
+    NavSection,
+    TocEntry,
     ValueBinding,
     breadcrumb,
     breadcrumb_styles,
@@ -53,6 +56,8 @@ from switchboard_ui.components import (
     modal,
     modal_scripts,
     modal_styles,
+    nav,
+    nav_styles,
     popover,
     popover_scripts,
     popover_styles,
@@ -72,6 +77,8 @@ from switchboard_ui.components import (
     theme_export_styles,
     theme_state,
     theme_state_scripts,
+    toc,
+    toc_styles,
     value_field,
     value_field_scripts,
     value_field_styles,
@@ -513,6 +520,63 @@ def _gallery_specs() -> tuple[_Spec, ...]:
             ),
             tokens=("--sb-color-border", "--sb-color-muted", "--sb-color-fg"),
             rebuild=_collapsible_specimen,
+        ),
+        _Spec(
+            id="nav",
+            name="Nav",
+            section="Display",
+            body=(
+                nav(
+                    sections=(
+                        NavSection(
+                            links=(NavLink(label="Overview", href="#", current=True),)
+                        ),
+                        NavSection(
+                            heading="Groups",
+                            links=(
+                                NavLink(label="Controls", href="#", meta="6"),
+                                NavLink(label="Display", href="#", meta="6"),
+                            ),
+                        ),
+                    ),
+                    label="Example nav",
+                ),
+            ),
+            props=(
+                DisplayProp("sections", "2"),
+                DisplayProp("current", "Overview"),
+            ),
+            tokens=(
+                "--sb-color-accent",
+                "--sb-color-faint",
+                "--sb-border-width-accent",
+            ),
+        ),
+        _Spec(
+            id="toc",
+            name="Toc",
+            section="Display",
+            body=(
+                toc(
+                    entries=(
+                        TocEntry(text="The recipe", anchor="sec-nav"),
+                        TocEntry(text="Why native", anchor="sec-nav", nested=True),
+                        TocEntry(
+                            text="What it replaces", anchor="sec-nav", nested=True
+                        ),
+                        TocEntry(text="Related", anchor="sec-nav"),
+                    ),
+                ),
+            ),
+            props=(
+                DisplayProp("entries", "4"),
+                DisplayProp("label", "On this page"),
+            ),
+            tokens=(
+                "--sb-color-muted",
+                "--sb-color-faint",
+                "--sb-font-size-sm",
+            ),
         ),
     )
 
@@ -1042,6 +1106,8 @@ def showcase_styles() -> str:
             modal_styles(),
             breadcrumb_styles(),
             collapsible_styles(),
+            nav_styles(),
+            toc_styles(),
         )
     )
     return (

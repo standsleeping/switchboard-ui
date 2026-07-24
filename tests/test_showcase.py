@@ -65,6 +65,8 @@ _EXPECTED_IDS = [
     "code-block",
     "breadcrumb",
     "collapsible",
+    "nav",
+    "toc",
 ]
 
 

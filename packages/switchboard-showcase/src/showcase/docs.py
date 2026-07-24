@@ -39,15 +39,22 @@ from switchboard_theme.modes import (
 )
 from switchboard_ui import Document, Island
 from switchboard_ui.components import (
+    NavLink,
+    NavSection,
+    TocEntry,
     breadcrumb,
     breadcrumb_styles,
     code_block_scripts,
     code_block_styles,
+    nav,
+    nav_styles,
     popover_scripts,
     popover_styles,
     segmented_scripts,
     segmented_styles,
     table_styles,
+    toc,
+    toc_styles,
 )
 from switchboard_ui.html import element, escape_text
 from switchboard_ui.model import Region
@@ -121,81 +128,44 @@ def _category_of(relpath: str) -> tuple[str, str] | None:
 def _nav(current: str) -> Island:
     """The nav column: an Overview link over the Diátaxis groups, current marked.
 
-    A static island (no adapter): the links navigate natively to ``/docs`` routes.
+    The shared ``nav`` component: a leading ungrouped Overview link, then one
+    headed section per category, built from the same tree the routes come from.
     """
-    items: list[str] = [
-        element(
-            "a",
-            {
-                "class": "sb-docs-nav-item",
-                "href": "/docs",
-                "aria-current": "page" if current == "index.md" else "false",
-            },
-            [escape_text("Overview")],
+    sections = [
+        NavSection(
+            links=(
+                NavLink(label="Overview", href="/docs", current=current == "index.md"),
+            )
         )
     ]
     for label, entries in _tree():
-        items.append(
-            element("div", {"class": "sb-docs-nav-group"}, [escape_text(label)])
-        )
-        for entry in entries:
-            items.append(
-                element(
-                    "a",
-                    {
-                        "class": "sb-docs-nav-item",
-                        "href": entry.route,
-                        "aria-current": "page" if entry.relpath == current else "false",
-                    },
-                    [escape_text(entry.label)],
-                )
+        sections.append(
+            NavSection(
+                heading=label,
+                links=tuple(
+                    NavLink(
+                        label=entry.label,
+                        href=entry.route,
+                        current=entry.relpath == current,
+                    )
+                    for entry in entries
+                ),
             )
-    nav = element("nav", {"class": "sb-docs-nav", "aria-label": "Documentation"}, items)
-    return Island(name="docs-nav", initial=nav)
+        )
+    return nav(sections=tuple(sections), label="Documentation")
 
 
 def _toc(headings: tuple[Heading, ...]) -> Island:
     """The on-this-page column: the doc's H2/H3 headings as anchor links.
 
-    A static island: each link is an in-page anchor to the heading's id. H3s are
-    grouped into a sublist that owns the nesting indent structurally, so the links
-    themselves keep a square inset rather than an asymmetric left padding.
+    The shared ``toc`` component; an H3 becomes a nested entry, so a run of them
+    lands in the component's indented sublist.
     """
-
-    def link(heading: Heading) -> str:
-        return element(
-            "a",
-            {
-                "class": f"sb-docs-toc-link sb-docs-toc-l{heading.level}",
-                "href": f"#{heading.slug}",
-            },
-            [escape_text(heading.text)],
+    return toc(
+        entries=tuple(
+            TocEntry(text=h.text, anchor=h.slug, nested=h.level >= 3) for h in headings
         )
-
-    rows: list[str] = []
-    sublist: list[str] = []
-
-    def flush_sublist() -> None:
-        if sublist:
-            rows.append(element("div", {"class": "sb-docs-toc-sublist"}, list(sublist)))
-            sublist.clear()
-
-    for heading in headings:
-        if heading.level >= 3:
-            sublist.append(link(heading))
-        else:
-            flush_sublist()
-            rows.append(link(heading))
-    flush_sublist()
-
-    children = [
-        element("div", {"class": "sb-docs-toc-label"}, [escape_text("On this page")]),
-        element("div", {"class": "sb-docs-toc-links"}, rows),
-    ]
-    toc = element(
-        "nav", {"class": "sb-docs-toc", "aria-label": "On this page"}, children
     )
-    return Island(name="docs-toc", initial=toc)
 
 
 def _breadcrumb(relpath: str, title: str) -> Island:
@@ -385,70 +355,6 @@ _DOCS_CSS = f"""
   min-inline-size: var(--sb-space-md);
   color: var(--sb-color-muted);
 }}
-.sb-docs-nav {{
-  display: flex;
-  flex-direction: column;
-  gap: var(--sb-space-2xs);
-  padding: var(--sb-space-md);
-}}
-.sb-docs-nav-group {{
-  color: var(--sb-color-faint);
-  font-weight: var(--sb-font-weight-bold);
-  text-transform: uppercase;
-  letter-spacing: var(--sb-font-tracking-wide);
-  font-size: var(--sb-font-size-sm);
-}}
-.sb-docs-nav-item {{
-  color: var(--sb-color-fg);
-  text-decoration: none;
-  border-inline-start: var(--sb-border-width-accent) solid transparent;
-  padding: var(--sb-space-xs);
-}}
-.sb-docs-nav-item:hover {{
-  color: var(--sb-color-accent);
-}}
-.sb-docs-nav-item[aria-current="page"] {{
-  color: var(--sb-color-accent);
-  border-inline-start-color: var(--sb-color-accent);
-}}
-.sb-docs-nav-item:focus-visible {{
-  outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
-  outline-offset: -2px;
-}}
-.sb-docs-toc {{
-  display: flex;
-  flex-direction: column;
-  gap: var(--sb-space-sm);
-  padding: var(--sb-space-md);
-}}
-.sb-docs-toc-label {{
-  color: var(--sb-color-faint);
-  font-weight: var(--sb-font-weight-bold);
-  text-transform: uppercase;
-  letter-spacing: var(--sb-font-tracking-wide);
-  font-size: var(--sb-font-size-sm);
-  padding: var(--sb-space-2xs);
-}}
-.sb-docs-toc-links {{
-  display: flex;
-  flex-direction: column;
-  gap: var(--sb-space-2xs);
-}}
-.sb-docs-toc-sublist {{
-  display: flex;
-  flex-direction: column;
-  gap: var(--sb-space-2xs);
-  padding-inline-start: var(--sb-space-md);
-}}
-.sb-docs-toc-link {{
-  color: var(--sb-color-muted);
-  text-decoration: none;
-  font-size: var(--sb-font-size-sm);
-  padding: var(--sb-space-2xs);
-}}
-.sb-docs-toc-link:hover {{
-  color: var(--sb-color-accent);
-}}
 .sb-docs-notice {{
   border: var(--sb-border-width-thin) solid var(--sb-color-border);
 }}
@@ -473,9 +379,11 @@ def docs_styles() -> str:
         (
             code_block_styles(),
             breadcrumb_styles(),
+            nav_styles(),
             popover_styles(),
             segmented_styles(),
             table_styles(),
+            toc_styles(),
         )
     )
     return (
