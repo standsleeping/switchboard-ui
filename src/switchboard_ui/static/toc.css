@@ -1,0 +1,24 @@
+/* switchboard-ui: structural CSS for the on-this-page toc.
+ *
+ * Geometry only, the same contract as layout.css: a column rail — the label over
+ * the link list, nested runs grouped into their own sublist column so the indent
+ * is a property of the group, not asymmetric spacing on each link. It carries no
+ * paint and no box-spacing — the gaps, the sublist indent, the label typography,
+ * and the link colors are all the theme's, keyed to these same .sb-* hooks. The
+ * guard in tests/test_components.py holds this file to the geometry-only,
+ * token-free, .sb-*-only contract. */
+
+.sb-toc {
+  display: flex;
+  flex-direction: column;
+}
+
+.sb-toc-links {
+  display: flex;
+  flex-direction: column;
+}
+
+.sb-toc-sublist {
+  display: flex;
+  flex-direction: column;
+}

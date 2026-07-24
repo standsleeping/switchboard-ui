@@ -146,6 +146,22 @@ def collapsible(*, title: str, body: str, count: int | None = None, open: bool =
 
 A native `<details>`/`<summary>` section, so toggling, keyboard, and open/closed state come from the browser. An optional `count` shows beside the title; `open` renders it expanded. Raises `ValueError` if `title` is blank, `body` is empty, or `count` is negative. Companion: `collapsible.css`.
 
+### `nav`
+
+```python
+def nav(*, sections: Sequence[NavSection], label: str) -> Island
+```
+
+A sidebar `<nav>` of link sections, the canonical left rail. Each `NavSection` renders an optional uppercase group heading over its `NavLink` rows; a link's optional `meta` annotation (a count, a status) sits at the row's far edge, and the `current` link carries `aria-current="page"`. Every row reserves the active-edge channel, so marking the current page never shifts a row. A static island: the links navigate natively. Raises `ValueError` if `label` is blank, `sections` is empty, or any link has a blank label or href. Companion: `nav.css`.
+
+### `toc`
+
+```python
+def toc(*, entries: Sequence[TocEntry], label: str = "On this page") -> Island
+```
+
+An on-this-page rail: a page's headings as in-page anchor links. A run of `nested` entries (h3s under their h2) is grouped into a sublist that owns the indent structurally, so each link keeps a square inset. An empty `entries` renders just the label. A static island. Raises `ValueError` if `label` is blank or any entry has blank text or a blank anchor. Companion: `toc.css`.
+
 ## Supporting types
 
 Public types in `switchboard_ui.components` used by the factories above:
@@ -153,6 +169,9 @@ Public types in `switchboard_ui.components` used by the factories above:
 | Type | Used by | Meaning |
 |---|---|---|
 | `Cell(html: str)` | `table` | A trusted, already-rendered inline-HTML table cell. |
+| `NavLink(label, href, current, meta)` | `nav` | One nav row: a route link, optionally current, with an optional far-edge annotation. |
+| `NavSection(links, heading)` | `nav` | A run of nav links under an optional group heading. |
+| `TocEntry(text, anchor, nested)` | `toc` | One on-this-page row; `nested` places it in the indented sublist. |
 | `ArmBinding(topic, token, arm)` | `theme_state`, `theme_export` | Edits one scheme arm (`"light"` or `"dark"`) of a color token, re-declaring its `light-dark()`. |
 | `ValueBinding(topic, token)` | `theme_state`, `theme_export` | Sets a scheme-invariant token directly. |
 | `Binding` | the two above | `ArmBinding | ValueBinding`. |
@@ -176,6 +195,8 @@ Public types in `switchboard_ui.components` used by the factories above:
 | Code block | `code_block` | — (copy only) | `code-block.js` | `code-block.css` |
 | Breadcrumb | `breadcrumb` | — | — | `breadcrumb.css` |
 | Collapsible | `collapsible` | — | — | `collapsible.css` |
+| Nav | `nav` | — | — | `nav.css` |
+| Toc | `toc` | — | — | `toc.css` |
 
 ## See also
 

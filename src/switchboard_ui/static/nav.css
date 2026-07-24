@@ -1,0 +1,20 @@
+/* switchboard-ui: structural CSS for the sidebar nav.
+ *
+ * Geometry only, the same contract as layout.css: a column of group headings and
+ * link rows, each row spreading its label and optional meta annotation to the
+ * row's two edges. It carries no paint and no box-spacing — the gaps, the row
+ * inset, the group-label typography, the reserved active-edge channel, and the
+ * current-page accent are all the theme's, keyed to these same .sb-* hooks.
+ * The guard in tests/test_components.py holds this file to the geometry-only,
+ * token-free, .sb-*-only contract. */
+
+.sb-nav {
+  display: flex;
+  flex-direction: column;
+}
+
+.sb-nav-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}

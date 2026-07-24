@@ -20,6 +20,9 @@ from switchboard_ui import ownership
 from switchboard_ui.components import (
     ArmBinding,
     Cell,
+    NavLink,
+    NavSection,
+    TocEntry,
     ValueBinding,
     breadcrumb,
     breadcrumb_styles,
@@ -37,6 +40,8 @@ from switchboard_ui.components import (
     modal,
     modal_scripts,
     modal_styles,
+    nav,
+    nav_styles,
     popover,
     popover_scripts,
     popover_styles,
@@ -55,6 +60,8 @@ from switchboard_ui.components import (
     theme_export_styles,
     theme_state,
     theme_state_scripts,
+    toc,
+    toc_styles,
     value_field,
     value_field_scripts,
     value_field_styles,
@@ -1179,6 +1186,144 @@ def test_collapsible_rejects_a_negative_count() -> None:
 def test_collapsible_styles_returns_the_structural_css() -> None:
     """The structural CSS ships and targets the component's hooks."""
     assert ".sb-collapsible" in collapsible_styles()
+
+
+# --- nav ----------------------------------------------------------------------
+
+
+def _nav() -> Island:
+    """A two-section nav: a leading ungrouped link, then a headed group."""
+    return nav(
+        sections=(
+            NavSection(links=(NavLink(label="Index", href="/", current=True),)),
+            NavSection(
+                heading="Groups",
+                links=(
+                    NavLink(label="Types", href="/types/", meta="17"),
+                    NavLink(label="Layout", href="/layout/"),
+                ),
+            ),
+        ),
+        label="Site",
+    )
+
+
+def test_nav_builds_a_static_nav_island() -> None:
+    """The factory names the nav slot and ships no pub/sub (it is inert)."""
+    island = _nav()
+    assert island.name == "nav"
+    assert island.publishes == () and island.subscribes == ()
+
+
+def test_nav_renders_sections_with_headings_over_links() -> None:
+    """A headed section renders its group label; links carry their hrefs."""
+    island = _nav()
+    groups = find(island.initial, "div", **{"class": "sb-nav-group"})
+    assert len(groups) == 1
+    assert ">Groups<" in island.initial
+    hrefs = [a["href"] for a in find(island.initial, "a", **{"class": "sb-nav-item"})]
+    assert hrefs == ["/", "/types/", "/layout/"]
+
+
+def test_nav_marks_only_the_current_link() -> None:
+    """Exactly the current link carries aria-current; the others say false."""
+    island = _nav()
+    current = find(island.initial, "a", **{"aria-current": "page"})
+    assert [a["href"] for a in current] == ["/"]
+
+
+def test_nav_renders_meta_only_where_given() -> None:
+    """A link's meta annotation renders at the row's edge; absent meta renders nothing."""
+    island = _nav()
+    metas = find(island.initial, "span", **{"class": "sb-nav-meta"})
+    assert len(metas) == 1
+    assert ">17<" in island.initial
+
+
+def test_nav_rejects_blank_label_sections_and_links() -> None:
+    """A blank nav label, an empty section list, or a blank link fails at the boundary."""
+    section = NavSection(links=(NavLink(label="A", href="/a"),))
+    with pytest.raises(ValueError, match="non-empty label"):
+        nav(sections=(section,), label="")
+    with pytest.raises(ValueError, match="at least one section"):
+        nav(sections=(), label="Site")
+    with pytest.raises(ValueError, match="blank label"):
+        nav(
+            sections=(NavSection(links=(NavLink(label="", href="/a"),)),),
+            label="Site",
+        )
+    with pytest.raises(ValueError, match="blank href"):
+        nav(
+            sections=(NavSection(links=(NavLink(label="A", href=""),)),),
+            label="Site",
+        )
+
+
+def test_nav_styles_returns_the_structural_css() -> None:
+    """The structural CSS ships and targets the component's hooks."""
+    assert ".sb-nav" in nav_styles()
+
+
+# --- toc ----------------------------------------------------------------------
+
+
+def _toc() -> Island:
+    """A toc with one top-level entry followed by a nested run and another top."""
+    return toc(
+        entries=(
+            TocEntry(text="Recipe", anchor="recipe"),
+            TocEntry(text="Why", anchor="why", nested=True),
+            TocEntry(text="Rules", anchor="rules", nested=True),
+            TocEntry(text="Related", anchor="related"),
+        ),
+        label="On this page",
+    )
+
+
+def test_toc_builds_a_static_nav_island() -> None:
+    """The factory names the toc slot and ships no pub/sub (it is inert)."""
+    island = _toc()
+    assert island.name == "toc"
+    assert island.publishes == () and island.subscribes == ()
+
+
+def test_toc_links_every_entry_to_its_anchor() -> None:
+    """Each entry renders as an in-page anchor link to its heading id."""
+    island = _toc()
+    links = find(island.initial, "a")
+    assert [a["href"] for a in links] == ["#recipe", "#why", "#rules", "#related"]
+
+
+def test_toc_groups_a_nested_run_into_one_sublist() -> None:
+    """Consecutive nested entries share a sublist that owns the indent; the
+    following top-level entry closes it."""
+    island = _toc()
+    sublists = find(island.initial, "div", **{"class": "sb-toc-sublist"})
+    assert len(sublists) == 1
+    nested = find(island.initial, "a", **{"class": "sb-toc-link sb-toc-link-nested"})
+    assert [a["href"] for a in nested] == ["#why", "#rules"]
+
+
+def test_toc_with_no_entries_keeps_its_label() -> None:
+    """A page with no headings keeps the rail label over an empty list."""
+    island = toc(entries=(), label="On this page")
+    assert "On this page" in island.initial
+    assert find(island.initial, "a") == []
+
+
+def test_toc_rejects_blank_label_text_or_anchor() -> None:
+    """A blank rail label, entry text, or anchor fails at the authoring boundary."""
+    with pytest.raises(ValueError, match="non-empty label"):
+        toc(entries=(), label="")
+    with pytest.raises(ValueError, match="blank text"):
+        toc(entries=(TocEntry(text="", anchor="a"),))
+    with pytest.raises(ValueError, match="blank anchor"):
+        toc(entries=(TocEntry(text="T", anchor=""),))
+
+
+def test_toc_styles_returns_the_structural_css() -> None:
+    """The structural CSS ships and targets the component's hooks."""
+    assert ".sb-toc" in toc_styles()
 
 
 def _component_sheets() -> list[tuple[str, str]]:

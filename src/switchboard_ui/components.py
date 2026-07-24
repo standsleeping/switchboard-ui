@@ -1144,3 +1144,159 @@ def collapsible(
 def collapsible_styles() -> str:
     """The collapsible structural CSS, for the host to inline in ``extra_head``."""
     return read_static("collapsible.css")
+
+
+@dataclass(frozen=True)
+class NavLink:
+    """One nav row: a label linking to a route.
+
+    ``current`` marks the row as the current page (``aria-current="page"``, the
+    theme's reserved accent channel recolored). ``meta`` is an optional short
+    annotation at the row's far edge (a count, a status); empty renders nothing.
+    """
+
+    label: str
+    href: str
+    current: bool = False
+    meta: str = ""
+
+
+@dataclass(frozen=True)
+class NavSection:
+    """A run of nav links under an optional group heading.
+
+    ``heading`` is a structural label over the run (uppercase in the theme);
+    empty renders the links with no heading, for a leading ungrouped run.
+    """
+
+    links: tuple[NavLink, ...]
+    heading: str = ""
+
+
+def nav(*, sections: Sequence[NavSection], label: str) -> Island:
+    """A sidebar nav: sections of links, the current page marked.
+
+    The canonical left-rail navigation — a static island (no adapter, no
+    pub/sub): the links navigate natively. Each section renders its optional
+    group heading over its links; each link is a row whose label sits at the
+    row's start and whose optional ``meta`` annotation sits at the far edge.
+    The current link carries ``aria-current="page"``; every row reserves the
+    active-edge channel (the theme draws it transparent and recolors the
+    current one), so marking the current page never shifts a row. ``label`` is
+    the nav's accessible name (its ``aria-label``). Raises :class:`ValueError`
+    if ``label`` is blank, ``sections`` is empty, or any link has a blank label
+    or href — so a malformed nav fails where it is written.
+    """
+    if not label:
+        raise ValueError("nav requires a non-empty label (the nav's name)")
+    if not sections:
+        raise ValueError("nav requires at least one section")
+    items: list[str] = []
+    for section in sections:
+        if section.heading:
+            items.append(
+                element(
+                    "div",
+                    {"class": "sb-nav-group"},
+                    [escape_text(section.heading)],
+                )
+            )
+        for index, link in enumerate(section.links):
+            if not link.label:
+                raise ValueError(f"nav link {index} has a blank label")
+            if not link.href:
+                raise ValueError(f"nav link {index} has a blank href")
+            children = [
+                element("span", {"class": "sb-nav-label"}, [escape_text(link.label)])
+            ]
+            if link.meta:
+                children.append(
+                    element("span", {"class": "sb-nav-meta"}, [escape_text(link.meta)])
+                )
+            items.append(
+                element(
+                    "a",
+                    {
+                        "class": "sb-nav-item",
+                        "href": link.href,
+                        "aria-current": "page" if link.current else "false",
+                    },
+                    children,
+                )
+            )
+    initial = element("nav", {"class": "sb-nav", "aria-label": label}, items)
+    return Island(name="nav", initial=initial)
+
+
+def nav_styles() -> str:
+    """The nav structural CSS, for the host to inline in ``extra_head``."""
+    return read_static("nav.css")
+
+
+@dataclass(frozen=True)
+class TocEntry:
+    """One on-this-page row: heading text linking to its in-page anchor.
+
+    ``nested`` places the entry in an indented sublist under the preceding
+    top-level entry (an h3 under its h2).
+    """
+
+    text: str
+    anchor: str
+    nested: bool = False
+
+
+def toc(*, entries: Sequence[TocEntry], label: str = "On this page") -> Island:
+    """An on-this-page rail: a page's headings as in-page anchor links.
+
+    The structural twin of an inspector column — a static island: each link is
+    an in-page anchor (``#<anchor>``) the scroll owner follows natively. A run
+    of ``nested`` entries is grouped into a sublist that owns the nesting indent
+    structurally, so the links themselves keep a square inset. ``label`` is the
+    rail's heading and accessible name. An empty ``entries`` renders just the
+    label (a page with no headings keeps its rail without inventing links).
+    Raises :class:`ValueError` if ``label`` is blank, or any entry has blank
+    text or a blank anchor.
+    """
+    if not label:
+        raise ValueError("toc requires a non-empty label (the rail's name)")
+
+    def link(entry: TocEntry, index: int) -> str:
+        if not entry.text:
+            raise ValueError(f"toc entry {index} has blank text")
+        if not entry.anchor:
+            raise ValueError(f"toc entry {index} has a blank anchor")
+        cls = "sb-toc-link sb-toc-link-nested" if entry.nested else "sb-toc-link"
+        return element(
+            "a",
+            {"class": cls, "href": f"#{entry.anchor}"},
+            [escape_text(entry.text)],
+        )
+
+    rows: list[str] = []
+    sublist: list[str] = []
+
+    def flush_sublist() -> None:
+        if sublist:
+            rows.append(element("div", {"class": "sb-toc-sublist"}, list(sublist)))
+            sublist.clear()
+
+    for index, entry in enumerate(entries):
+        if entry.nested:
+            sublist.append(link(entry, index))
+        else:
+            flush_sublist()
+            rows.append(link(entry, index))
+    flush_sublist()
+
+    children = [
+        element("div", {"class": "sb-toc-label"}, [escape_text(label)]),
+        element("div", {"class": "sb-toc-links"}, rows),
+    ]
+    initial = element("nav", {"class": "sb-toc", "aria-label": label}, children)
+    return Island(name="toc", initial=initial)
+
+
+def toc_styles() -> str:
+    """The toc structural CSS, for the host to inline in ``extra_head``."""
+    return read_static("toc.css")
