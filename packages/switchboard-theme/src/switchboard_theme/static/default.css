@@ -676,10 +676,15 @@ button:focus-visible {
   color: var(--sb-color-fg);
 }
 
-/* Sidebar nav: a quiet column of group labels and link rows. Every row reserves
- * the active-edge channel as a transparent inline-start border, recolored only
- * on the current page, so marking it never shifts a row (peer edge
- * reservation). The optional meta annotation sits faint at the row's far edge. */
+/* Sidebar nav: a quiet column of group labels and link rows. Every child
+ * reserves the active-edge channel as a transparent inline-start border
+ * (recolored only on the current page), so marking it never shifts a row and
+ * headings align with row labels (peer edge reservation). The current page
+ * carries the full three-channel mark: the recolored edge, the accent-soft
+ * wash, and the bold label (weight is reflow-safe in mono: the advance width
+ * does not change). A heading that follows rows opens a new section, drawn
+ * with a thin separator rule. The optional meta annotation sits faint at the
+ * row's far edge. */
 .sb-nav {
   gap: var(--sb-space-2xs);
   padding: var(--sb-space-md);
@@ -690,12 +695,26 @@ button:focus-visible {
   text-transform: uppercase;
   letter-spacing: var(--sb-font-tracking-wide);
   font-size: var(--sb-font-size-sm);
+  border-inline-start: var(--sb-border-width-accent) solid transparent;
+  padding: var(--sb-space-xs);
+}
+.sb-nav-item + .sb-nav-group,
+.sb-nav-sublist + .sb-nav-group {
+  border-block-start: var(--sb-border-width-thin) solid var(--sb-color-border);
+}
+.sb-nav-sublist {
+  gap: var(--sb-space-2xs);
+  padding-inline-start: var(--sb-space-lg);
+}
+.sb-nav-sublist .sb-nav-item {
+  font-size: var(--sb-font-size-sm);
+  padding: var(--sb-space-xs);
 }
 .sb-nav-item {
   color: var(--sb-color-fg);
   text-decoration: none;
   border-inline-start: var(--sb-border-width-accent) solid transparent;
-  padding: var(--sb-space-xs);
+  padding: var(--sb-space-sm);
   gap: var(--sb-space-sm);
 }
 .sb-nav-item:hover {
@@ -704,6 +723,11 @@ button:focus-visible {
 .sb-nav-item[aria-current="page"] {
   color: var(--sb-color-accent);
   border-inline-start-color: var(--sb-color-accent);
+  background: var(--sb-color-accent-soft);
+  font-weight: var(--sb-font-weight-bold);
+}
+.sb-nav-item[aria-current="page"] .sb-nav-meta {
+  color: var(--sb-color-accent);
 }
 .sb-nav-item:focus-visible {
   outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
@@ -739,7 +763,7 @@ button:focus-visible {
   color: var(--sb-color-muted);
   text-decoration: none;
   font-size: var(--sb-font-size-sm);
-  padding: var(--sb-space-2xs);
+  padding: var(--sb-space-xs);
 }
 .sb-toc-link:hover {
   color: var(--sb-color-accent);
