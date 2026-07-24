@@ -675,3 +675,76 @@ button:focus-visible {
   padding: var(--sb-space-sm);
   color: var(--sb-color-fg);
 }
+
+/* Sidebar nav: a quiet column of group labels and link rows. Every row reserves
+ * the active-edge channel as a transparent inline-start border, recolored only
+ * on the current page, so marking it never shifts a row (peer edge
+ * reservation). The optional meta annotation sits faint at the row's far edge. */
+.sb-nav {
+  gap: var(--sb-space-2xs);
+  padding: var(--sb-space-md);
+}
+.sb-nav-group {
+  color: var(--sb-color-faint);
+  font-weight: var(--sb-font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--sb-font-tracking-wide);
+  font-size: var(--sb-font-size-sm);
+}
+.sb-nav-item {
+  color: var(--sb-color-fg);
+  text-decoration: none;
+  border-inline-start: var(--sb-border-width-accent) solid transparent;
+  padding: var(--sb-space-xs);
+  gap: var(--sb-space-sm);
+}
+.sb-nav-item:hover {
+  color: var(--sb-color-accent);
+}
+.sb-nav-item[aria-current="page"] {
+  color: var(--sb-color-accent);
+  border-inline-start-color: var(--sb-color-accent);
+}
+.sb-nav-item:focus-visible {
+  outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
+  outline-offset: calc(-1 * var(--sb-border-width-accent));
+}
+.sb-nav-meta {
+  color: var(--sb-color-faint);
+  font-size: var(--sb-font-size-sm);
+}
+
+/* On-this-page toc: a small-type rail under a structural label. The sublist
+ * owns the nesting indent, so each link keeps its square inset. */
+.sb-toc {
+  gap: var(--sb-space-sm);
+  padding: var(--sb-space-md);
+}
+.sb-toc-label {
+  color: var(--sb-color-faint);
+  font-weight: var(--sb-font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--sb-font-tracking-wide);
+  font-size: var(--sb-font-size-sm);
+  padding: var(--sb-space-2xs);
+}
+.sb-toc-links {
+  gap: var(--sb-space-2xs);
+}
+.sb-toc-sublist {
+  gap: var(--sb-space-2xs);
+  padding-inline-start: var(--sb-space-md);
+}
+.sb-toc-link {
+  color: var(--sb-color-muted);
+  text-decoration: none;
+  font-size: var(--sb-font-size-sm);
+  padding: var(--sb-space-2xs);
+}
+.sb-toc-link:hover {
+  color: var(--sb-color-accent);
+}
+.sb-toc-link:focus-visible {
+  outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
+  outline-offset: calc(-1 * var(--sb-border-width-accent));
+}
