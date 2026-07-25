@@ -36,6 +36,7 @@ from switchboard_ui import Document, Island, render_island
 from switchboard_ui.components import (
     ArmBinding,
     Binding,
+    FilterControl,
     NavLink,
     NavSection,
     TocEntry,
@@ -53,6 +54,13 @@ from switchboard_ui.components import (
     color_picker,
     color_picker_scripts,
     color_picker_styles,
+    filter_table,
+    filter_table_scripts,
+    filter_table_styles,
+    hero,
+    hero_styles,
+    masthead,
+    masthead_styles,
     modal,
     modal_scripts,
     modal_styles,
@@ -64,6 +72,10 @@ from switchboard_ui.components import (
     preview,
     preview_items,
     preview_styles,
+    prose,
+    prose_styles,
+    section,
+    section_styles,
     segmented,
     segmented_scripts,
     segmented_styles,
@@ -93,6 +105,9 @@ from switchboard_ui.presets import three_column
 # and the inspector shows its props and tokens. So a column placement is never
 # arbitrary — it is the component's row read in a different direction.
 _SELECT_TOPIC = "gallery:select"
+# The filter-table specimen's own topic: its bar's field publishes here and the
+# specimen subscribes, one more bus edge crossing the gallery.
+_GALLERY_FILTER_TOPIC = "gallery:filter"
 
 
 # --- typed prop descriptors --------------------------------------------------
@@ -275,6 +290,91 @@ def _collapsible_specimen(edits: Mapping[str, str]) -> Island:
             open=True,
         ),
         "collapsible",
+    )
+
+
+def _masthead_specimen(edits: Mapping[str, str]) -> Island:
+    """The masthead specimen; ``edits`` overrides its structural props."""
+    return _specimen(
+        masthead(name=edits.get("name", "Switchboard"), href="#"),
+        "masthead",
+    )
+
+
+def _hero_specimen(edits: Mapping[str, str]) -> Island:
+    """The hero specimen; ``edits`` overrides its structural props."""
+    return _specimen(
+        hero(
+            title=edits.get("title", "Components"),
+            eyebrow=edits.get("eyebrow", "Gallery · display"),
+            description=(
+                "Every specimen on this page is the same factory a host calls, "
+                "rendered by the same theme."
+            ),
+        ),
+        "hero",
+    )
+
+
+def _section_specimen(edits: Mapping[str, str]) -> Island:
+    """The section specimen; ``edits`` overrides its structural props."""
+    return _specimen(
+        section(
+            title=edits.get("title", "Related"),
+            meta=edits.get("meta", "3 items"),
+            anchor="sec-related",
+            body=render_island(
+                table(
+                    columns=("Component", "Section"),
+                    rows=(
+                        ("Section heading", "Display"),
+                        ("Hero", "Display"),
+                        ("Prose", "Display"),
+                    ),
+                    label="Related components",
+                )
+            ),
+        ),
+        "section",
+    )
+
+
+# Rendered markup standing in for a markdown renderer's output: one block of each
+# kind the prose surface paints, so a token edit is visible across all of them.
+_PROSE_SAMPLE = (
+    "<h2>The reading surface</h2>"
+    "<p>Prose is the one place the proportional arm of the family appears. "
+    "Paragraphs cap at the reading measure while a table or a code block takes "
+    "the column's full width.</p>"
+    "<ul><li>Lists carry the same voice as paragraphs.</li>"
+    "<li>Their markers recede to the muted tier.</li></ul>"
+    "<pre><code>prose(html=render_markdown(source))</code></pre>"
+    "<blockquote>A quote is set off by a rule at its start edge, "
+    "not by a box.</blockquote>"
+)
+
+
+def _filter_table_specimen() -> Island:
+    """The filter-table specimen: a typed query narrowing four rows.
+
+    The control is an ordinary :func:`value_field` publishing on its own topic;
+    the table subscribes. Nothing but the topic name connects them, which is what
+    lets the analyzer draw the edge without running anything.
+    """
+    rows: tuple[tuple[str, ...], ...] = (
+        ("Segmented", "Control", "publishes a chosen value"),
+        ("Slider", "Control", "publishes a number in range"),
+        ("Table", "Display", "structured rows, no adapter"),
+        ("Prose", "Display", "rendered markup, no adapter"),
+    )
+    query = value_field(topic=_GALLERY_FILTER_TOPIC, value="", label="Filter rows")
+    return filter_table(
+        columns=("Component", "Kind", "Role"),
+        rows=rows,
+        label="Filterable components",
+        topic=_GALLERY_FILTER_TOPIC,
+        keys=[" ".join(row).lower() for row in rows],
+        controls=(FilterControl(label="Filter", control=query),),
     )
 
 
@@ -578,6 +678,87 @@ def _gallery_specs() -> tuple[_Spec, ...]:
                 "--sb-font-size-sm",
             ),
         ),
+        _Spec(
+            id="masthead",
+            name="Masthead",
+            section="Display",
+            body=(_masthead_specimen({}),),
+            props=(
+                StructProp("name", "Switchboard"),
+                DisplayProp("href", "/"),
+            ),
+            tokens=(
+                "--sb-color-fg",
+                "--sb-color-accent",
+                "--sb-font-tracking-wide",
+            ),
+            rebuild=_masthead_specimen,
+        ),
+        _Spec(
+            id="hero",
+            name="Hero",
+            section="Display",
+            body=(_hero_specimen({}),),
+            props=(
+                StructProp("title", "Components"),
+                StructProp("eyebrow", "Gallery · display"),
+                DisplayProp("description", "one line"),
+            ),
+            tokens=(
+                "--sb-font-size-display",
+                "--sb-font-weight-display",
+                "--sb-color-faint",
+            ),
+            rebuild=_hero_specimen,
+        ),
+        _Spec(
+            id="section",
+            name="Section",
+            section="Display",
+            body=(_section_specimen({}),),
+            props=(
+                StructProp("title", "Related"),
+                StructProp("meta", "3 items"),
+                DisplayProp("anchor", "sec-related"),
+            ),
+            tokens=(
+                "--sb-color-border",
+                "--sb-color-faint",
+                "--sb-font-size-lg",
+            ),
+            rebuild=_section_specimen,
+        ),
+        _Spec(
+            id="prose",
+            name="Prose",
+            section="Display",
+            body=(prose(html=_PROSE_SAMPLE),),
+            props=(
+                DisplayProp("html", "rendered markup"),
+                DisplayProp("lead", "sb-prose-lead"),
+            ),
+            tokens=(
+                "--sb-font-family-prose",
+                "--sb-font-measure",
+                "--sb-color-border",
+            ),
+        ),
+        _Spec(
+            id="filter-table",
+            name="Filter table",
+            section="Display",
+            body=(_filter_table_specimen(),),
+            props=(
+                DisplayProp("match", "substring"),
+                DisplayProp("controls", "1"),
+                DisplayProp("rows", "4"),
+            ),
+            tokens=(
+                "--sb-color-faint",
+                "--sb-color-bg-raised",
+                "--sb-font-tracking-wide",
+            ),
+        ),
     )
 
 
@@ -867,6 +1048,7 @@ def showcase_scripts() -> tuple[str, ...]:
         + theme_state_scripts()
         + code_block_scripts()
         + modal_scripts()
+        + filter_table_scripts()
         + mode_switch_scripts()
         + (_GALLERY_NAV_JS, _GALLERY_INSPECTOR_JS, _GALLERY_REMOUNT_JS)
     )
@@ -1108,6 +1290,11 @@ def showcase_styles() -> str:
             collapsible_styles(),
             nav_styles(),
             toc_styles(),
+            masthead_styles(),
+            hero_styles(),
+            section_styles(),
+            prose_styles(),
+            filter_table_styles(),
         )
     )
     return (

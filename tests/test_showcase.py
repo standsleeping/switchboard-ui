@@ -67,6 +67,11 @@ _EXPECTED_IDS = [
     "collapsible",
     "nav",
     "toc",
+    "masthead",
+    "hero",
+    "section",
+    "prose",
+    "filter-table",
 ]
 
 
@@ -145,7 +150,12 @@ def test_inspector_prop_edits_drive_the_specimens() -> None:
         "collapsible:prop:count",
         "collapsible:prop:title",
         "color-picker:prop:value",
+        "hero:prop:eyebrow",
+        "hero:prop:title",
+        "masthead:prop:name",
         "modal:prop:title",
+        "section:prop:meta",
+        "section:prop:title",
         "segmented:prop:value",
         "slider:prop:value",
         "value-field:prop:value",
