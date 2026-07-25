@@ -1,0 +1,20 @@
+/* switchboard-ui: structural CSS for the titled section and its heading row.
+ *
+ * Geometry only, the same contract as layout.css: a column of content under a
+ * heading row that spreads its title and optional meta annotation to the row's
+ * two edges. It carries no paint and no box-spacing — the gap, the heading's
+ * underline and inset, the title's weight, and the meta's label typography are
+ * all the theme's, keyed to these same .sb-* hooks. The guard in
+ * tests/test_components.py holds this file to the geometry-only, token-free,
+ * .sb-*-only contract. */
+
+.sb-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.sb-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}

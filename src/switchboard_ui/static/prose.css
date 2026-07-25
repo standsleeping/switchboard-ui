@@ -1,0 +1,29 @@
+/* switchboard-ui: structural CSS for the prose surface.
+ *
+ * Geometry only, the same contract as layout.css: the surface and its list
+ * containers are columns, so the rhythm between blocks is one gap rather than a
+ * margin on each child (rendered markdown arrives as a flat run of block
+ * elements). A preformatted block owns its own horizontal scroll, so a long code
+ * line never pushes the page (the scroll-containment contract).
+ *
+ * The selectors reach past the .sb-prose hook to the element names inside it
+ * because the content is host-rendered markup, not a factory's: the surface is
+ * the only hook there is. It carries no paint and no box-spacing — the gaps, the
+ * reading measure, the heading rules, the code surface, and the link color are
+ * all the theme's. The guard in tests/test_components.py holds this file to the
+ * geometry-only, token-free, .sb-*-only contract. */
+
+.sb-prose,
+.sb-prose ul,
+.sb-prose ol {
+  display: flex;
+  flex-direction: column;
+}
+
+.sb-prose pre {
+  overflow-x: auto;
+}
+
+.sb-prose table {
+  inline-size: 100%;
+}

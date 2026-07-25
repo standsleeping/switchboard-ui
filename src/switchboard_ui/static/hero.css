@@ -1,0 +1,13 @@
+/* switchboard-ui: structural CSS for the page hero.
+ *
+ * Geometry only, the same contract as layout.css: a column stacking the optional
+ * eyebrow, the display title, and the lead description. It carries no paint and
+ * no box-spacing — the gap, the display type, the eyebrow's label typography,
+ * and the lead's reading measure are all the theme's, keyed to these same .sb-*
+ * hooks. The guard in tests/test_components.py holds this file to the
+ * geometry-only, token-free, .sb-*-only contract. */
+
+.sb-hero {
+  display: flex;
+  flex-direction: column;
+}

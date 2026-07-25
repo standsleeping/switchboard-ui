@@ -20,6 +20,7 @@ from switchboard_ui import ownership
 from switchboard_ui.components import (
     ArmBinding,
     Cell,
+    FilterControl,
     NavLink,
     NavSection,
     TocEntry,
@@ -37,6 +38,13 @@ from switchboard_ui.components import (
     color_picker,
     color_picker_scripts,
     color_picker_styles,
+    filter_table,
+    filter_table_scripts,
+    filter_table_styles,
+    hero,
+    hero_styles,
+    masthead,
+    masthead_styles,
     modal,
     modal_scripts,
     modal_styles,
@@ -47,6 +55,12 @@ from switchboard_ui.components import (
     popover_styles,
     preview,
     preview_styles,
+    prose,
+    prose_lead,
+    prose_styles,
+    section,
+    section_heading,
+    section_styles,
     segmented,
     segmented_scripts,
     segmented_styles,
@@ -1358,6 +1372,357 @@ def test_toc_rejects_blank_label_text_or_anchor() -> None:
 def test_toc_styles_returns_the_structural_css() -> None:
     """The structural CSS ships and targets the component's hooks."""
     assert ".sb-toc" in toc_styles()
+
+
+def test_masthead_builds_a_static_brand_link() -> None:
+    """The brand is a static island (no adapter, no pub/sub): a link that navigates."""
+    island = masthead(name="System Principles", href="/")
+    assert island.name == "masthead"
+    assert island.publishes == () and island.subscribes == ()
+    (brand,) = find(island.initial, "a", **{"class": "sb-masthead"})
+    assert brand["href"] == "/"
+    assert "System Principles" in island.initial
+
+
+def test_masthead_defaults_its_link_to_the_site_root() -> None:
+    """The brand links home unless the host routes it elsewhere."""
+    (brand,) = find(masthead(name="Dashboard").initial, "a", **{"class": "sb-masthead"})
+    assert brand["href"] == "/"
+
+
+def test_masthead_rejects_a_blank_name() -> None:
+    """A nameless brand fails where it is written."""
+    with pytest.raises(ValueError, match="non-empty name"):
+        masthead(name="")
+
+
+def test_masthead_rejects_a_blank_href() -> None:
+    """A brand that links nowhere fails where it is written."""
+    with pytest.raises(ValueError, match="non-empty href"):
+        masthead(name="Dashboard", href="")
+
+
+def test_masthead_styles_returns_the_structural_css() -> None:
+    """The structural CSS ships and targets the component's hook."""
+    assert ".sb-masthead" in masthead_styles()
+
+
+def test_section_heading_pairs_the_title_with_its_far_edge_meta() -> None:
+    """The row carries the title as an h2 beside the annotation."""
+    island = section_heading(title="Related", meta="3 principles")
+    assert island.name == "section-heading"
+    assert find(island.initial, "h2", **{"class": "sb-section-title"})
+    assert find(island.initial, "span", **{"class": "sb-section-meta"})
+    assert ">Related</h2>" in island.initial
+    assert ">3 principles</span>" in island.initial
+
+
+def test_section_heading_omits_the_meta_when_there_is_none() -> None:
+    """A heading with nothing to annotate renders the title alone."""
+    html = section_heading(title="Overview").initial
+    assert not find(html, "span", **{"class": "sb-section-meta"})
+
+
+def test_section_heading_anchors_the_row_when_asked() -> None:
+    """The anchor lands on the row, so a rail entry scrolls to the heading itself."""
+    (row,) = find(
+        section_heading(title="Specs", anchor="specs").initial,
+        "div",
+        **{"class": "sb-section-heading"},
+    )
+    assert row["id"] == "specs"
+
+
+def test_section_heading_carries_no_id_without_an_anchor() -> None:
+    """An unanchored heading emits no empty id attribute."""
+    (row,) = find(
+        section_heading(title="Specs").initial, "div", **{"class": "sb-section-heading"}
+    )
+    assert "id" not in row
+
+
+def test_section_heading_rejects_a_blank_title() -> None:
+    """A heading with no title fails where it is written."""
+    with pytest.raises(ValueError, match="non-empty title"):
+        section_heading(title="")
+
+
+def test_section_heading_rejects_an_invalid_anchor() -> None:
+    """An anchor that could not be linked to fails at the authoring boundary."""
+    with pytest.raises(ValueError, match="not a valid id"):
+        section_heading(title="Specs", anchor="spec list")
+
+
+def test_section_wraps_its_heading_and_body_in_one_column() -> None:
+    """The section is the heading row over its content, marked for the theme's gap."""
+    island = section(title="Groups", meta="4 total", body="<p>Body</p>")
+    assert island.name == "section"
+    assert island.class_ == "sb-section"
+    assert find(island.initial, "h2", **{"class": "sb-section-title"})
+    assert "<p>Body</p>" in island.initial
+
+
+def test_section_rejects_empty_body() -> None:
+    """A section with no content fails where it is written."""
+    with pytest.raises(ValueError, match="body content"):
+        section(title="Groups", body="")
+
+
+def test_section_styles_returns_the_structural_css() -> None:
+    """One sheet covers the container and its heading row."""
+    css = section_styles()
+    assert ".sb-section" in css and ".sb-section-heading" in css
+
+
+def test_hero_stacks_the_eyebrow_title_and_description() -> None:
+    """The display heading renders all three parts in reading order."""
+    island = hero(
+        title="System Principles",
+        description="A catalog of design principles.",
+        eyebrow="Design principles · catalog",
+    )
+    assert island.name == "hero"
+    assert find(island.initial, "div", **{"class": "sb-hero-eyebrow"})
+    assert find(island.initial, "h1", **{"class": "sb-hero-title"})
+    assert find(island.initial, "p", **{"class": "sb-prose-lead"})
+    assert ">Design principles · catalog</div>" in island.initial
+    assert ">System Principles</h1>" in island.initial
+    assert ">A catalog of design principles.</p>" in island.initial
+
+
+def test_hero_renders_the_title_alone_when_that_is_all_there_is() -> None:
+    """The optional parts leave no empty elements behind."""
+    html = hero(title="Groups").initial
+    assert not find(html, "div", **{"class": "sb-hero-eyebrow"})
+    assert not find(html, "p", **{"class": "sb-prose-lead"})
+
+
+def test_hero_rejects_a_blank_title() -> None:
+    """A hero with no title fails where it is written."""
+    with pytest.raises(ValueError, match="non-empty title"):
+        hero(title="")
+
+
+def test_hero_styles_returns_the_structural_css() -> None:
+    """The structural CSS ships and targets the component's hook."""
+    assert ".sb-hero" in hero_styles()
+
+
+def test_prose_wraps_rendered_markup_in_the_painted_surface() -> None:
+    """The host's rendered markup passes through under the one hook the theme paints."""
+    island = prose(html="<h2>Heading</h2><p>Body</p>")
+    assert island.name == "prose"
+    assert island.publishes == () and island.subscribes == ()
+    (surface,) = find(island.initial, "div", **{"class": "sb-prose"})
+    assert surface is not None
+    assert "<h2>Heading</h2><p>Body</p>" in island.initial
+
+
+def test_prose_rejects_empty_content() -> None:
+    """An empty prose surface fails where it is written."""
+    with pytest.raises(ValueError, match="rendered content"):
+        prose(html="")
+
+
+def test_prose_lead_escapes_its_text() -> None:
+    """A lead is a fragment of escaped plain text, not trusted markup."""
+    html = prose_lead("Tokens & their <arms>")
+    assert 'class="sb-prose-lead"' in html
+    assert "&amp;" in html and "&lt;arms&gt;" in html
+
+
+def test_prose_styles_returns_the_structural_css() -> None:
+    """The structural CSS ships and targets the component's hook."""
+    assert ".sb-prose" in prose_styles()
+
+
+_FILTER_ROWS: tuple[tuple[str, ...], ...] = (
+    ("Segmented", "Control"),
+    ("Table", "Display"),
+)
+_FILTER_KEYS = ["segmented control", "table display"]
+
+
+def _query_control() -> FilterControl:
+    """A filter bar holding one typed-query field."""
+    field = value_field(topic="index:filter", value="", label="Filter")
+    return FilterControl(label="Filter", control=field)
+
+
+def test_filter_table_subscribes_the_topic_its_control_publishes() -> None:
+    """The bar's control and the grid meet on the bus, not through a reference."""
+    island = filter_table(
+        columns=("Name", "Kind"),
+        rows=_FILTER_ROWS,
+        label="Components",
+        topic="index:filter",
+        keys=_FILTER_KEYS,
+        controls=(_query_control(),),
+    )
+    assert island.name == "filter-table"
+    assert island.subscribes == ("index:filter",)
+    assert island.class_ == "sb-filter-table"
+    assert island.props["keys"] == _FILTER_KEYS
+    assert island.props["match"] == "substring"
+    assert island.props["allValue"] == ""
+
+
+def test_filter_table_renders_every_row_for_the_browser_to_hide() -> None:
+    """The grid is complete at first paint; filtering only hides what is there."""
+    html = filter_table(
+        columns=("Name", "Kind"),
+        rows=_FILTER_ROWS,
+        label="Components",
+        topic="index:filter",
+        keys=_FILTER_KEYS,
+        controls=(_query_control(),),
+    ).initial
+    assert len(find(html, "tr")) == len(_FILTER_ROWS) + 1  # the header row
+    (count,) = find(html, "span", **{"class": "sb-filter-count"})
+    assert count["aria-live"] == "polite"  # the result size is announced
+
+
+def test_filter_table_labels_each_control_in_the_bar() -> None:
+    """A control is rendered under its own label, so a two-control bar reads."""
+    html = filter_table(
+        columns=("Name", "Kind"),
+        rows=_FILTER_ROWS,
+        label="Components",
+        topic="index:filter",
+        keys=_FILTER_KEYS,
+        controls=(_query_control(),),
+    ).initial
+    assert len(find(html, "span", **{"class": "sb-filter-label"})) == 1
+    assert ">Filter</span>" in html
+    assert find(html, "input", **{"class": "sb-value-field-text"})
+
+
+def test_filter_table_declares_the_sort_topic_and_keys_when_sorting() -> None:
+    """A sort control adds a second subscription and its own aligned key list."""
+    island = filter_table(
+        columns=("Name", "Kind"),
+        rows=_FILTER_ROWS,
+        label="Components",
+        topic="index:filter",
+        keys=_FILTER_KEYS,
+        controls=(_query_control(),),
+        match="exact",
+        all_value="all",
+        sort_topic="index:sort",
+        sort_keys=["2026-01-02", "2026-01-01"],
+    )
+    assert island.subscribes == ("index:filter", "index:sort")
+    assert island.props["sortTopic"] == "index:sort"
+    assert island.props["sortKeys"] == ["2026-01-02", "2026-01-01"]
+    assert island.props["match"] == "exact"
+    assert island.props["allValue"] == "all"
+
+
+def test_filter_table_omits_sort_props_when_there_is_no_sort_control() -> None:
+    """An unsorted table declares nothing about sorting."""
+    island = filter_table(
+        columns=("Name", "Kind"),
+        rows=_FILTER_ROWS,
+        label="Components",
+        topic="index:filter",
+        keys=_FILTER_KEYS,
+        controls=(_query_control(),),
+    )
+    assert "sortTopic" not in island.props and "sortKeys" not in island.props
+
+
+def test_filter_table_rejects_a_blank_topic() -> None:
+    """A table subscribing to nothing fails where it is written."""
+    with pytest.raises(ValueError, match="non-empty topic"):
+        filter_table(
+            columns=("Name",),
+            rows=(("Segmented",),),
+            label="Components",
+            topic="",
+            keys=["segmented"],
+            controls=(_query_control(),),
+        )
+
+
+def test_filter_table_rejects_an_empty_control_bar() -> None:
+    """A filterable table with no control to filter it fails where it is written."""
+    with pytest.raises(ValueError, match="at least one control"):
+        filter_table(
+            columns=("Name",),
+            rows=(("Segmented",),),
+            label="Components",
+            topic="index:filter",
+            keys=["segmented"],
+            controls=(),
+        )
+
+
+def test_filter_table_rejects_a_blank_control_label() -> None:
+    """An unlabelled control fails where it is written."""
+    field = value_field(topic="index:filter", value="", label="Filter")
+    with pytest.raises(ValueError, match="control 0 has a blank label"):
+        filter_table(
+            columns=("Name",),
+            rows=(("Segmented",),),
+            label="Components",
+            topic="index:filter",
+            keys=["segmented"],
+            controls=(FilterControl(label="", control=field),),
+        )
+
+
+def test_filter_table_rejects_keys_misaligned_with_the_rows() -> None:
+    """Keys are matched by row position, so a short list fails at authoring time."""
+    with pytest.raises(ValueError, match="1 keys for 2 rows"):
+        filter_table(
+            columns=("Name", "Kind"),
+            rows=_FILTER_ROWS,
+            label="Components",
+            topic="index:filter",
+            keys=["segmented"],
+            controls=(_query_control(),),
+        )
+
+
+def test_filter_table_rejects_sort_keys_misaligned_with_the_rows() -> None:
+    """The sort keys are aligned the same way, and fail the same way."""
+    with pytest.raises(ValueError, match="1 sort keys for 2 rows"):
+        filter_table(
+            columns=("Name", "Kind"),
+            rows=_FILTER_ROWS,
+            label="Components",
+            topic="index:filter",
+            keys=_FILTER_KEYS,
+            controls=(_query_control(),),
+            sort_topic="index:sort",
+            sort_keys=["2026-01-01"],
+        )
+
+
+def test_filter_table_rejects_sort_keys_with_no_topic_to_order_by() -> None:
+    """Keys nothing publishes against are dead weight; the call fails instead."""
+    with pytest.raises(ValueError, match="need a sort_topic"):
+        filter_table(
+            columns=("Name", "Kind"),
+            rows=_FILTER_ROWS,
+            label="Components",
+            topic="index:filter",
+            keys=_FILTER_KEYS,
+            controls=(_query_control(),),
+            sort_keys=["2026-01-02", "2026-01-01"],
+        )
+
+
+def test_filter_table_scripts_returns_the_adapter() -> None:
+    """The adapter ships and registers under the component's name."""
+    (adapter,) = filter_table_scripts()
+    assert 'register("filter-table"' in adapter
+
+
+def test_filter_table_styles_returns_the_structural_css() -> None:
+    """The structural CSS ships and targets the component's hooks."""
+    css = filter_table_styles()
+    assert ".sb-filter-table" in css and ".sb-filter-bar" in css
 
 
 def _component_sheets() -> list[tuple[str, str]]:

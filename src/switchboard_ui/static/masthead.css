@@ -1,0 +1,12 @@
+/* switchboard-ui: structural CSS for the masthead brand.
+ *
+ * Geometry only, the same contract as layout.css: the brand is an inline block,
+ * so its inset makes it as tall as the rail chrome around it without stretching
+ * to the cell's full width. It carries no paint and no box-spacing — the inset,
+ * the uppercase weight, and the hover accent are all the theme's, keyed to this
+ * same .sb-* hook. The guard in tests/test_components.py holds this file to the
+ * geometry-only, token-free, .sb-*-only contract. */
+
+.sb-masthead {
+  display: inline-block;
+}

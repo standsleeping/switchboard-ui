@@ -1,0 +1,25 @@
+/* switchboard-ui: structural CSS for the filterable table.
+ *
+ * Geometry only, the same contract as layout.css: the surface is a column of the
+ * control bar over the grid, and the bar is a row of labelled control groups
+ * ending in the count readout. It carries no paint and no box-spacing — the
+ * gaps, the label typography, and the count's muted color are all the theme's,
+ * keyed to these same .sb-* hooks. The grid inside is the table component's, and
+ * owns its own horizontal scroll. The guard in tests/test_components.py holds
+ * this file to the geometry-only, token-free, .sb-*-only contract. */
+
+.sb-filter-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.sb-filter-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.sb-filter-group {
+  display: flex;
+  align-items: center;
+}

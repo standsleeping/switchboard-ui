@@ -890,6 +890,139 @@ def table_styles() -> str:
     return read_static("table.css")
 
 
+@dataclass(frozen=True)
+class FilterControl:
+    """One labelled control in a filter bar: a name beside the control island.
+
+    ``control`` is any publishing island — a :func:`value_field` for a typed
+    query, a :func:`segmented` for a small set of choices. The filter table lays
+    it out and subscribes to its topic; it never builds the control, so which one
+    a bar carries stays the host's choice.
+    """
+
+    label: str
+    control: Island
+
+
+MatchMode = Literal["substring", "exact"]
+"""How a published value is matched against a row's key: contained in it
+(a typed query) or equal to it (a chosen category)."""
+
+# The reserved sort values. A control publishing anything else leaves the order
+# alone, so a sort control can carry an "unsorted" option under any label.
+SORT_VALUES: tuple[str, ...] = ("none", "asc", "desc")
+"""The values a sort control publishes: restore the server's order, or sort by
+the sort key ascending or descending."""
+
+
+def filter_table(
+    *,
+    columns: Sequence[str],
+    rows: Sequence[Sequence[str | Cell]],
+    label: str,
+    topic: str,
+    keys: Sequence[str],
+    controls: Sequence[FilterControl],
+    match: MatchMode = "substring",
+    all_value: str = "",
+    sort_topic: str = "",
+    sort_keys: Sequence[str] = (),
+) -> Island:
+    """A :func:`table` that narrows and reorders as controls publish on the bus.
+
+    The whole table is server-rendered and every row stays in the DOM: the
+    adapter hides the misses and reorders in place, so the page is complete
+    without JavaScript and no request is made to filter. ``columns``, ``rows``,
+    and ``label`` are the table's, with the same meanings.
+
+    ``controls`` are the labelled controls rendered in the bar above the grid,
+    with the running count at its far edge. ``topic`` is the topic the filtering
+    control publishes on and ``keys`` are the per-row match keys, one per row in
+    row order (a key may hold more than the row displays — the tags a listing
+    does not show, say — so a search reaches them). ``match`` picks containment
+    (lowercased and trimmed on both sides) or equality, and ``all_value`` is the
+    published value that restores every row: the empty string for a typed query,
+    a sentinel like ``"all"`` for a chosen category.
+
+    ``sort_topic`` names an optional second topic whose control publishes one of
+    :data:`SORT_VALUES`; ``sort_keys`` are the per-row keys it orders by (dates,
+    names), again one per row. Sorting and filtering compose: a row's hidden
+    state and its position are independent.
+
+    Raises :class:`ValueError` at the authoring boundary if ``topic`` is blank,
+    ``controls`` is empty or any control's label is blank, ``keys`` does not have
+    one entry per row, or ``sort_topic`` is given without a matching
+    ``sort_keys`` (and the reverse) — so a misaligned table fails where it is
+    written, not silently filtering the wrong rows in the browser.
+    """
+    if not topic:
+        raise ValueError("filter_table requires a non-empty topic")
+    if not controls:
+        raise ValueError("filter_table requires at least one control")
+    for index, control in enumerate(controls):
+        if not control.label:
+            raise ValueError(f"filter_table control {index} has a blank label")
+    if len(keys) != len(rows):
+        msg = f"filter_table has {len(keys)} keys for {len(rows)} rows"
+        raise ValueError(msg)
+    if sort_topic and len(sort_keys) != len(rows):
+        msg = f"filter_table has {len(sort_keys)} sort keys for {len(rows)} rows"
+        raise ValueError(msg)
+    if sort_keys and not sort_topic:
+        raise ValueError("filter_table sort_keys need a sort_topic to order by")
+    groups = [
+        element(
+            "div",
+            {"class": "sb-filter-group"},
+            [
+                element(
+                    "span", {"class": "sb-filter-label"}, [escape_text(control.label)]
+                ),
+                render_island(control.control),
+            ],
+        )
+        for control in controls
+    ]
+    # The count is a live region: filtering is a visual change with no focus
+    # move, so the readout is how a screen reader learns the result size.
+    readout = element(
+        "span",
+        {"class": "sb-filter-count", "role": "status", "aria-live": "polite"},
+        (),
+    )
+    bar = element("div", {"class": "sb-filter-bar"}, [*groups, readout])
+    grid = table(columns=columns, rows=rows, label=label)
+    props: dict[str, Json] = {
+        "topic": topic,
+        "keys": list(keys),
+        "match": match,
+        "allValue": all_value,
+    }
+    if sort_topic:
+        props["sortTopic"] = sort_topic
+        props["sortKeys"] = list(sort_keys)
+    return Island(
+        name="filter-table",
+        props=props,
+        subscribes=(topic, sort_topic) if sort_topic else (topic,),
+        class_="sb-filter-table",
+        initial=bar + render_island(grid),
+    )
+
+
+def filter_table_scripts() -> tuple[str, ...]:
+    """The filter-table adapter, for the host to pass to ``extra_scripts``. The
+    controls in the bar bring their own (:func:`value_field_scripts`,
+    :func:`segmented_scripts`), the way two wired islands each bring theirs."""
+    return (read_static("filter-table.js"),)
+
+
+def filter_table_styles() -> str:
+    """The filter-table structural CSS. Pair with :func:`table_styles` (the grid
+    inside is the table component's), the way the adapters are paired."""
+    return read_static("filter-table.css")
+
+
 def code_block(
     *, code: str, label: str, language: str | None = None, copy: bool = True
 ) -> Island:
@@ -1251,6 +1384,142 @@ def nav(*, sections: Sequence[NavSection], label: str) -> Island:
 def nav_styles() -> str:
     """The nav structural CSS, for the host to inline in ``extra_head``."""
     return read_static("nav.css")
+
+
+def masthead(*, name: str, href: str = "/") -> Island:
+    """The head rail's brand: the site's name linking home.
+
+    The one piece of chrome every page carries in the same place — a static
+    island (no adapter, no pub/sub): the link navigates natively. ``name`` is the
+    site's name (the visible text) and ``href`` the route it links to. Raises
+    :class:`ValueError` at the authoring boundary if either is blank.
+    """
+    if not name:
+        raise ValueError("masthead requires a non-empty name (the site's name)")
+    if not href:
+        raise ValueError("masthead requires a non-empty href")
+    brand = element("a", {"class": "sb-masthead", "href": href}, [escape_text(name)])
+    return Island(name="masthead", initial=brand)
+
+
+def masthead_styles() -> str:
+    """The masthead structural CSS, for the host to inline in ``extra_head``."""
+    return read_static("masthead.css")
+
+
+def section_heading(*, title: str, meta: str = "", anchor: str = "") -> Island:
+    """A section's heading row: its title beside an optional meta at the far edge.
+
+    The underlined row that opens a content section — a static island. ``title``
+    is the heading text (an ``h2``); ``meta`` is a short annotation pinned to the
+    row's far edge (a count, a total), omitted when blank; ``anchor`` gives the
+    row an ``id`` so an on-this-page rail can link to it. Raises
+    :class:`ValueError` at the authoring boundary if ``title`` is blank or
+    ``anchor`` is not a valid id (letters, digits, hyphens, underscores).
+    """
+    if not title:
+        raise ValueError("section_heading requires a non-empty title")
+    if anchor and not _ID.match(anchor):
+        raise ValueError(
+            f"section_heading anchor {anchor!r} is not a valid id"
+            " (letters, digits, hyphens, underscores)"
+        )
+    children = [element("h2", {"class": "sb-section-title"}, [escape_text(title)])]
+    if meta:
+        children.append(
+            element("span", {"class": "sb-section-meta"}, [escape_text(meta)])
+        )
+    initial = element(
+        "div", {"class": "sb-section-heading", "id": anchor or None}, children
+    )
+    return Island(name="section-heading", initial=initial)
+
+
+def section(*, title: str, body: str, meta: str = "", anchor: str = "") -> Island:
+    """A titled content section: a :func:`section_heading` over its body.
+
+    The page's unit of structure — a heading row and the content under it, in one
+    column with a single rhythm between them, separated from its neighbours by
+    the heading's rule rather than by a box. ``body`` is a raw-HTML fragment (a
+    rendered island, a table, prose); ``title``, ``meta``, and ``anchor`` are the
+    heading's, with the same meanings. Raises :class:`ValueError` at the authoring
+    boundary if ``title`` is blank, ``body`` is empty, or ``anchor`` is not a
+    valid id.
+    """
+    if not body:
+        raise ValueError("section requires body content")
+    heading = section_heading(title=title, meta=meta, anchor=anchor)
+    return Island(
+        name="section",
+        class_="sb-section",
+        initial=render_island(heading) + body,
+    )
+
+
+def section_styles() -> str:
+    """The section structural CSS (the container and its heading row), for the
+    host to inline in ``extra_head``. One sheet covers :func:`section` and
+    :func:`section_heading`: a heading is the section's own first row."""
+    return read_static("section.css")
+
+
+def hero(*, title: str, description: str = "", eyebrow: str = "") -> Island:
+    """A page's display heading: an optional eyebrow, the title, a description.
+
+    The opening block of a landing or detail page — a static island. ``title`` is
+    the page's name, set in the display type; ``description`` is the lead
+    paragraph under it (the prose lead surface, capped at the reading measure),
+    omitted when blank; ``eyebrow`` is a short structural label above the title (a
+    category, a breadcrumb-like context), also omitted when blank. Raises
+    :class:`ValueError` at the authoring boundary if ``title`` is blank.
+    """
+    if not title:
+        raise ValueError("hero requires a non-empty title")
+    parts = [
+        element("div", {"class": "sb-hero-eyebrow"}, [escape_text(eyebrow)])
+        if eyebrow
+        else "",
+        element("h1", {"class": "sb-hero-title"}, [escape_text(title)]),
+        prose_lead(description) if description else "",
+    ]
+    initial = element("header", {"class": "sb-hero"}, [part for part in parts if part])
+    return Island(name="hero", initial=initial)
+
+
+def hero_styles() -> str:
+    """The hero structural CSS, for the host to inline in ``extra_head``."""
+    return read_static("hero.css")
+
+
+def prose(*, html: str) -> Island:
+    """A prose surface: rendered markup the theme paints as running text.
+
+    The host's markdown renderer produces the markup; this wraps it in the one
+    hook the theme paints — headings, measure-capped paragraphs, lists, code,
+    tables, blockquotes, and links — so every page's prose reads the same without
+    each host restating the rules. ``html`` is the rendered fragment, trusted raw
+    HTML (the same trust model as :attr:`Island.initial`). Raises
+    :class:`ValueError` at the authoring boundary if ``html`` is empty.
+    """
+    if not html:
+        raise ValueError("prose requires rendered content")
+    return Island(name="prose", initial=element("div", {"class": "sb-prose"}, [html]))
+
+
+def prose_lead(text: str) -> str:
+    """A lead paragraph as an HTML fragment: muted prose at the reading measure.
+
+    The standalone form of what :func:`hero` sets under its title — a section's
+    or a page's opening sentence. A fragment rather than an island because a lead
+    is one line inside a larger composition (a hero, a section's heading run),
+    never a mount point of its own. ``text`` is plain text and is escaped.
+    """
+    return element("p", {"class": "sb-prose-lead"}, [escape_text(text)])
+
+
+def prose_styles() -> str:
+    """The prose structural CSS, for the host to inline in ``extra_head``."""
+    return read_static("prose.css")
 
 
 @dataclass(frozen=True)
