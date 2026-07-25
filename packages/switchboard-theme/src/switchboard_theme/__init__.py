@@ -24,9 +24,15 @@ The theme's two shipped mode axes (color scheme and density) come with a
 standard control surface (:mod:`switchboard_theme.modes`): the ``Modes`` popover,
 the invisible applier island, and the pre-paint stamp, each riding the same host
 seams as any component.
+
+Paint for the layout's own regions travels a third module
+(:mod:`switchboard_theme.chrome`), because the shipped sheet may not dress a
+structural hook: :func:`content_column_styles` is the document-shaped center
+column, opted in through ``extra_head`` like any other chrome.
 """
 
 from switchboard_theme.api import THEMES, font_bytes, font_head, head
+from switchboard_theme.chrome import content_column_styles
 from switchboard_theme.modes import (
     DENSITY_TOPIC,
     SCHEME_TOPIC,
@@ -62,6 +68,7 @@ __all__ = [
     "Themed",
     "Token",
     "ValueType",
+    "content_column_styles",
     "font_bytes",
     "font_head",
     "head",
