@@ -69,3 +69,14 @@ The side columns use the preset's `220px` / `200px` structural widths. The head 
 ## The stylesheet is structure only
 
 The packaged stylesheet (`switchboard_ui/static/layout.css`) carries layout structure only: the flex rules that make a frame tree render, an empty-cell collapse, a viewport-filling root, and an island block. It sets no color, type, theming, or design tokens. Visual style is the host application's to add.
+
+## Dressing a region
+
+The shipped theme sheet paints components, never regions: a region is part of this structural vocabulary, and the theme is held to insetting none of it. Chrome that dresses a region therefore ships as an opt-in helper the host inlines in `extra_head`, beside the theme:
+
+| Helper | Region | What it paints |
+|---|---|---|
+| `switchboard_theme.chrome.content_column_styles()` | `body-c` | The document shape: both inline seams, the column's square inset, one gap between islands, and an island cap at `--sb-fit-content-inline`. Anchored elements clear the scroll owner's top edge. |
+| `switchboard_theme.modes.mode_switch_styles()` | `head-r` | The mode switch's rail chrome: the cell as an end-aligned row, plus the trigger and panel. |
+
+A page with a different shape (a gallery filling the viewport width) simply omits the helper, or overrides the few declarations after it. Nothing here is load-bearing: the layout stands up unpainted.

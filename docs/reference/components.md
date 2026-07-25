@@ -162,6 +162,61 @@ def toc(*, entries: Sequence[TocEntry], label: str = "On this page") -> Island
 
 An on-this-page rail: a page's headings as in-page anchor links. A run of `nested` entries (h3s under their h2) is grouped into a sublist that owns the indent structurally, so each link keeps a square inset. An empty `entries` renders just the label. A static island. Raises `ValueError` if `label` is blank or any entry has blank text or a blank anchor. Companion: `toc.css`.
 
+### `masthead`
+
+```python
+def masthead(*, name: str, href: str = "/") -> Island
+```
+
+The head rail's brand: the site's `name` as a link to `href`. A static island. Raises `ValueError` if either is blank. Companion: `masthead.css`.
+
+### `hero`
+
+```python
+def hero(*, title: str, description: str = "", eyebrow: str = "") -> Island
+```
+
+A page's display heading: an optional `eyebrow` (a short structural label), the `title` in the display type, and an optional `description` set as a [prose lead](#prose). Omitted parts leave no empty elements. A static island. Raises `ValueError` if `title` is blank. Companion: `hero.css`.
+
+### `section_heading`
+
+```python
+def section_heading(*, title: str, meta: str = "", anchor: str = "") -> Island
+```
+
+A section's heading row: the `title` as an `h2` beside an optional `meta` annotation (a count, a total) at the row's far edge, over a hairline rule. `anchor` gives the row an `id` so a [`toc`](#toc) entry can link to it. A static island. Raises `ValueError` if `title` is blank or `anchor` is not a valid id. Companion: `section.css`.
+
+### `section`
+
+```python
+def section(*, title: str, body: str, meta: str = "", anchor: str = "") -> Island
+```
+
+A titled content section: a `section_heading` over `body` (a raw-HTML fragment) in one column. The page's unit of structure, set off from its neighbours by the heading's rule rather than by a box. Raises `ValueError` if `title` is blank, `body` is empty, or `anchor` is not a valid id. Companion: `section.css` (the same sheet as `section_heading`).
+
+### `prose`
+
+```python
+def prose(*, html: str) -> Island
+def prose_lead(text: str) -> str
+```
+
+A prose surface wrapping a markdown renderer's output in the one hook the theme paints as running text: headings, measure-capped paragraphs, lists, code, tables, blockquotes, and links. `html` is trusted raw HTML. `prose_lead` is the standalone lead paragraph (an HTML fragment of escaped text, not an island) that `hero` sets under its title. Raises `ValueError` if `html` is empty. Companion: `prose.css`.
+
+### `filter_table`
+
+```python
+def filter_table(*, columns, rows, label, topic: str, keys: Sequence[str], controls: Sequence[FilterControl], match: MatchMode = "substring", all_value: str = "", sort_topic: str = "", sort_keys: Sequence[str] = ()) -> Island
+```
+
+A [`table`](#table) that narrows and reorders as controls publish on the bus. The whole table is server-rendered and every row stays in the DOM: the adapter hides the misses and reorders in place, so the page is complete without JavaScript and no request is made to filter.
+
+`controls` are the labelled controls in the bar above the grid (each a `FilterControl` wrapping any publishing island — a `value_field` for a typed query, a `segmented` for a small set of choices), with the running count at the bar's far edge as a live region. `topic` is the filtering control's topic and `keys` are the per-row match keys in row order; a key may hold more than its row displays, so a search reaches undisplayed fields. `match` picks `"substring"` (lowercased and trimmed on both sides) or `"exact"`, and `all_value` is the published value that restores every row (`""` for a typed query, a sentinel like `"all"` for a chosen category).
+
+`sort_topic` names an optional second topic whose control publishes one of `SORT_VALUES` (`"none"`, `"asc"`, `"desc"`), ordering by `sort_keys`. Filtering and sorting compose: a row's hidden state and its position are independent.
+
+Raises `ValueError` if `topic` is blank, `controls` is empty or any control's label is blank, `keys` does not have one entry per row, or the sort topic and keys are given without each other. Companions: `filter-table.js`, `filter-table.css` (pair with `table.css`).
+
 ## Supporting types
 
 Public types in `switchboard_ui.components` used by the factories above:
@@ -169,6 +224,9 @@ Public types in `switchboard_ui.components` used by the factories above:
 | Type | Used by | Meaning |
 |---|---|---|
 | `Cell(html: str)` | `table` | A trusted, already-rendered inline-HTML table cell. |
+| `FilterControl(label, control)` | `filter_table` | One labelled control in a filter bar, wrapping any publishing island. |
+| `MatchMode` | `filter_table` | `Literal["substring", "exact"]`: how a published value is matched against a row key. |
+| `SORT_VALUES` | `filter_table` | `("none", "asc", "desc")`: the values a sort control publishes. |
 | `NavLink(label, href, current, meta, nested)` | `nav` | One nav row: a route link, optionally current, with an optional far-edge annotation; `nested` places it in the sublist under the preceding top-level row. |
 | `NavSection(links, heading)` | `nav` | A run of nav links under an optional group heading. |
 | `TocEntry(text, anchor, nested)` | `toc` | One on-this-page row; `nested` places it in the indented sublist. |
@@ -197,6 +255,12 @@ Public types in `switchboard_ui.components` used by the factories above:
 | Collapsible | `collapsible` | — | — | `collapsible.css` |
 | Nav | `nav` | — | — | `nav.css` |
 | Toc | `toc` | — | — | `toc.css` |
+| Masthead | `masthead` | — | — | `masthead.css` |
+| Hero | `hero` | — | — | `hero.css` |
+| Section heading | `section_heading` | — | — | `section.css` |
+| Section | `section` | — | — | `section.css` |
+| Prose | `prose` | — | — | `prose.css` |
+| Filter table | `filter_table` | subscribes `topic`, `sort_topic` | `filter-table.js` | `filter-table.css` (+ table) |
 
 ## See also
 

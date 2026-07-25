@@ -121,12 +121,15 @@ The `--sb-fit-*` tokens are `Derived` or `Fixed` obligations projected from the 
 |---|---|---|
 | `--sb-fit-control-block` | `calc(var(--sb-font-size-base) * var(--sb-font-line-height) + 2 * var(--sb-space-inset) + 2 * var(--sb-border-width-thin))` | the rendered height of one standard control: line box + symmetric inset + symmetric hairline |
 | `--sb-fit-control-inline` | `6rem` | the short-label minimum width |
+| `--sb-fit-content-inline` | `60rem` | the content column's cap: how wide a document surface grows before the margins take the rest |
+| `--sb-fit-hit-target` | `1.5rem` | the minimum pointer-target square |
 | `--sb-fit-rail-block` | `var(--sb-fit-control-block)` | a rail row is one control tall |
 | `--sb-fit-color-area` | `12rem` | the square saturation/value surface |
 | `--sb-fit-color-hue` | `var(--sb-fit-control-block)` | the hue track is one control tall |
 | `--sb-fit-color-handle` | `0.75rem` | the picker drag handle |
 | `--sb-fit-slider-thumb` | `0.875rem` | the slider thumb |
 | `--sb-fit-modal-inline` | `32rem` | the modal width cap |
+| `--sb-fit-modal-block` | `90dvb` | the modal height cap, stopping short of the viewport so a band of scrim stays visible |
 
 `control-block` is the one computed root. Because `rail-block` and `color-hue` alias it, a rail row and the hue track are guaranteed the same height as a control and reproject together.
 
