@@ -30,6 +30,7 @@ from showcase.markdown import (
     internal_link_rewriter,
     render_markdown,
 )
+from switchboard_theme.chrome import content_column_styles
 from switchboard_theme.modes import (
     mode_stamp_head,
     mode_state,
@@ -277,99 +278,89 @@ def docs_scripts() -> tuple[str, ...]:
 
 # The docs' own page chrome (host CSS, not the core's structure or the theme's
 # paint): the content prose styles, the nav, the on-this-page TOC, and the header.
-# It reads the theme's --sb-* tokens because the theme is loaded. The center column
-# owns both inline seams (single owner; the side columns draw neither). Content
-# children share one reading measure so prose and code align to one column edge.
-_DOC_MEASURE = "60rem"
+# It reads the theme's --sb-* tokens because the theme is loaded. The center
+# column itself is the theme's own content-column chrome (content_column_styles),
+# which owns both inline seams and caps every island at one reading measure, so
+# prose and code align to one column edge.
 
-_DOCS_CSS = f"""
-.sb-body-c {{
-  border-inline-start: var(--sb-border-width-thin) solid var(--sb-color-border);
-  border-inline-end: var(--sb-border-width-thin) solid var(--sb-color-border);
-  gap: var(--sb-space-lg);
-  padding: var(--sb-space-3xl);
-}}
-.sb-body-c > .sb-island {{
-  inline-size: 100%;
-  max-inline-size: {_DOC_MEASURE};
-}}
-.sb-doc {{
+_DOCS_CSS = """
+.sb-doc {
   display: flex;
   flex-direction: column;
   gap: var(--sb-space-md);
-}}
-.sb-doc-h {{
+}
+.sb-doc-h {
   font-family: var(--sb-font-family);
   font-variation-settings: "MONO" var(--sb-font-axis-mono), "CASL" var(--sb-font-axis-casual);
   font-weight: var(--sb-font-weight-bold);
   line-height: 1.2;
-}}
-.sb-doc-h1 {{
+}
+.sb-doc-h1 {
   font-size: var(--sb-font-size-display);
   font-weight: var(--sb-font-weight-display);
   line-height: var(--sb-font-line-height-display);
   letter-spacing: var(--sb-font-tracking-tight);
-}}
-.sb-doc-h2 {{ font-size: var(--sb-font-size-lg); }}
-.sb-doc-h3 {{
+}
+.sb-doc-h2 { font-size: var(--sb-font-size-lg); }
+.sb-doc-h3 {
   font-size: var(--sb-font-size-base);
   font-weight: var(--sb-font-weight-medium);
-}}
-.sb-doc-p {{
+}
+.sb-doc-p {
   font-family: var(--sb-font-family-prose);
   font-variation-settings: "MONO" var(--sb-font-axis-mono-prose), "CASL" var(--sb-font-axis-casual-prose);
   line-height: var(--sb-font-line-height);
   color: var(--sb-color-fg);
   max-inline-size: var(--sb-font-measure);
-}}
-.sb-doc-code {{
+}
+.sb-doc-code {
   font-family: var(--sb-font-family);
   font-variation-settings: "MONO" var(--sb-font-axis-mono), "CASL" var(--sb-font-axis-casual);
   font-size: var(--sb-font-size-sm);
   background: var(--sb-color-bg-raised);
   padding: var(--sb-space-2xs);
-}}
-.sb-doc-link {{
+}
+.sb-doc-link {
   color: var(--sb-color-accent);
   text-decoration: underline;
-}}
-.sb-doc-link:focus-visible {{
+}
+.sb-doc-link:focus-visible {
   outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
   outline-offset: 2px;
-}}
-.sb-doc-list {{
+}
+.sb-doc-list {
   display: flex;
   flex-direction: column;
   gap: var(--sb-space-sm);
   max-inline-size: var(--sb-font-measure);
-}}
-.sb-doc-item {{
+}
+.sb-doc-item {
   display: flex;
   gap: var(--sb-space-sm);
   font-family: var(--sb-font-family-prose);
   font-variation-settings: "MONO" var(--sb-font-axis-mono-prose), "CASL" var(--sb-font-axis-casual-prose);
   line-height: var(--sb-font-line-height);
-}}
-.sb-doc-marker {{
+}
+.sb-doc-marker {
   flex: 0 0 auto;
   min-inline-size: var(--sb-space-md);
   color: var(--sb-color-muted);
-}}
-.sb-docs-notice {{
+}
+.sb-docs-notice {
   border: var(--sb-border-width-thin) solid var(--sb-color-border);
-}}
-.sb-docs-notice-body {{
+}
+.sb-docs-notice-body {
   display: flex;
   flex-direction: column;
   gap: var(--sb-space-sm);
   padding: var(--sb-space-lg);
-}}
-.sb-docs-notice-title {{
+}
+.sb-docs-notice-title {
   font-weight: var(--sb-font-weight-bold);
   text-transform: uppercase;
   letter-spacing: var(--sb-font-tracking-wide);
   color: var(--sb-color-faint);
-}}
+}
 """
 
 
@@ -387,6 +378,6 @@ def docs_styles() -> str:
         )
     )
     return (
-        f"<style>{sheets}</style><style>{_DOCS_CSS}</style>"
+        f"<style>{sheets}</style>{content_column_styles()}<style>{_DOCS_CSS}</style>"
         f"{surface_switch_styles()}{mode_switch_styles()}{mode_stamp_head()}"
     )
