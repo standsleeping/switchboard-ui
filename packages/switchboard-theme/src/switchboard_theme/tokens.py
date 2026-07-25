@@ -238,6 +238,11 @@ REGISTRY: tuple[Token, ...] = (
         ),
     ),
     Token(Category.FIT, "control-inline", ValueType.LENGTH, Fixed("6rem")),
+    # The content column's cap: how wide a document surface grows before the
+    # column stops and the margins take the rest. Wider than the prose measure
+    # (a table or a code block uses the full column while paragraphs stay
+    # readable inside it), and consumed by the opt-in chrome in chrome.py.
+    Token(Category.FIT, "content-inline", ValueType.LENGTH, Fixed("60rem")),
     # The minimum pointer-target square (24px): the block-size floor an
     # interactive control's hit area must grant even when its visual reads
     # smaller. Interaction geometry is an obligation like any other, so it is
@@ -921,6 +926,193 @@ button:focus-visible {
 .sb-toc-link:focus-visible {
   outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
   outline-offset: calc(-1 * var(--sb-border-width-accent));
+}
+
+/* Filterable table: the control bar over the grid. The bar reads as chrome — a
+ * row of labelled controls with the running count at its far edge — so the grid
+ * stays the surface carrying the weight. The labels are structural labels and
+ * the readout is quiet; neither competes with the data below. */
+.sb-filter-table {
+  gap: var(--sb-space-md);
+}
+.sb-filter-bar {
+  gap: var(--sb-space-xl);
+}
+.sb-filter-group {
+  gap: var(--sb-space-md);
+}
+.sb-filter-label {
+  color: var(--sb-color-faint);
+  text-transform: uppercase;
+  letter-spacing: var(--sb-font-tracking-wide);
+  font-size: var(--sb-font-size-sm);
+}
+.sb-filter-count {
+  color: var(--sb-color-faint);
+  font-size: var(--sb-font-size-sm);
+}
+
+/* Masthead: the site's name as the head rail's brand. A quiet uppercase mark in
+ * the foreground color that takes the accent on hover; its square inset makes it
+ * as tall as the chrome at the rail's other end. */
+.sb-masthead {
+  color: var(--sb-color-fg);
+  text-decoration: none;
+  font-weight: var(--sb-font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--sb-font-tracking-wide);
+  padding: var(--sb-space-md);
+}
+.sb-masthead:hover {
+  color: var(--sb-color-accent);
+}
+.sb-masthead:focus-visible {
+  outline: var(--sb-border-width-accent) solid var(--sb-color-accent);
+  outline-offset: calc(-1 * var(--sb-border-width-accent));
+}
+
+/* Section: a titled block of content, set off from its neighbours by its
+ * heading's rule rather than by a box. The heading lays the title against a
+ * faint far-edge annotation over a hairline, and insets itself squarely so the
+ * rule clears the descenders (a box's inset, never a one-sided pad). */
+.sb-section {
+  gap: var(--sb-space-md);
+}
+.sb-section-heading {
+  border-block-end: var(--sb-border-width-thin) solid var(--sb-color-border);
+  padding: var(--sb-space-2xs);
+}
+.sb-section-title {
+  font-size: var(--sb-font-size-lg);
+  font-weight: var(--sb-font-weight-bold);
+}
+.sb-section-meta {
+  color: var(--sb-color-faint);
+  text-transform: uppercase;
+  letter-spacing: var(--sb-font-tracking-wide);
+  font-size: var(--sb-font-size-sm);
+}
+
+/* Hero: a page's display heading. The eyebrow is a structural label above the
+ * title; the title is the page's one display-type line; the description is the
+ * prose lead, painted with the standalone lead below. */
+.sb-hero {
+  gap: var(--sb-space-sm);
+}
+.sb-hero-eyebrow {
+  color: var(--sb-color-faint);
+  text-transform: uppercase;
+  letter-spacing: var(--sb-font-tracking-wide);
+  font-size: var(--sb-font-size-sm);
+}
+.sb-hero-title {
+  font-size: var(--sb-font-size-display);
+  font-weight: var(--sb-font-weight-display);
+  line-height: var(--sb-font-line-height-display);
+  letter-spacing: var(--sb-font-tracking-tight);
+}
+
+/* Prose surface: rendered markup set as running text. The proportional arm of
+ * the family carries paragraphs, list items, and quotes; everything structural
+ * (headings, table headers, code) stays in the mono arm. Paragraphs and lists
+ * cap at the reading measure while tables and code take the column's full width.
+ * An h1 is the document's own title, so it takes the display type the hero uses;
+ * an h2 opens a block over the same hairline a section heading draws. Headings
+ * clear the scroll owner's edge when an anchor lands on them. The lead is the
+ * same prose voice one step quieter: the opening line of a hero or a section. */
+.sb-prose {
+  gap: var(--sb-space-md);
+}
+.sb-prose h1,
+.sb-prose h2,
+.sb-prose h3,
+.sb-prose h4 {
+  font-weight: var(--sb-font-weight-bold);
+  scroll-margin-block-start: var(--sb-space-md);
+}
+.sb-prose h1 {
+  font-size: var(--sb-font-size-display);
+  font-weight: var(--sb-font-weight-display);
+  line-height: var(--sb-font-line-height-display);
+  letter-spacing: var(--sb-font-tracking-tight);
+}
+.sb-prose h2 {
+  font-size: var(--sb-font-size-lg);
+  border-block-end: var(--sb-border-width-thin) solid var(--sb-color-border);
+  padding: var(--sb-space-2xs);
+}
+.sb-prose h3,
+.sb-prose h4 {
+  font-size: var(--sb-font-size-base);
+}
+.sb-prose p,
+.sb-prose li,
+.sb-prose blockquote {
+  font-family: var(--sb-font-family-prose);
+  font-variation-settings: "MONO" var(--sb-font-axis-mono-prose), "CASL" var(--sb-font-axis-casual-prose);
+  line-height: var(--sb-font-line-height);
+}
+.sb-prose p {
+  max-inline-size: var(--sb-font-measure);
+}
+.sb-prose ul,
+.sb-prose ol {
+  gap: var(--sb-space-2xs);
+  padding-inline-start: var(--sb-space-lg);
+  max-inline-size: var(--sb-font-measure);
+}
+.sb-prose li::marker {
+  color: var(--sb-color-muted);
+}
+.sb-prose code {
+  font-family: var(--sb-font-family);
+  font-variation-settings: "MONO" var(--sb-font-axis-mono), "CASL" var(--sb-font-axis-casual);
+  font-size: var(--sb-font-size-sm);
+  background: var(--sb-color-bg-raised);
+  padding: var(--sb-space-2xs);
+}
+.sb-prose pre {
+  background: var(--sb-color-bg-raised);
+  padding: var(--sb-space-lg);
+}
+.sb-prose pre code {
+  background: none;
+  padding: 0;
+}
+.sb-prose table {
+  border-collapse: collapse;
+}
+.sb-prose th {
+  color: var(--sb-color-muted);
+  text-align: start;
+  text-transform: uppercase;
+  letter-spacing: var(--sb-font-tracking-wide);
+  font-size: var(--sb-font-size-sm);
+}
+.sb-prose th,
+.sb-prose td {
+  border-block-end: var(--sb-border-width-thin) solid var(--sb-color-border);
+  padding: var(--sb-space-sm);
+  vertical-align: top;
+}
+.sb-prose blockquote {
+  color: var(--sb-color-muted);
+  border-inline-start: var(--sb-border-width-accent) solid var(--sb-color-border);
+  padding: var(--sb-space-sm);
+}
+.sb-prose hr {
+  border: none;
+  border-block-start: var(--sb-border-width-thin) solid var(--sb-color-border);
+}
+.sb-prose a {
+  color: var(--sb-color-accent);
+}
+.sb-prose-lead {
+  color: var(--sb-color-muted);
+  font-family: var(--sb-font-family-prose);
+  font-variation-settings: "MONO" var(--sb-font-axis-mono-prose), "CASL" var(--sb-font-axis-casual-prose);
+  line-height: var(--sb-font-line-height);
+  max-inline-size: var(--sb-font-measure);
 }"""
 
 
