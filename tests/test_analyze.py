@@ -1,4 +1,4 @@
-"""The wiring analyzer recovers the declared pub/sub graph from rendered HTML.
+"""The analyzer recovers a page's declared wiring and its layout policy.
 
 The island descriptor's third consumer: after Python emits the ``data-pub`` /
 ``data-sub`` attributes and the browser mounts from them, :mod:`switchboard_ui.analyze`
@@ -8,9 +8,10 @@ without executing anything.
 """
 
 from switchboard_ui import Island, wiring
-from switchboard_ui.analyze import Edge, MountPoint
+from switchboard_ui.analyze import Edge, MountPoint, unreachable_content
 from switchboard_ui.demo import build_demo
-from switchboard_ui.model import Frame
+from switchboard_ui.model import Document, Frame, Slot
+from switchboard_ui.presets import three_column
 from switchboard_ui.render import render_document, render_frame, render_island
 
 
@@ -97,3 +98,45 @@ def test_wiring_lists_subscribers_in_document_order() -> None:
         Island(name="early", subscribes=("t",))
     )
     assert wiring(html).subscribers("t") == ("late", "early")
+
+
+def test_a_viewport_page_whose_frames_never_scroll_is_unreachable() -> None:
+    """A locked root with no auto-overflow descendant renders content nothing reaches.
+
+    Each frame's policy is fine on its own; the defect is the combination, which
+    is why it is checked over the tree rather than expressed in the dataclasses.
+    """
+    doc = Document(
+        body=Frame(
+            direction="column",
+            overflow="clip",
+            children=(Frame(direction="row", overflow="visible"),),
+        ),
+        root="viewport",
+    )
+    assert unreachable_content(doc)
+
+
+def test_one_auto_frame_anywhere_in_the_tree_makes_content_reachable() -> None:
+    """The scroll owner may sit at any depth, including behind a Slot."""
+    scroller = Frame(direction="column", overflow="auto")
+    doc = Document(
+        body=Frame(
+            direction="column",
+            overflow="clip",
+            children=(Slot(Frame(direction="row", children=(scroller,))),),
+        ),
+        root="viewport",
+    )
+    assert not unreachable_content(doc)
+
+
+def test_a_flow_page_is_never_unreachable() -> None:
+    """The page is the scroll owner in flow, so no descendant needs to be one."""
+    doc = Document(body=Frame(direction="column", overflow="clip"), root="flow")
+    assert not unreachable_content(doc)
+
+
+def test_the_shipped_preset_leaves_no_content_unreachable() -> None:
+    """The dogfood workbench preset passes its own diagnostic."""
+    assert not unreachable_content(three_column({"body-c": (Island(name="app"),)}))
