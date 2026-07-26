@@ -47,11 +47,32 @@ def test_font_bytes_is_the_packaged_woff2() -> None:
 def test_font_head_declares_the_face_at_the_supplied_url() -> None:
     """font_head wraps an @font-face naming the host's URL and the full weight range."""
     out = themes.font_head("/fonts/recursive.woff2")
-    assert out.startswith("<style>")
     assert out.endswith("</style>")
     assert "@font-face" in out
     assert 'src: url("/fonts/recursive.woff2") format("woff2");' in out
     assert "font-weight: 300 1000;" in out
+
+
+def test_font_head_preloads_the_face_from_the_same_url() -> None:
+    """The fetch starts at head-parse, not when the face is first matched.
+
+    The hint carries crossorigin because a font is fetched in anonymous CORS
+    mode; a preload without it is a second, separate request.
+    """
+    out = themes.font_head("/fonts/recursive.woff2")
+    assert out.startswith('<link rel="preload" href="/fonts/recursive.woff2"')
+    assert 'as="font"' in out
+    assert "crossorigin" in out
+
+
+def test_the_face_never_swaps_after_paint() -> None:
+    """optional is the one display value that cannot re-render text under a reader.
+
+    A face that misses its block period sits out that page load rather than
+    replacing the fallback mid-read; the next navigation has it cached.
+    """
+    assert "font-display: optional;" in themes.font_head("/f.woff2")
+    assert "font-display: swap" not in themes.font_head("/f.woff2")
 
 
 def test_family_tokens_lead_with_the_packaged_face() -> None:

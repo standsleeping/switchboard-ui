@@ -41,19 +41,33 @@ def font_bytes() -> bytes:
 
 
 def font_head(src: str) -> str:
-    """Return the inline ``@font-face`` block for ``extra_head``.
+    """Return the typeface's preload hint and inline ``@font-face``, for ``extra_head``.
 
     ``src`` is the URL where the host serves :func:`font_bytes`. The descriptor
     spans the face's full weight range; slant and the unregistered axes are
     driven by ``font-variation-settings`` in the token CSS, so the face is
     declared upright.
+
+    The preload starts the fetch when the head is parsed rather than when the
+    ``@font-face`` is first matched against an element, which is several dozen
+    milliseconds later and lands the face in the middle of first paint. It
+    carries ``crossorigin`` because a font is always fetched in anonymous CORS
+    mode; without it the preload and the real request are two separate fetches.
+
+    ``font-display: optional`` is the one value that never swaps after paint. A
+    face that misses its short block period is simply not used for that page
+    load, so the reader never watches the text re-render under them; the next
+    navigation has it in cache and uses it. The alternative, ``swap``, paints in
+    the fallback and corrects a few milliseconds later — invisible in a
+    filmstrip, plainly visible as a flicker on every navigation.
     """
     return (
+        f'<link rel="preload" href="{src}" as="font" type="font/woff2" crossorigin>'
         "<style>@font-face {\n"
         '  font-family: "Recursive";\n'
         f'  src: url("{src}") format("woff2");\n'
         "  font-weight: 300 1000;\n"
         "  font-style: normal;\n"
-        "  font-display: swap;\n"
+        "  font-display: optional;\n"
         "}</style>"
     )
