@@ -165,8 +165,30 @@
   color-scheme: dark;
 }
 
-/* The viewport surface: the mechanism's root frame fills it (position: fixed;
- * inset: 0), so the surface paint belongs here, not on body. */
+/* The canvas, and the viewport's scrollbar gutter. Both are the root element's,
+ * and both are the theme's because the mechanism never styles the host's own
+ * elements — a page that embeds the mechanism decides its own canvas.
+ *
+ * A background on a `div` propagates to nothing, so under a flow root the areas
+ * the root frame does not cover are painted by the user agent rather than by the
+ * surface token. That is invisible under a viewport root (no canvas is ever
+ * exposed) and invisible in the light scheme by coincidence, because the light
+ * surface token happens to equal the user agent's light canvas. It shows in the
+ * dark scheme during rubber-band overscroll, which is why the token is named
+ * here rather than left to chance.
+ *
+ * The gutter must be on the root element: per CSS Overflow 3 the user agent
+ * applies the root element's `scrollbar-gutter` to the viewport, and, unlike
+ * `overflow`, it is never propagated from `body`. So the structural sheet
+ * cannot reserve it, and the element scrollers' own gutters do not reach it. */
+:root {
+  background: var(--sb-color-bg);
+  scrollbar-gutter: stable;
+}
+
+/* The surface the mechanism's frames paint against. Under a viewport root this
+ * is the whole visible page; under a flow root it is the document's own column,
+ * with the canvas above carrying anything it does not cover. */
 .sb-root {
   background: var(--sb-color-bg);
   color: var(--sb-color-fg);
