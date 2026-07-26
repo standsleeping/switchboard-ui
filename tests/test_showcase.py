@@ -41,7 +41,7 @@ def test_showcase_keeps_unplaced_corner_regions_empty() -> None:
         assert find(
             html,
             "div",
-            **{"class": f"sb-frame sb-frame-column sb-{region}"},
+            **{"class": f"sb-frame sb-frame-column sb-overflow-clip sb-{region}"},
         )
 
 

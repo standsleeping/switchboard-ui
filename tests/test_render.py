@@ -1,8 +1,12 @@
 """Tests for the renderer (structural assertions over parsed HTML)."""
 
+import pytest
+
+from switchboard_ui import model
 from switchboard_ui.model import REGIONS, Document, Frame, Island, Slot
 from switchboard_ui.presets import three_column
 from switchboard_ui.render import (
+    DOCUMENT_CLASS,
     render_document,
     render_frame,
     render_island,
@@ -84,22 +88,26 @@ def test_render_appends_user_classes_to_frame_and_island() -> None:
             direction="row", class_="grid", children=(Island(name="a", class_="card"),)
         )
     )
-    assert find(html, "div", **{"class": "sb-frame sb-frame-row grid"})
+    assert find(
+        html, "div", **{"class": "sb-frame sb-frame-row sb-overflow-visible grid"}
+    )
     assert find(html, "div", **{"class": "sb-island card"})
 
 
 def test_render_frame_renders_an_empty_flex_stack() -> None:
     """A childless frame is an empty flex stack carrying its direction class."""
     html = render_frame(Frame(direction="row"))
-    assert html == '<div class="sb-frame sb-frame-row"></div>'
+    assert html == '<div class="sb-frame sb-frame-row sb-overflow-visible"></div>'
 
 
 def test_render_frame_nests_frames_and_islands() -> None:
     """Frames compose to depth; leaves are islands, branches are nested frames."""
     inner = Frame(direction="row", children=(Island(name="a"), Island(name="b")))
     html = render_frame(Frame(direction="column", children=(inner, Island(name="c"))))
-    assert find(html, "div", **{"class": "sb-frame sb-frame-column"})  # outer stack
-    assert find(html, "div", **{"class": "sb-frame sb-frame-row"})  # nested stack
+    assert find(
+        html, "div", **{"class": "sb-frame sb-frame-column sb-overflow-visible"}
+    )
+    assert find(html, "div", **{"class": "sb-frame sb-frame-row sb-overflow-visible"})
     for name in ("a", "b", "c"):
         assert find(html, "div", **{"data-island": name})
 
@@ -108,12 +116,18 @@ def test_render_document_wraps_a_frame_root_in_the_envelope() -> None:
     """A document renders its body frame as the viewport-locked page root."""
     doc = Document(
         body=Frame(direction="row", children=(Island(name="a"), Island(name="b"))),
+        root="flow",
         title="Doc & Co",
     )
     html = render_document(doc)
     assert html.startswith("<!doctype html>")
     assert find(html, "title")  # escaped title present
-    assert find(html, "div", **{"class": "sb-frame sb-frame-row sb-root"})  # root frame
+    [root] = find(
+        html,
+        "div",
+        **{"class": "sb-frame sb-frame-row sb-overflow-visible sb-root sb-root-flow"},
+    )
+    assert root
     assert find(html, "style")  # inline assets embedded by default
     for name in ("a", "b"):
         assert find(html, "div", **{"data-island": name})
@@ -143,5 +157,50 @@ def test_render_frame_sizes_a_nested_frame_slot() -> None:
     """A Slot sizes a nested frame, not only an island."""
     inner = Frame(direction="column", children=(Island(name="x"),))
     html = render_frame(Frame(direction="row", children=(Slot(inner, basis="200px"),)))
-    [stack] = find(html, "div", **{"class": "sb-frame sb-frame-column"})
+    [stack] = find(
+        html, "div", **{"class": "sb-frame sb-frame-column sb-overflow-visible"}
+    )
     assert stack["style"] == "flex: 0 0 200px"
+
+
+def test_every_overflow_policy_and_root_mode_renders_a_class() -> None:
+    """The class mappings are total over the model's literals.
+
+    A dict cannot be proved exhaustive by the type checker, so the guard is a
+    test: if a policy or mode is added to the model without a class, this fails
+    rather than the renderer raising at some caller's page.
+    """
+    for policy in model.OVERFLOWS:
+        html = render_frame(Frame(direction="row", overflow=policy))
+        assert f"sb-overflow-{policy}" in html
+    for mode in model.ROOT_MODES:
+        html = render_document(Document(body=Frame(direction="row"), root=mode))
+        assert f"sb-root-{mode}" in html
+
+
+def test_a_policy_outside_the_model_fails_loudly() -> None:
+    """An untyped caller gets a KeyError, never a frame with no policy class.
+
+    Silently rendering no overflow class would put the frame back on whatever the
+    stylesheet's cascade happened to give it — the failure mode typing this was
+    meant to end.
+    """
+    with pytest.raises(KeyError):
+        render_frame(Frame(direction="row", overflow="scroll"))  # type: ignore[arg-type]
+
+
+def test_every_frame_carries_exactly_one_overflow_class() -> None:
+    """No rendered frame is missing a policy, and none carries two."""
+    html = render_document(three_column({"body-c": (Island(name="app"),)}))
+    for div in find(html, "div"):
+        names = div["class"].split()
+        if "sb-frame" not in names:
+            continue
+        policies = [n for n in names if n.startswith("sb-overflow-")]
+        assert len(policies) == 1, f"frame has policies {policies}: {names}"
+
+
+def test_the_envelope_body_carries_the_owned_document_class() -> None:
+    """The renderer names the envelope it generates, so the reset has a target."""
+    html = render_document(three_column())
+    assert f'<body class="{DOCUMENT_CLASS}">' in html

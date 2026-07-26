@@ -95,19 +95,28 @@ def _cells(row: Frame) -> list[Frame]:
 
 
 def test_three_column_body_cells_own_their_scroll() -> None:
-    """The three body cells are scroll owners (``sb-scroll``); the chrome rail cells clip.
+    """The three body cells declare ``overflow="auto"``; every frame above clips.
 
-    Scroll ownership is structural: the center and sidebars scroll their own
-    overflow while every frame above them (rows, rails, root) clips by default.
+    Scroll ownership is a value on the frame that owns it, so the whole
+    containment chain is readable without consulting a stylesheet: the center and
+    sidebars scroll their own overflow while the rows, rails, and root clip.
     """
     doc = three_column()
     head, middle, foot = doc.body.children
+    assert doc.body.overflow == "clip"
     assert isinstance(middle, Slot)
     body_row = middle.child
     assert isinstance(body_row, Frame)
+    assert body_row.overflow == "clip"
     for cell in _cells(body_row):
-        assert "sb-scroll" in cell.class_
+        assert cell.overflow == "auto"
     for rail in (head, foot):
         assert isinstance(rail, Frame)
+        assert rail.overflow == "clip"
         for cell in _cells(rail):
-            assert "sb-scroll" not in cell.class_
+            assert cell.overflow == "clip"
+
+
+def test_three_column_is_a_viewport_page() -> None:
+    """The preset names its own root mode: it is a workbench, not a document."""
+    assert three_column().root == "viewport"

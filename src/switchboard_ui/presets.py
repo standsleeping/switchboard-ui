@@ -15,7 +15,7 @@ obligation and lets content drive above it (see ``static/layout.css``).
 
 from collections.abc import Mapping, Sequence
 
-from switchboard_ui.model import Document, Frame, Island, Region, Slot
+from switchboard_ui.model import Document, Frame, Island, Overflow, Region, Slot
 
 # Side-rail widths: plain structural lengths (a layout choice, above the control
 # obligation a sufficiency test verifies), not design tokens.
@@ -27,19 +27,19 @@ def _cell(
     region: Region,
     placed: Mapping[Region, Sequence[Island]],
     *,
-    scroll: bool = False,
+    overflow: Overflow,
 ) -> Frame:
     """A region cell: a column stack of its islands, hooked by an ``sb-<region>``
     class (a theming hook the packaged CSS leaves unpainted).
 
-    ``scroll`` marks the cell as a scroll owner (``sb-scroll``): it scrolls its
-    own overflow while every frame above it clips (see ``static/layout.css``).
+    ``overflow`` is the cell's declared policy, passed down from the preset that
+    decided it rather than assembled into a class string here.
     """
-    cls = f"sb-{region} sb-scroll" if scroll else f"sb-{region}"
     return Frame(
         direction="column",
         children=tuple(placed.get(region, ())),
-        class_=cls,
+        overflow=overflow,
+        class_=f"sb-{region}",
     )
 
 
@@ -50,7 +50,7 @@ def _row(
     placed: Mapping[Region, Sequence[Island]],
     *,
     class_: str = "",
-    scroll: bool = False,
+    cell_overflow: Overflow,
     left_width: str = _LEFT_WIDTH,
     right_width: str = _RIGHT_WIDTH,
 ) -> Frame:
@@ -60,18 +60,19 @@ def _row(
     rows pass ``sb-rail`` so the layer floors them to the contract; all three
     rows carry an identity hook (``sb-head-row`` / ``sb-body-row`` /
     ``sb-foot-row``) so a theme can give each full-width seam one row owner.
-    ``scroll`` makes the row's cells scroll owners; the body row passes it so the
-    center and sidebars scroll while the chrome rails clip. ``left_width`` /
-    ``right_width`` are the side cells' fixed bases (one layout choice for the
-    whole arrangement, so the columns line up across all three rows).
+    ``cell_overflow`` is the policy each of the three cells declares; the body
+    row makes its cells scroll owners while the chrome rails clip.
+    ``left_width`` / ``right_width`` are the side cells' fixed bases (one layout
+    choice for the whole arrangement, so the columns line up across all rows).
     """
     return Frame(
         direction="row",
         children=(
-            Slot(_cell(left, placed, scroll=scroll), basis=left_width),
-            Slot(_cell(center, placed, scroll=scroll)),
-            Slot(_cell(right, placed, scroll=scroll), basis=right_width),
+            Slot(_cell(left, placed, overflow=cell_overflow), basis=left_width),
+            Slot(_cell(center, placed, overflow=cell_overflow)),
+            Slot(_cell(right, placed, overflow=cell_overflow), basis=right_width),
         ),
+        overflow="clip",
         class_=class_,
     )
 
@@ -91,8 +92,9 @@ def three_column(
     name (``head-l`` through ``foot-r``); an omitted region renders as an empty
     cell that collapses. Each cell carries an ``sb-<region>`` class as a theming
     hook; each row carries an ``sb-<row>-row`` hook for full-width seam ownership.
-    The three body cells are scroll owners (``sb-scroll``): they scroll their own
-    overflow while the root and chrome rails clip. The result is an ordinary
+    The three body cells declare ``overflow="auto"``: they scroll their own
+    overflow while the root and chrome rails clip. It is a viewport-locked page,
+    so it returns ``Document(root="viewport")``. The result is an ordinary
     ``Document`` you render with :func:`switchboard_ui.render_document`.
 
     ``left_width`` / ``right_width`` size the side columns: a layout choice (how
@@ -110,6 +112,7 @@ def three_column(
                 "head-r",
                 placed,
                 class_="sb-rail sb-head-row",
+                cell_overflow="clip",
                 left_width=left_width,
                 right_width=right_width,
             ),
@@ -120,7 +123,7 @@ def three_column(
                     "body-r",
                     placed,
                     class_="sb-body-row",
-                    scroll=True,
+                    cell_overflow="auto",
                     left_width=left_width,
                     right_width=right_width,
                 )
@@ -131,9 +134,11 @@ def three_column(
                 "foot-r",
                 placed,
                 class_="sb-rail sb-foot-row",
+                cell_overflow="clip",
                 left_width=left_width,
                 right_width=right_width,
             ),
         ),
+        overflow="clip",
     )
-    return Document(body=body, title=title)
+    return Document(body=body, root="viewport", title=title)

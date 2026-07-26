@@ -19,11 +19,37 @@ from typing import Literal
 
 from switchboard_ui.assets import read_static
 from switchboard_ui.html import classes, element, escape_attr, escape_text
-from switchboard_ui.model import Document, Frame, Island, Slot
+from switchboard_ui.model import Document, Frame, Island, Overflow, RootMode, Slot
 
 RuntimeMode = Literal["inline", "linked"]
 
 _COMPACT = (",", ":")
+
+# Every overflow policy and root mode maps to exactly one class, and the class is
+# the only thing the stylesheet keys on. A value outside the mapping raises here
+# rather than rendering a frame with no policy: an untyped caller gets a loud
+# KeyError instead of silently-visible overflow. `test_render.py` proves the
+# mappings are total over OVERFLOWS / ROOT_MODES, which is the exhaustiveness the
+# type checker cannot enforce across a dict.
+_OVERFLOW_CLASS: dict[Overflow, str] = {
+    "visible": "sb-overflow-visible",
+    "clip": "sb-overflow-clip",
+    "auto": "sb-overflow-auto",
+}
+
+_ROOT_CLASS: dict[RootMode, str] = {
+    "flow": "sb-root-flow",
+    "viewport": "sb-root-viewport",
+}
+
+DOCUMENT_CLASS = "sb-document"
+"""The class the renderer puts on ``<body>``.
+
+The envelope is generated, so the package names it and owns the one reset it
+needs (the user agent's default body margin). Naming it is what keeps the reset
+from reaching into an arbitrary host element: the package resets the envelope it
+created, never the host's ``body`` as such.
+"""
 
 
 def _render_island(island: Island, *, style: str | None = None) -> str:
@@ -58,11 +84,21 @@ def _render_frame(
     direction: str,
     children: Iterable[str],
     *,
+    overflow: Overflow,
     extra_class: str = "",
     style: str | None = None,
 ) -> str:
-    """Render a flex stack: a div whose children lay out along ``direction``."""
-    cls = classes("sb-frame", f"sb-frame-{direction}", extra_class)
+    """Render a flex stack: a div whose children lay out along ``direction``.
+
+    Every frame carries exactly one overflow policy class, so the policy is
+    visible in the markup and no frame depends on a cascade tie to get one.
+    """
+    cls = classes(
+        "sb-frame",
+        f"sb-frame-{direction}",
+        _OVERFLOW_CLASS[overflow],
+        extra_class,
+    )
     return element("div", {"class": cls, "style": style}, children)
 
 
@@ -72,6 +108,7 @@ def _render_node(node: Island | Frame, *, style: str | None) -> str:
         return _render_frame(
             node.direction,
             [_render_child(c) for c in node.children],
+            overflow=node.overflow,
             extra_class=node.class_,
             style=style,
         )
@@ -135,7 +172,7 @@ def _document(
         f"{styles}\n"
         f"{extra_head}"
         "</head>\n"
-        "<body>\n"
+        f'<body class="{DOCUMENT_CLASS}">\n'
         f"{body}\n"
         f"{runtime_tag}\n"
         f"{scripts}"
@@ -144,12 +181,19 @@ def _document(
     )
 
 
-def _render_root(frame: Frame) -> str:
-    """Render a frame as the viewport-locked document root (``sb-root``)."""
+def _render_root(frame: Frame, root: RootMode) -> str:
+    """Render a frame as the document root, carrying its root-mode policy class.
+
+    The root frame keeps its own overflow policy like any other frame; the extra
+    ``sb-root`` hook and the ``sb-root-flow`` / ``sb-root-viewport`` policy class
+    say how the root relates to the viewport, which is a separate decision from
+    what it does with its own overflow.
+    """
     return _render_frame(
         frame.direction,
         [_render_child(c) for c in frame.children],
-        extra_class=classes("sb-root", frame.class_),
+        overflow=frame.overflow,
+        extra_class=classes("sb-root", _ROOT_CLASS[root], frame.class_),
     )
 
 
@@ -161,13 +205,15 @@ def render_document(
     extra_head: str = "",
     extra_scripts: Sequence[str] = (),
 ) -> str:
-    """Render a :class:`Document` (a root layout frame plus a title) to a page.
+    """Render a :class:`Document` to a complete page.
 
-    The body frame becomes the viewport-locked root. Build the document by hand,
-    or from a preset such as ``three_column`` in :mod:`switchboard_ui.presets`.
+    The body frame becomes the document root, rendered under the document's
+    declared :data:`~switchboard_ui.model.RootMode`. Build the document by hand,
+    or from a preset such as ``document_site`` or ``workbench`` in
+    :mod:`switchboard_ui.presets`.
     """
     return _document(
-        _render_root(document.body),
+        _render_root(document.body, document.root),
         title=document.title,
         runtime=runtime,
         asset_base=asset_base,

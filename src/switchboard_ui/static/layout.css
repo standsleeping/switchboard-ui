@@ -1,25 +1,34 @@
 /* switchboard-ui: structural layout CSS for the Frame primitive.
  *
- * Geometry only: the flex stacks that make a Frame tree render, sizing, and a
- * viewport-locked root. It carries no paint (no color, type, or light/dark
- * theming) and no box-spacing: space between siblings is `gap` (structural
- * distribution), never `margin` (banned) and never `padding`
- * (a box's inset is a density decision the theme owns, not the structure). The
- * one theme value it may consume is a Component Geometry obligation the theme
- * publishes as `--sb-fit-*`: a rail floors itself to `--sb-fit-rail-block`
- * rather than guessing a fixed height (the cause of the old spillover).
+ * Geometry only: the flex stacks that make a Frame tree render, sizing, the two
+ * root policies, and the sticky-rail role. It carries no paint (no color, type,
+ * or light/dark theming) and no box-spacing beyond the one owned reset below:
+ * space between siblings is `gap` (structural distribution), never `margin`, and
+ * a box's inset is a density decision the theme owns. The one theme value it may
+ * consume is a Component Geometry obligation the theme publishes as `--sb-fit-*`:
+ * a rail floors itself to `--sb-fit-rail-block` rather than guessing a fixed
+ * height (the cause of the old spillover).
  *
- * Overflow is a declared policy, never an accident: every frame clips by default
- * so nothing escapes the viewport-locked root, and a region
- * opts into owning its scroll with `sb-scroll`. It selects only its own `.sb-*`
- * elements, never the host's `body` / `:root`. The test suite enforces every
- * line of this statically. */
+ * Overflow is a declared policy on every frame, never a default and never a
+ * cascade accident: the renderer emits exactly one `sb-overflow-*` class per
+ * frame from the frame's own value, so no rule here has to win a specificity tie
+ * to take effect and reordering this file changes nothing. It selects only its
+ * own `.sb-*` elements, never the host's `html` / `:root`. The test suite
+ * enforces every line of this statically. */
+
+/* The generated body envelope. The package created this element and named it, so
+ * it owns the one reset it needs: the user agent's default body margin, which a
+ * flow root would otherwise inherit and turn into host-dependent geometry. This
+ * is the reset layer, not sibling rhythm — `margin` as a spacing mechanism stays
+ * banned, and the guard enforces that by rejecting any non-zero value. */
+.sb-document {
+  margin: 0;
+}
 
 .sb-frame {
   display: flex;
   min-inline-size: 0;
   min-block-size: 0;
-  overflow: hidden; /* clip by default; a region opts into scroll via sb-scroll */
 }
 .sb-frame-row {
   flex-direction: row;
@@ -33,12 +42,30 @@
   display: none;
 }
 
-/* A scroll owner: the one region in a containment chain that scrolls, while
- * every frame above it clips. Defined
- * after `.sb-frame` so it wins the equal-specificity tie and overrides the
- * default clip. The preset hands this to the body cells. */
-.sb-scroll {
+/* The three overflow policies. Exactly one lands on every frame.
+ *
+ * `clip` rather than `hidden` for containment: `hidden` creates a box that is
+ * not user-scrollable but is still *programmatically* scrollable, and the user
+ * agent uses that to bring a focused off-screen descendant into view — a silent
+ * source of mystery offsets. `clip` creates no scroll container at all.
+ *
+ * `auto` reserves its scrollbar gutter. Reserving is not styling the bar: the
+ * platform still paints, sizes, and themes it, and the user's OS scrollbar
+ * preference is untouched. A gutter exists only where a classic scrollbar
+ * exists, so this is inert under overlay scrollbars and converts an intermittent
+ * inline shift into a constant inset under classic ones. The viewport's own
+ * gutter cannot be set from here: per CSS Overflow 3 it applies only from the
+ * root element and, unlike `overflow`, never propagates from `body`. The theme
+ * owns that one, beside `color-scheme`. */
+.sb-overflow-visible {
+  overflow: visible;
+}
+.sb-overflow-clip {
+  overflow: clip;
+}
+.sb-overflow-auto {
   overflow: auto;
+  scrollbar-gutter: stable;
 }
 
 /* A rail (a head/foot row) is content-driven with a floor: it grants at least
@@ -51,11 +78,39 @@
   min-block-size: var(--sb-fit-rail-block);
 }
 
-/* The root frame is locked to the viewport: robust to any host body margin, and
- * styling none of the host's own elements to get there. */
-.sb-root {
+/* The two root policies.
+ *
+ * Flow is the browser's normal document: the root is content-sized and the page
+ * scrolls. The floor keeps a short page filling the screen so its foot rail sits
+ * at the bottom rather than partway up.
+ *
+ * `svb`, not `dvb`: the dynamic viewport unit is *defined* to change as mobile
+ * browser chrome collapses and expands, so a length written in it has a
+ * mid-scroll geometry change built into the unit — the exact defect class this
+ * layer exists to eliminate. The small viewport unit is the always-visible area
+ * and never changes during a scroll. */
+.sb-root-flow {
+  min-block-size: 100svb;
+}
+
+/* Viewport containment: the root is locked to the viewport, robust to any host
+ * body margin, and styling none of the host's own elements to get there. Every
+ * scroll on such a page belongs to a frame that declared `overflow: auto`. */
+.sb-root-viewport {
   position: fixed;
   inset: 0;
+}
+
+/* A sticky rail: a side column in a flowing document that stays put while the
+ * page scrolls past it. `align-self: flex-start` stops the flex row from
+ * stretching it to the article's height (which would leave nothing to stick),
+ * and the cap keeps a rail taller than the screen scrollable within itself
+ * rather than running off the bottom. Capped in `svb` for the reason above. */
+.sb-sticky-rail {
+  position: sticky;
+  inset-block-start: 0;
+  align-self: flex-start;
+  max-block-size: 100svb;
 }
 
 /* An island fills its cell; its geometry comes from the surrounding frames. */

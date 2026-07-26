@@ -1425,7 +1425,8 @@ def _builder_controls() -> tuple[Frame, list[Binding], list[Category]]:
     column = Frame(
         direction="column",
         children=tuple(children),
-        class_="sb-builder-controls sb-scroll",
+        overflow="auto",
+        class_="sb-builder-controls",
     )
     return column, bindings, categories
 
@@ -1494,7 +1495,8 @@ def build_theme_builder() -> Document:
     preview_col = Frame(
         direction="column",
         children=(_builder_matrix(),),
-        class_="sb-builder-preview sb-scroll",
+        overflow="auto",
+        class_="sb-builder-preview",
     )
     # The surface switch stands alone flush-left (as in head-c on the gallery and
     # docs); the shared mode switch and the page-local export group flush-right,
@@ -1514,6 +1516,7 @@ def build_theme_builder() -> Document:
                 class_="sb-builder-header-right",
             ),
         ),
+        overflow="clip",
         class_="sb-rail sb-builder-header",
     )
     # Not the three_column preset the gallery and docs use. The builder has two
@@ -1528,6 +1531,7 @@ def build_theme_builder() -> Document:
             Slot(controls, basis="32rem"),
             Slot(preview_col),
         ),
+        overflow="clip",
         class_="sb-builder-main",
     )
     # The mode-state applier (invisible) sits beside the theme-state applier, at
@@ -1535,8 +1539,9 @@ def build_theme_builder() -> Document:
     body = Frame(
         direction="column",
         children=(header, Slot(main), state, mode_state()),
+        overflow="clip",
     )
-    return Document(body=body, title="switchboard-ui theme builder")
+    return Document(body=body, root="viewport", title="switchboard-ui theme builder")
 
 
 def theme_builder_scripts() -> tuple[str, ...]:

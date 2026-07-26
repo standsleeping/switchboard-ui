@@ -139,13 +139,19 @@ def inline_styles(html: str) -> list[str]:
 # --- structural ownership policy ---------------------------------------------
 
 # The only properties the structural layer may declare: those that determine size,
-# position, and flow. Box-spacing is excluded on purpose — `margin` is banned
-# (rhythm is the parent's `gap`) and `padding` is the theme's (a box's inset is a
-# density decision). Appearance (color, background, border, font, shadow) is absent
-# for the same reason: a structural sheet that names one fails the guard.
+# position, and flow. `padding` is excluded outright — a box's inset is a density
+# decision the theme owns. `margin` is present but value-guarded: the property is
+# geometry, and the reason it was excluded was delegation (rhythm is the parent's
+# `gap`), not category. A zero reset on the generated envelope is the removal of a
+# user-agent default rather than a use of the spacing mechanism, so the guard
+# rejects any non-zero margin instead of the property name — the rule stated
+# rather than approximated. Appearance (color, background, border, font, shadow)
+# is absent: a structural sheet that names one fails the guard.
 LAYOUT_PROPERTIES: frozenset[str] = frozenset(
     {
         "display",
+        # the one value-guarded box-spacing property (see MARGIN_RESET_ONLY)
+        "margin",
         # flexbox (sibling distribution lives here, via `gap`)
         "flex",
         "flex-direction",
@@ -201,6 +207,10 @@ LAYOUT_PROPERTIES: frozenset[str] = frozenset(
         "overflow-y",
         "overflow-inline",
         "overflow-block",
+        # Reserving the classic scrollbar's width is geometry, not bar styling:
+        # the platform still paints, sizes, and themes the bar. Hiding, tinting,
+        # and resizing it remain absent from this list and always will be.
+        "scrollbar-gutter",
         # positioning
         "position",
         "top",
@@ -209,7 +219,11 @@ LAYOUT_PROPERTIES: frozenset[str] = frozenset(
         "left",
         "inset",
         "inset-block",
+        "inset-block-start",
+        "inset-block-end",
         "inset-inline",
+        "inset-inline-start",
+        "inset-inline-end",
         "z-index",
         # anchor positioning (declarative placement of a top-layer panel
         # relative to its trigger; the popover's placement contract)
@@ -239,13 +253,19 @@ see."""
 
 STRUCTURAL_HOOKS: frozenset[str] = frozenset(
     {
+        "sb-document",
         "sb-frame",
         "sb-frame-row",
         "sb-frame-column",
+        "sb-overflow-visible",
+        "sb-overflow-clip",
+        "sb-overflow-auto",
         "sb-island",
         "sb-root",
+        "sb-root-flow",
+        "sb-root-viewport",
         "sb-rail",
-        "sb-scroll",
+        "sb-sticky-rail",
         "sb-head-row",
         "sb-body-row",
         "sb-foot-row",
