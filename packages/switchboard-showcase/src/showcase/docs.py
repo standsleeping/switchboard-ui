@@ -48,6 +48,7 @@ from switchboard_ui.components import (
     code_block_scripts,
     code_block_styles,
     nav,
+    nav_scripts,
     nav_styles,
     popover_scripts,
     popover_styles,
@@ -189,7 +190,14 @@ def _nav(current: str) -> Island:
     ]
     for label, entries in _tree():
         sections.append(NavSection(heading=label, items=_nest(entries, current)))
-    return nav(sections=tuple(sections), label="Documentation")
+    # The docs nav is shared chrome: the same rail on every page, and long
+    # enough that a reader is usually scrolled into it. The key opts it into
+    # surviving a native page load.
+    return nav(
+        sections=tuple(sections),
+        label="Documentation",
+        scroll_key="docs-primary-nav",
+    )
 
 
 def _toc(headings: tuple[Heading, ...]) -> Island:
@@ -307,10 +315,11 @@ def build_doc(relpath: str) -> Document:
 
 
 def docs_scripts() -> tuple[str, ...]:
-    """The adapters the docs register: the code block's copy action and the mode
-    switch (nav is static)."""
+    """The adapters the docs register: the code block's copy action, the nav's
+    scroll persistence, and the mode switch."""
     return (
         code_block_scripts()
+        + nav_scripts()
         + popover_scripts()
         + segmented_scripts()
         + mode_switch_scripts()
