@@ -8,7 +8,7 @@ control surface for them, so a host places it rather than inventing its own:
 
 - :func:`mode_switch` — a quiet ``Modes`` trigger in the head rail opening an
   anchored popover holding one segmented toggle per axis. A popover rather than
-  inline toggles: the three-column preset's head-r cell shares its fixed width
+  inline toggles: the presets' head-r cell shares its fixed width
   with the inspector column below (the columns of all three rows align), and six
   labelled options do not fit it; the panel renders in the top layer, so the set
   can grow without widening any rail.

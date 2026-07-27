@@ -136,7 +136,7 @@ def test_external_and_anchor_links_pass_through_rewriting() -> None:
 
 def test_internal_md_link_keeps_its_anchor_fragment() -> None:
     """A ``.md#anchor`` link rewrites the path to a route and preserves the fragment."""
-    rewrite = internal_link_rewriter("reference/three-column.md")
+    rewrite = internal_link_rewriter("reference/workbench.md")
     assert (
         rewrite("rendering.md#render_document")
         == "/docs/reference/rendering#render_document"

@@ -1,7 +1,7 @@
 """A showcase page draws each vertical seam on a full-height cell, never island content.
 
 `switchboard-theme`'s `test_seams.py` proves single-ownership for the
-`three_column` preset's region hooks. The showcase also hand-rolls layouts
+`workbench` preset's region hooks. The showcase also hand-rolls layouts
 directly on `Frame` (the theme builder's nav | controls | preview), whose seams
 are the page's own chrome CSS and fall outside that guard. This is the parallel
 guard for those pages.

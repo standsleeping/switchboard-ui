@@ -11,9 +11,7 @@ from switchboard_ui import render_document
 from tests.htmlprobe import find
 
 
-def test_build_doc_fills_the_three_columns_with_nav_breadcrumb_content_and_toc() -> (
-    None
-):
+def test_build_doc_fills_the_regions_with_nav_breadcrumb_content_and_toc() -> None:
     """A rendered doc carries the nav, a breadcrumb over content, and an on-this-page TOC."""
     html = render_document(build_doc("tutorials/getting-started.md"))
     assert find(html, "div", **{"data-island": "nav"})

@@ -45,7 +45,7 @@ def test_showcase_keeps_unplaced_corner_regions_empty() -> None:
         )
 
 
-def test_showcase_styles_carry_the_three_column_chrome() -> None:
+def test_showcase_styles_carry_the_workbench_chrome() -> None:
     """The gallery paints its own column seams, nav, and inspector (host chrome)."""
     css = showcase_styles()
     assert ".sb-body-c" in css  # the center column owns both column seams
