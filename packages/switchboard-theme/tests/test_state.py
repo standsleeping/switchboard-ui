@@ -64,3 +64,62 @@ def test_theme_focus_ring_stays_inside_the_box() -> None:
                     f"{selectors.strip()!r}; inset it (negative outline-offset) or "
                     "reserve --sb-fit-paint-outset"
                 )
+
+
+def test_state_dependent_font_weight_is_confined_to_the_monospace_axis() -> None:
+    """Bolding a state is safe only where the face's advance cannot change.
+
+    ``font-weight`` sits outside ``GEOMETRY_EXACT`` deliberately, so a state rule
+    may bold its text. That is a claim about *this* face, not a general one, and
+    the distinction is easy to get wrong: monospace pins one advance width per
+    font instance, and says nothing about whether the advance is constant across
+    positions on the weight axis. A variable font may widen with weight and still
+    be monospace at every instance.
+
+    So it was measured rather than inferred. Rendering the same string at weight
+    400 and weight 700 at the axis position the nav actually inherits gave an
+    identical advance (393.6015625px for a 41-character sample, delta exactly 0),
+    and the current and peer nav rows measured identically at 40x196. Recursive's
+    Mono holds its advance across the weight axis, which is what a code face has
+    to do to stay usable in bold.
+
+    That result only transfers while the rows really are on the monospace axis.
+    This test pins that precondition: any rule that varies ``font-weight`` by
+    state must not also move the element off ``MONO 1``, and no rule may override
+    the axis for the nav. If a future design puts a state-bolded row on the
+    proportional axis, the measurement no longer applies and this fails.
+    """
+    for name, css in _theme_sheets():
+        for selectors, body in ownership.rules(css):
+            declared = dict(ownership.declarations(body))
+            if "font-weight" not in declared:
+                continue
+            if not is_state_selector(selectors):
+                continue
+            variation = declared.get("font-variation-settings", "")
+            assert "MONO" not in variation or "MONO 1" in variation, (
+                f"theme {name!r} bolds state rule {selectors.strip()!r} while "
+                f"moving it off the monospace axis ({variation!r}); the advance "
+                "invariance that makes state-dependent weight safe was measured "
+                "at MONO 1 and does not transfer"
+            )
+
+
+def test_the_nav_inherits_the_monospace_axis_it_was_measured_on() -> None:
+    """No rule takes nav rows off ``MONO 1``, where the weight measurement holds.
+
+    The rows reach the monospace axis by inheritance — the axis token is 1 and
+    the root applies it — rather than by any nav rule. That is easy to break
+    silently by adding a nav rule that sets its own axis, which is why the
+    absence is asserted rather than assumed.
+    """
+    for name, css in _theme_sheets():
+        for selectors, body in ownership.rules(css):
+            if "sb-nav" not in selectors:
+                continue
+            declared = dict(ownership.declarations(body))
+            variation = declared.get("font-variation-settings")
+            assert variation is None or "MONO 1" in variation, (
+                f"theme {name!r} overrides the font axis on {selectors.strip()!r} "
+                f"({variation!r}); nav rows must stay on the monospace axis"
+            )
