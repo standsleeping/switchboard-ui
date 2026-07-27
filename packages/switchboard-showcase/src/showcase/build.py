@@ -37,7 +37,7 @@ from switchboard_ui.components import (
     ArmBinding,
     Binding,
     FilterControl,
-    NavLink,
+    NavItem,
     NavSection,
     TocEntry,
     ValueBinding,
@@ -628,14 +628,33 @@ def _gallery_specs() -> tuple[_Spec, ...]:
             body=(
                 nav(
                     sections=(
-                        NavSection(
-                            links=(NavLink(label="Overview", href="#", current=True),)
-                        ),
+                        NavSection(items=(NavItem(label="Overview", href="#"),)),
                         NavSection(
                             heading="Groups",
-                            links=(
-                                NavLink(label="Controls", href="#", meta="6"),
-                                NavLink(label="Display", href="#", meta="6"),
+                            # Three levels deep, so the specimen shows what the
+                            # recursive model buys: a grandchild is expressible,
+                            # and the current page sits at the deepest level with
+                            # its ancestors marked by the server-computed hook.
+                            items=(
+                                NavItem(
+                                    label="Controls",
+                                    href="#",
+                                    meta="6",
+                                    children=(
+                                        NavItem(
+                                            label="Slider",
+                                            href="#",
+                                            children=(
+                                                NavItem(
+                                                    label="Range",
+                                                    href="#",
+                                                    current=True,
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                                NavItem(label="Display", href="#", meta="6"),
                             ),
                         ),
                     ),

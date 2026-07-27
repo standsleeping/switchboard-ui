@@ -1280,104 +1280,155 @@ def collapsible_styles() -> str:
 
 
 @dataclass(frozen=True)
-class NavLink:
-    """One nav row: a label linking to a route.
+class NavItem:
+    """One nav row: a label linking to a route, with optional children.
 
     ``current`` marks the row as the current page (``aria-current="page"``, the
     theme's reserved accent channel recolored). ``meta`` is an optional short
     annotation at the row's far edge (a count, a status); empty renders nothing.
-    ``nested`` places the row in an indented sublist under the preceding
-    top-level row (a section page under its area), mirroring the toc's model:
-    a run of nested rows is grouped into a sublist that owns the indent
-    structurally, so each row keeps a square inset.
+
+    ``children`` are the items nested under this one, to any depth. Nesting is
+    the shape of the value, exactly as it is for :class:`~switchboard_ui.Frame`:
+    a child belongs to the item it is written inside, not to whichever row
+    happened to precede it. Reordering rows therefore cannot silently reparent
+    them, and a grandchild is expressible.
     """
 
     label: str
     href: str
     current: bool = False
     meta: str = ""
-    nested: bool = False
+    children: tuple["NavItem", ...] = ()
 
 
 @dataclass(frozen=True)
 class NavSection:
-    """A run of nav links under an optional group heading.
+    """A run of nav items under an optional group heading.
 
     ``heading`` is a structural label over the run (uppercase in the theme);
-    empty renders the links with no heading, for a leading ungrouped run.
+    empty renders the items with no heading, for a leading ungrouped run.
     """
 
-    links: tuple[NavLink, ...]
+    items: tuple[NavItem, ...]
     heading: str = ""
 
 
+def _nav_contains_current(item: NavItem) -> bool:
+    """Whether ``item`` or any descendant is the current page."""
+    return item.current or any(_nav_contains_current(c) for c in item.children)
+
+
+def _nav_current_count(sections: Sequence[NavSection]) -> int:
+    """How many items in the whole tree are marked current."""
+
+    def count(item: NavItem) -> int:
+        return int(item.current) + sum(count(c) for c in item.children)
+
+    return sum(count(item) for section in sections for item in section.items)
+
+
 def nav(*, sections: Sequence[NavSection], label: str) -> Island:
-    """A sidebar nav: sections of links, the current page marked.
+    """A sidebar nav: sections of items to any depth, the current page marked.
 
     The canonical left-rail navigation — a static island (no adapter, no
-    pub/sub): the links navigate natively. Each section renders its optional
-    group heading over its links; each link is a row whose label sits at the
-    row's start and whose optional ``meta`` annotation sits at the far edge.
-    The current link carries ``aria-current="page"``; every row reserves the
-    active-edge channel (the theme draws it transparent and recolors the
-    current one), so marking the current page never shifts a row. ``label`` is
-    the nav's accessible name (its ``aria-label``). Raises :class:`ValueError`
-    if ``label`` is blank, ``sections`` is empty, or any link has a blank label
-    or href — so a malformed nav fails where it is written.
+    pub/sub): the links navigate natively, and no click is intercepted. Each
+    section renders its optional group heading over a semantic ``<ul>``; each
+    item is an ``<li>`` holding an ``<a>`` whose label sits at the row's start
+    and whose optional ``meta`` annotation sits at the far edge. An item with
+    children renders a nested ``<ul>`` inside its own ``<li>``, so the document
+    outline matches the navigation hierarchy for assistive technology.
+
+    The current item carries ``aria-current="page"``; every row reserves the
+    active-edge channel (the theme draws it transparent and recolors the current
+    one), so marking the current page never shifts a row. Each ancestor of the
+    current item carries ``data-current-ancestor``, computed here rather than in
+    the browser, so revealing the current path costs no script and no reflow.
+
+    Every branch renders expanded. Disclosure is a later, separate concern, and
+    an ancestor that opened or closed a branch would move the row the reader just
+    clicked and every row after it.
+
+    ``label`` is the nav's accessible name (its ``aria-label``). Raises
+    :class:`ValueError` if ``label`` is blank, ``sections`` is empty, any item
+    has a blank label or href, or more than one item is marked current — so a
+    malformed nav fails where it is written. Validation errors name the item by
+    its path through the tree (``section 1 > item 0 > item 2``), which is stable
+    under reordering and unambiguous across sections.
     """
     if not label:
         raise ValueError("nav requires a non-empty label (the nav's name)")
     if not sections:
         raise ValueError("nav requires at least one section")
+    marked = _nav_current_count(sections)
+    if marked > 1:
+        raise ValueError(
+            f"nav has {marked} items marked current; exactly one page is current"
+        )
 
-    def row(link: NavLink, index: int) -> str:
-        if not link.label:
-            raise ValueError(f"nav link {index} has a blank label")
-        if not link.href:
-            raise ValueError(f"nav link {index} has a blank href")
-        children = [
-            element("span", {"class": "sb-nav-label"}, [escape_text(link.label)])
-        ]
-        if link.meta:
-            children.append(
-                element("span", {"class": "sb-nav-meta"}, [escape_text(link.meta)])
+    def row(item: NavItem, path: str) -> str:
+        if not item.label:
+            raise ValueError(f"nav {path} has a blank label")
+        if not item.href:
+            raise ValueError(f"nav {path} has a blank href")
+        parts = [element("span", {"class": "sb-nav-label"}, [escape_text(item.label)])]
+        if item.meta:
+            parts.append(
+                element("span", {"class": "sb-nav-meta"}, [escape_text(item.meta)])
             )
-        return element(
+        anchor = element(
             "a",
             {
                 "class": "sb-nav-item",
-                "href": link.href,
-                "aria-current": "page" if link.current else "false",
+                "href": item.href,
+                "aria-current": "page" if item.current else "false",
             },
-            children,
+            parts,
+        )
+        contents = [anchor]
+        if item.children:
+            contents.append(
+                element(
+                    "ul",
+                    {"class": "sb-nav-list sb-nav-sublist"},
+                    [
+                        row(child, f"{path} > item {i}")
+                        for i, child in enumerate(item.children)
+                    ],
+                )
+            )
+        # The ancestor hook marks the path to the current page, never the page
+        # itself: the item carries `aria-current` for that.
+        ancestor = any(_nav_contains_current(c) for c in item.children)
+        return element(
+            "li",
+            {
+                "class": "sb-nav-node",
+                "data-current-ancestor": "" if ancestor else None,
+            },
+            contents,
         )
 
-    items: list[str] = []
-    sublist: list[str] = []
-
-    def flush_sublist() -> None:
-        if sublist:
-            items.append(element("div", {"class": "sb-nav-sublist"}, list(sublist)))
-            sublist.clear()
-
-    for section in sections:
-        flush_sublist()
+    blocks: list[str] = []
+    for section_index, section in enumerate(sections):
         if section.heading:
-            items.append(
+            blocks.append(
                 element(
                     "div",
                     {"class": "sb-nav-group"},
                     [escape_text(section.heading)],
                 )
             )
-        for index, link in enumerate(section.links):
-            if link.nested:
-                sublist.append(row(link, index))
-            else:
-                flush_sublist()
-                items.append(row(link, index))
-    flush_sublist()
-    initial = element("nav", {"class": "sb-nav", "aria-label": label}, items)
+        blocks.append(
+            element(
+                "ul",
+                {"class": "sb-nav-list"},
+                [
+                    row(item, f"section {section_index} > item {i}")
+                    for i, item in enumerate(section.items)
+                ],
+            )
+        )
+    initial = element("nav", {"class": "sb-nav", "aria-label": label}, blocks)
     return Island(name="nav", initial=initial)
 
 

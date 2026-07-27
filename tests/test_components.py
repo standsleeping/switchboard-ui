@@ -21,7 +21,7 @@ from switchboard_ui.components import (
     ArmBinding,
     Cell,
     FilterControl,
-    NavLink,
+    NavItem,
     NavSection,
     TocEntry,
     ValueBinding,
@@ -1206,15 +1206,15 @@ def test_collapsible_styles_returns_the_structural_css() -> None:
 
 
 def _nav() -> Island:
-    """A two-section nav: a leading ungrouped link, then a headed group."""
+    """A two-section nav: a leading ungrouped item, then a headed group."""
     return nav(
         sections=(
-            NavSection(links=(NavLink(label="Index", href="/", current=True),)),
+            NavSection(items=(NavItem(label="Index", href="/", current=True),)),
             NavSection(
                 heading="Groups",
-                links=(
-                    NavLink(label="Types", href="/types/", meta="17"),
-                    NavLink(label="Layout", href="/layout/"),
+                items=(
+                    NavItem(label="Types", href="/types/", meta="17"),
+                    NavItem(label="Layout", href="/layout/"),
                 ),
             ),
         ),
@@ -1229,8 +1229,8 @@ def test_nav_builds_a_static_nav_island() -> None:
     assert island.publishes == () and island.subscribes == ()
 
 
-def test_nav_renders_sections_with_headings_over_links() -> None:
-    """A headed section renders its group label; links carry their hrefs."""
+def test_nav_renders_sections_with_headings_over_items() -> None:
+    """A headed section renders its group label; items carry their hrefs."""
     island = _nav()
     groups = find(island.initial, "div", **{"class": "sb-nav-group"})
     assert len(groups) == 1
@@ -1239,70 +1239,188 @@ def test_nav_renders_sections_with_headings_over_links() -> None:
     assert hrefs == ["/", "/types/", "/layout/"]
 
 
-def test_nav_marks_only_the_current_link() -> None:
-    """Exactly the current link carries aria-current; the others say false."""
+def test_nav_marks_only_the_current_item() -> None:
+    """Exactly the current item carries aria-current; the others say false."""
     island = _nav()
     current = find(island.initial, "a", **{"aria-current": "page"})
     assert [a["href"] for a in current] == ["/"]
 
 
 def test_nav_renders_meta_only_where_given() -> None:
-    """A link's meta annotation renders at the row's edge; absent meta renders nothing."""
+    """An item's meta annotation renders at the row's edge; absent meta renders nothing."""
     island = _nav()
     metas = find(island.initial, "span", **{"class": "sb-nav-meta"})
     assert len(metas) == 1
     assert ">17<" in island.initial
 
 
-def test_nav_groups_nested_runs_into_sublists() -> None:
-    """A run of nested links lands in a sublist under the preceding row; the
-    following top-level row closes the run and sits outside it."""
-    island = nav(
+def test_nav_uses_semantic_list_markup() -> None:
+    """The hierarchy is carried by nav/ul/li/a, not by sibling divs.
+
+    The list is what tells assistive technology that these rows form a tree and
+    how deep each one sits; a flat run of anchors carries no such information.
+    """
+    island = _nav()
+    assert find(island.initial, "nav", **{"aria-label": "Site"})
+    assert find(island.initial, "ul", **{"class": "sb-nav-list"})
+    nodes = find(island.initial, "li", **{"class": "sb-nav-node"})
+    assert len(nodes) == 3  # one per item, each holding its own anchor
+
+
+def _deep_nav(current_at_depth: int = 3) -> Island:
+    """A three-level nav, current marked at the requested depth."""
+    return nav(
         sections=(
             NavSection(
                 heading="Projects",
-                links=(
-                    NavLink(label="alpha", href="/p/alpha/"),
-                    NavLink(label="Roadmap", href="/p/alpha/roadmap/", nested=True),
-                    NavLink(label="Docs", href="/p/alpha/docs/", nested=True),
-                    NavLink(label="beta", href="/p/beta/"),
+                items=(
+                    NavItem(
+                        label="alpha",
+                        href="/p/alpha/",
+                        current=current_at_depth == 1,
+                        children=(
+                            NavItem(
+                                label="Roadmap",
+                                href="/p/alpha/roadmap/",
+                                current=current_at_depth == 2,
+                                children=(
+                                    NavItem(
+                                        label="Q1",
+                                        href="/p/alpha/roadmap/q1/",
+                                        current=current_at_depth == 3,
+                                    ),
+                                ),
+                            ),
+                            NavItem(label="Docs", href="/p/alpha/docs/"),
+                        ),
+                    ),
+                    NavItem(label="beta", href="/p/beta/"),
                 ),
             ),
         ),
         label="Site",
     )
+
+
+def test_nav_nests_children_inside_their_own_parent_node() -> None:
+    """A child belongs to the item it is written inside, at any depth.
+
+    The flattened model this replaces made nesting order-dependent: a run of
+    nested rows attached to whatever preceded it, so moving a row reparented it
+    without the row changing. Here the tree is the value's own shape.
+    """
+    island = _deep_nav()
     order = [
-        (tag, attrs.get("class", ""), attrs.get("href", ""))
+        (tag, attrs.get("href", ""))
         for tag, attrs in elements(island.initial)
-        if attrs.get("class") in ("sb-nav-item", "sb-nav-sublist")
+        if attrs.get("class") in ("sb-nav-item", "sb-nav-list sb-nav-sublist")
     ]
     assert order == [
-        ("a", "sb-nav-item", "/p/alpha/"),
-        ("div", "sb-nav-sublist", ""),
-        ("a", "sb-nav-item", "/p/alpha/roadmap/"),
-        ("a", "sb-nav-item", "/p/alpha/docs/"),
-        ("a", "sb-nav-item", "/p/beta/"),
+        ("a", "/p/alpha/"),
+        ("ul", ""),
+        ("a", "/p/alpha/roadmap/"),
+        ("ul", ""),
+        ("a", "/p/alpha/roadmap/q1/"),
+        ("a", "/p/alpha/docs/"),
+        ("a", "/p/beta/"),
     ]
-    # The sublist closes before the next top-level row opens: beta is outside it.
+    # beta closes out of both sublists: it is a sibling of alpha, not of Docs.
     docs_at = island.initial.index("/p/alpha/docs/")
-    assert island.initial.index("</div>", docs_at) < island.initial.index("/p/beta/")
+    assert island.initial.index("</ul>", docs_at) < island.initial.index("/p/beta/")
 
 
-def test_nav_rejects_blank_label_sections_and_links() -> None:
-    """A blank nav label, an empty section list, or a blank link fails at the boundary."""
-    section = NavSection(links=(NavLink(label="A", href="/a"),))
+def test_nav_marks_every_ancestor_of_the_current_item() -> None:
+    """The path to the current page is computed server-side, at every depth.
+
+    The hook lands on ancestors only; the current item itself is identified by
+    `aria-current`, so a theme can paint the path and the destination apart.
+    """
+    island = _deep_nav(current_at_depth=3)
+    ancestors = find(island.initial, "li", **{"data-current-ancestor": ""})
+    hrefs = [
+        a["href"]
+        for a in find(island.initial, "a", **{"class": "sb-nav-item"})
+        if a.get("aria-current") == "page"
+    ]
+    assert hrefs == ["/p/alpha/roadmap/q1/"]
+    assert len(ancestors) == 2  # alpha and Roadmap, not Q1 itself
+
+
+def test_nav_marks_no_ancestor_when_the_current_item_is_top_level() -> None:
+    """A top-level current page has no ancestors, so no node carries the hook."""
+    island = _deep_nav(current_at_depth=1)
+    assert find(island.initial, "li", **{"data-current-ancestor": ""}) == []
+
+
+def test_nav_rejects_blank_label_sections_and_items() -> None:
+    """A blank nav label, an empty section list, or a blank item fails at the boundary."""
+    section = NavSection(items=(NavItem(label="A", href="/a"),))
     with pytest.raises(ValueError, match="non-empty label"):
         nav(sections=(section,), label="")
     with pytest.raises(ValueError, match="at least one section"):
         nav(sections=(), label="Site")
     with pytest.raises(ValueError, match="blank label"):
         nav(
-            sections=(NavSection(links=(NavLink(label="", href="/a"),)),),
+            sections=(NavSection(items=(NavItem(label="", href="/a"),)),),
             label="Site",
         )
     with pytest.raises(ValueError, match="blank href"):
         nav(
-            sections=(NavSection(links=(NavLink(label="A", href=""),)),),
+            sections=(NavSection(items=(NavItem(label="A", href=""),)),),
+            label="Site",
+        )
+
+
+def test_nav_validation_errors_name_the_node_by_its_path() -> None:
+    """An error identifies which node is bad, unambiguously across sections.
+
+    The flattened model numbered items per section, so a page with several
+    sections produced several different "item 0" errors, none of which said
+    which section. A path is unique in the whole tree and survives reordering.
+    """
+    with pytest.raises(
+        ValueError, match=r"section 1 > item 0 > item 1 has a blank label"
+    ):
+        nav(
+            sections=(
+                NavSection(items=(NavItem(label="ok", href="/ok"),)),
+                NavSection(
+                    items=(
+                        NavItem(
+                            label="parent",
+                            href="/p",
+                            children=(
+                                NavItem(label="fine", href="/p/a"),
+                                NavItem(label="", href="/p/b"),
+                            ),
+                        ),
+                    )
+                ),
+            ),
+            label="Site",
+        )
+
+
+def test_nav_rejects_more_than_one_current_item() -> None:
+    """Two current pages is a contradiction, so it fails where it is written.
+
+    Rendering both would leave the reader with two "you are here" marks and no
+    way to tell which is true; failing names the count instead.
+    """
+    with pytest.raises(ValueError, match="2 items marked current"):
+        nav(
+            sections=(
+                NavSection(
+                    items=(
+                        NavItem(label="a", href="/a", current=True),
+                        NavItem(
+                            label="b",
+                            href="/b",
+                            children=(NavItem(label="c", href="/c", current=True),),
+                        ),
+                    )
+                ),
+            ),
             label="Site",
         )
 
@@ -1735,13 +1853,17 @@ def _component_sheets() -> list[tuple[str, str]]:
     ]
 
 
-def test_component_css_declares_only_geometry() -> None:
-    """A component sheet declares only layout properties — no paint, no box-spacing."""
+def test_component_css_declares_only_geometry_and_permitted_resets() -> None:
+    """A component sheet declares geometry, or a permitted user-agent reset.
+
+    Same value-guarded rule the root layout sheet obeys: a sheet may clear the
+    presentation a user agent puts on an element the package generated (a list's
+    marker and inline padding), but may never use box-spacing for spacing or name
+    a paint property.
+    """
     for name, css in _component_sheets():
-        non_layout = ownership.declared_properties(css) - ownership.LAYOUT_PROPERTIES
-        assert not non_layout, (
-            f"{name} declares non-layout properties: {sorted(non_layout)}"
-        )
+        offenders = ownership.non_structural_declarations(css)
+        assert not offenders, f"{name} declares non-structural values: {offenders}"
 
 
 def test_component_css_selects_only_sb_classes() -> None:

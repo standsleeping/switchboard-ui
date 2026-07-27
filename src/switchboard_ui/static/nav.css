@@ -1,18 +1,52 @@
 /* switchboard-ui: structural CSS for the sidebar nav.
  *
  * Geometry only, the same contract as layout.css: a column of group headings and
- * link rows, each row spreading its label and optional meta annotation to the
- * row's two edges. It carries no paint and no box-spacing — the gaps, the row
- * inset, the group-label typography, the reserved active-edge channel, and the
- * current-page accent are all the theme's, keyed to these same .sb-* hooks.
- * The guard in tests/test_components.py holds this file to the geometry-only,
- * token-free, .sb-*-only contract. */
+ * semantic lists, each row spreading its label and optional meta annotation to
+ * the row's two edges. It carries no paint and no box-spacing — the gaps, the
+ * row inset, the group-label typography, the reserved active-edge channel, the
+ * indent step, and the current-page accent are all the theme's, keyed to these
+ * same .sb-* hooks. The guard in tests/test_components.py holds this file to the
+ * geometry-only, token-free, .sb-*-only contract.
+ *
+ * The markup is `nav > ul > li > a`, with a nested `ul` inside any `li` that has
+ * children, to any depth. The list is what carries the hierarchy to assistive
+ * technology, so the rules here undo the user agent's list *presentation*
+ * without flattening the structure that presentation describes. */
 
 .sb-nav {
   display: flex;
   flex-direction: column;
 }
 
+/* The list at every level: a column stack with the user agent's list
+ * presentation cleared. The marker and the ~40px inline padding a UA gives every
+ * `ul` are presentation, not structure; removing them leaves the `ul`/`li`
+ * semantics intact for a screen reader while the rows read as a plain column,
+ * and it hands the indent decision to the theme instead of inheriting a number
+ * nobody chose. This is the reset layer, the same category as the envelope's
+ * `margin: 0`, and it is value-guarded rather than name-guarded for the same
+ * reason: the sheet may clear a UA default, never use padding as an inset. */
+.sb-nav-list {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* A node holds its own row and, when it has children, their sublist. It is the
+ * element the current-ancestor hook lands on, so a theme can mark the path to
+ * the current page without any rule reaching across siblings. */
+.sb-nav-node {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+/* The indent belongs to the sublist container, once, rather than to each row, so
+ * a row keeps a square inset at every depth and the reserved active-edge channel
+ * stays at the row's own start edge instead of drifting rightward with depth.
+ * The step itself is the theme's. */
 .sb-nav-sublist {
   display: flex;
   flex-direction: column;
@@ -22,4 +56,5 @@
   display: flex;
   justify-content: space-between;
   align-items: baseline;
+  min-inline-size: 0;
 }

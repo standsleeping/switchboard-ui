@@ -40,7 +40,7 @@ from switchboard_theme.modes import (
 )
 from switchboard_ui import Document, Island
 from switchboard_ui.components import (
-    NavLink,
+    NavItem,
     NavSection,
     TocEntry,
     breadcrumb,
@@ -98,6 +98,24 @@ class _Entry:
     relpath: str
 
 
+# Declared parenthood: a doc that elaborates another sits under it in the nav.
+# The filesystem is flat within a category, and it should stay flat — a docs tree
+# whose shape is the directory layout makes every rename a re-nesting. So the
+# hierarchy the *content* already asserts is declared here, keyed by path, and
+# every doc not named stays at its category's top level. A new `.md` therefore
+# still appears in the nav the moment it lands, ungrouped until someone decides
+# it belongs beneath something.
+_PARENT: dict[str, str] = {
+    # The two presets are the page model applied; both pages lead with `Document`.
+    "reference/document-site.md": "reference/page-model.md",
+    "reference/workbench.md": "reference/page-model.md",
+    # Ownership is the layout's layering rule; seams is that rule applied to one
+    # edge, and seams.md refers back to both.
+    "explanation/ownership.md": "explanation/layout.md",
+    "explanation/seams.md": "explanation/ownership.md",
+}
+
+
 def _tree() -> list[tuple[str, list[_Entry]]]:
     """The Diátaxis nav tree: each category label paired with its doc entries.
 
@@ -117,6 +135,34 @@ def _tree() -> list[tuple[str, list[_Entry]]]:
     return groups
 
 
+def _nest(entries: list[_Entry], current: str) -> tuple[NavItem, ...]:
+    """Fold a category's flat entries into the tree ``_PARENT`` declares.
+
+    Recursion is by construction: an entry's children are built the same way its
+    parent was, so a grandchild costs nothing extra and depth is unbounded. An
+    entry whose declared parent is missing from this category stays top-level
+    rather than disappearing, so a mis-keyed parent degrades to a flat row
+    instead of silently dropping a page out of the nav.
+    """
+    known = {entry.relpath for entry in entries}
+
+    def build(entry: _Entry) -> NavItem:
+        return NavItem(
+            label=entry.label,
+            href=entry.route,
+            current=entry.relpath == current,
+            children=tuple(
+                build(child)
+                for child in entries
+                if _PARENT.get(child.relpath) == entry.relpath
+            ),
+        )
+
+    return tuple(
+        build(entry) for entry in entries if _PARENT.get(entry.relpath) not in known
+    )
+
+
 def _category_of(relpath: str) -> tuple[str, str] | None:
     """The ``(directory, label)`` a doc belongs to (``None`` for the index)."""
     directory = relpath.split("/", 1)[0]
@@ -131,28 +177,18 @@ def _nav(current: str) -> Island:
 
     The shared ``nav`` component: a leading ungrouped Overview link, then one
     headed section per category, built from the same tree the routes come from.
+    Within a category the entries are folded into the hierarchy ``_PARENT``
+    declares, so the nav renders the relationships the docs themselves assert.
     """
     sections = [
         NavSection(
-            links=(
-                NavLink(label="Overview", href="/docs", current=current == "index.md"),
+            items=(
+                NavItem(label="Overview", href="/docs", current=current == "index.md"),
             )
         )
     ]
     for label, entries in _tree():
-        sections.append(
-            NavSection(
-                heading=label,
-                links=tuple(
-                    NavLink(
-                        label=entry.label,
-                        href=entry.route,
-                        current=entry.relpath == current,
-                    )
-                    for entry in entries
-                ),
-            )
-        )
+        sections.append(NavSection(heading=label, items=_nest(entries, current)))
     return nav(sections=tuple(sections), label="Documentation")
 
 
