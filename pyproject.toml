@@ -51,6 +51,13 @@ dev = [
     "ruff>=0.14",
     "ty>=0.0.12",
 ]
+# Separate from `dev` so contributors touching only Python never install a
+# browser. CI syncs --all-groups, so it gets this without a workflow change;
+# the engine binary is a separate install step in its own job.
+browser = [
+    "playwright>=1.61",
+    "pytest-playwright>=0.8",
+]
 
 [tool.mypy]
 files = ["src"]

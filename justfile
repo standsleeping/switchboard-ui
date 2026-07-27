@@ -34,3 +34,13 @@ typecheck-ty:
 test:
     uv run pytest
     uv run --directory packages/switchboard-theme pytest
+
+# Run the real-browser regression tests (needs `just browser-install` once).
+# Deliberately outside `check`: those are the tests that need no browser, so a
+# contributor without one still runs the same gate CI runs for them.
+browser-test:
+    uv run pytest tests_browser -p no:cacheprovider --no-header -q --no-cov
+
+# Install the one engine the browser tests use.
+browser-install:
+    uv run playwright install --with-deps chromium
