@@ -169,6 +169,39 @@ def test_each_root_mode_has_one_rule_and_only_viewport_positions() -> None:
     )
 
 
+def test_the_sticky_rail_never_stretches_and_is_capped() -> None:
+    """A sticky rail aligns to the start and caps at the viewport.
+
+    Without ``align-self: flex-start`` the flex row stretches the rail to the
+    article's height, leaving nothing to stick; without the cap a rail taller
+    than the screen runs off the bottom instead of scrolling within itself.
+    """
+    rail = dict(
+        ownership.declarations(
+            ownership.rule_body(read_static("layout.css"), ".sb-sticky-rail")
+        )
+    )
+    assert rail.get("position") == "sticky"
+    assert rail.get("align-self") == "flex-start"
+    assert rail.get("max-block-size") == "100svb"
+
+
+def test_the_flow_body_row_grows_without_a_zero_basis() -> None:
+    """The flowing body row takes slack but is sized by its own content.
+
+    ``1 1 auto``, never ``1 1 0``: a zero basis contributes nothing to an
+    auto-height column's intrinsic size, so the row would be sized from leftover
+    viewport space and a long article crushed into it. The growth is also what
+    keeps a short article's column seams running the full page height.
+    """
+    body = dict(
+        ownership.declarations(
+            ownership.rule_body(read_static("layout.css"), ".sb-flow-body")
+        )
+    )
+    assert body.get("flex") == "1 1 auto"
+
+
 def test_structure_never_uses_the_dynamic_viewport_unit() -> None:
     """`dvb`/`dvh` change as mobile chrome collapses: a mid-scroll geometry change.
 
