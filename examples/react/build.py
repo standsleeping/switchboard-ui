@@ -3,7 +3,7 @@
 import argparse
 from pathlib import Path
 
-from switchboard_ui import Island, render_document, three_column
+from switchboard_ui import Island, render_document, workbench
 
 ROOT = Path(__file__).resolve().parent
 DEFAULT_OUT = ROOT / "index.html"
@@ -13,7 +13,7 @@ EXAMPLE_HEAD = '<script type="module" src="/src/main.jsx"></script>'
 
 def build_page() -> str:
     """Render the example page."""
-    page = three_column(
+    page = workbench(
         {
             "head-c": (
                 Island(

@@ -101,6 +101,18 @@
   inset: 0;
 }
 
+/* The flowing document's body row. It takes whatever slack a short page leaves,
+ * so the foot rail sits at the bottom of the screen rather than partway up, but
+ * its basis is its own content, so a long article extends the page.
+ *
+ * `1 1 auto`, never a `Slot`'s `1 1 0`: a zero basis contributes nothing to an
+ * auto-height column's intrinsic size, so the row would be sized from leftover
+ * viewport space and a long article would be crushed into it and overflow. The
+ * zero-basis form is right in a workbench, where the root height is definite. */
+.sb-flow-body {
+  flex: 1 1 auto;
+}
+
 /* A sticky rail: a side column in a flowing document that stays put while the
  * page scrolls past it. `align-self: flex-start` stops the flex row from
  * stretching it to the article's height (which would leave nothing to stick),

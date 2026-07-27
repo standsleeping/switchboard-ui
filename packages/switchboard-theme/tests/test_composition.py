@@ -23,7 +23,7 @@ import switchboard_theme as themes
 from switchboard_ui import render_document
 from switchboard_ui.assets import read_asset
 from switchboard_ui.model import REGIONS, Island, Region
-from switchboard_ui.presets import _LEFT_WIDTH, _RIGHT_WIDTH, three_column
+from switchboard_ui.presets import _LEFT_WIDTH, _RIGHT_WIDTH, workbench
 
 from .htmlprobe import elements
 
@@ -88,7 +88,7 @@ def test_a_control_in_every_region_renders_into_its_cell() -> None:
     regions: dict[Region, tuple[Island, ...]] = {
         r: (Island(name=f"ctl-{r}", initial="<button>Btn</button>"),) for r in REGIONS
     }
-    html = render_document(three_column(regions), extra_head=themes.head("default"))
+    html = render_document(workbench(regions), extra_head=themes.head("default"))
     cell_classes = {
         attrs.get("class", "")
         for tag, attrs in elements(html)

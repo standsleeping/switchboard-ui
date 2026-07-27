@@ -4,7 +4,7 @@ import pytest
 
 from switchboard_ui import model
 from switchboard_ui.model import REGIONS, Document, Frame, Island, Slot
-from switchboard_ui.presets import three_column
+from switchboard_ui.presets import workbench
 from switchboard_ui.render import (
     DOCUMENT_CLASS,
     render_document,
@@ -40,9 +40,9 @@ def test_render_island_omits_empty_attributes() -> None:
     assert "data-sub" not in div
 
 
-def test_three_column_inline_embeds_assets_and_places_islands() -> None:
+def test_workbench_inline_embeds_assets_and_places_islands() -> None:
     """Inline mode embeds a <style> and a srcless <script>, and places islands."""
-    doc = three_column({"body-c": (Island(name="app"),)}, title="Demo & Co")
+    doc = workbench({"body-c": (Island(name="app"),)}, title="Demo & Co")
     html = render_document(doc, runtime="inline")
     assert html.startswith("<!doctype html>")
     assert find(html, "title")
@@ -52,17 +52,17 @@ def test_three_column_inline_embeds_assets_and_places_islands() -> None:
     assert find(html, "div", **{"data-island": "app"})
 
 
-def test_three_column_places_an_island_in_every_region() -> None:
+def test_workbench_places_an_island_in_every_region() -> None:
     """Every region accepts an island; all nine appear in the output."""
     regions = {region: (Island(name=region),) for region in REGIONS}
-    html = render_document(three_column(regions), runtime="inline")
+    html = render_document(workbench(regions), runtime="inline")
     for region in REGIONS:
         assert find(html, "div", **{"data-island": region})
 
 
 def test_render_document_linked_references_assets() -> None:
     """Linked mode references the assets under asset_base; nothing embedded."""
-    html = render_document(three_column(), runtime="linked", asset_base="/static/")
+    html = render_document(workbench(), runtime="linked", asset_base="/static/")
     [link] = find(html, "link", rel="stylesheet")
     assert link["href"] == "/static/layout.css"
     assert find(html, "script", src="/static/switchboard.js")
@@ -73,7 +73,7 @@ def test_render_document_linked_references_assets() -> None:
 def test_render_document_includes_extra_head_and_scripts() -> None:
     """Extra head markup and island adapter scripts are injected."""
     html = render_document(
-        three_column(),
+        workbench(),
         extra_head='<meta name="x">',
         extra_scripts=("/* adapter */",),
     )
@@ -191,7 +191,7 @@ def test_a_policy_outside_the_model_fails_loudly() -> None:
 
 def test_every_frame_carries_exactly_one_overflow_class() -> None:
     """No rendered frame is missing a policy, and none carries two."""
-    html = render_document(three_column({"body-c": (Island(name="app"),)}))
+    html = render_document(workbench({"body-c": (Island(name="app"),)}))
     for div in find(html, "div"):
         names = div["class"].split()
         if "sb-frame" not in names:
@@ -202,5 +202,5 @@ def test_every_frame_carries_exactly_one_overflow_class() -> None:
 
 def test_the_envelope_body_carries_the_owned_document_class() -> None:
     """The renderer names the envelope it generates, so the reset has a target."""
-    html = render_document(three_column())
+    html = render_document(workbench())
     assert f'<body class="{DOCUMENT_CLASS}">' in html

@@ -1,6 +1,6 @@
 """A self-contained demo page that exercises the whole loop.
 
-Python builds a three-column page with four mount points; the runtime mounts the
+Python builds a nine-region workbench page with four mount points; the runtime mounts the
 interactive islands; clicking the counter publishes ``count:changed`` and the
 readout (a different region) reacts. The brand and status islands have no
 adapter: they are pure server-rendered content needing no JS. The ``data-pub`` /
@@ -15,7 +15,7 @@ place rather than building DOM at mount time.
 
 from switchboard_ui.assets import read_static
 from switchboard_ui.model import Document, Island, Region
-from switchboard_ui.presets import three_column
+from switchboard_ui.presets import workbench
 
 
 def demo_scripts() -> tuple[str, ...]:
@@ -24,7 +24,7 @@ def demo_scripts() -> tuple[str, ...]:
 
 
 def build_demo() -> Document:
-    """Build the demo page from the :func:`three_column` preset."""
+    """Build the demo page from the :func:`workbench` preset."""
     start = 0
     regions: dict[Region, tuple[Island, ...]] = {
         "head-c": (Island(name="brand", initial="switchboard-ui"),),
@@ -45,4 +45,4 @@ def build_demo() -> Document:
         ),
         "foot-c": (Island(name="status", initial="ready"),),
     }
-    return three_column(regions, title="switchboard-ui demo")
+    return workbench(regions, title="switchboard-ui demo")

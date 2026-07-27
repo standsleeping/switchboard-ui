@@ -11,7 +11,7 @@ from switchboard_ui import Island, wiring
 from switchboard_ui.analyze import Edge, MountPoint, unreachable_content
 from switchboard_ui.demo import build_demo
 from switchboard_ui.model import Document, Frame, Slot
-from switchboard_ui.presets import three_column
+from switchboard_ui.presets import workbench
 from switchboard_ui.render import render_document, render_frame, render_island
 
 
@@ -139,4 +139,4 @@ def test_a_flow_page_is_never_unreachable() -> None:
 
 def test_the_shipped_preset_leaves_no_content_unreachable() -> None:
     """The dogfood workbench preset passes its own diagnostic."""
-    assert not unreachable_content(three_column({"body-c": (Island(name="app"),)}))
+    assert not unreachable_content(workbench({"body-c": (Island(name="app"),)}))

@@ -2,7 +2,7 @@
 
 The documentation site is built with the library it documents: each doc's
 markdown is rendered by the in-repo subset renderer (:mod:`showcase.markdown`)
-into switchboard structure, then placed into the same ``three_column`` preset the
+into switchboard structure, then placed into the ``document_site`` preset the
 gallery uses, its columns used for what they mean:
 
 - **Nav (body-l)** — the Diátaxis tree (Tutorials / How-to / Reference /
@@ -59,7 +59,7 @@ from switchboard_ui.components import (
 )
 from switchboard_ui.html import element, escape_text
 from switchboard_ui.model import Region
-from switchboard_ui.presets import three_column
+from switchboard_ui.presets import document_site
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 DOCS_ROOT = REPO_ROOT / "docs"
@@ -189,7 +189,12 @@ def _shell(
     headings: tuple[Heading, ...],
     content: tuple[Island, ...],
 ) -> Document:
-    """Assemble the docs three-column shell around a doc's rendered content."""
+    """Assemble the docs shell, a flowing document, around a doc's rendered content.
+
+    The docs are the canonical rich static site: the article participates in page
+    scroll so the reader's position lives in the document, and the nav and TOC are
+    sticky capped rails.
+    """
     # The mode-state island is invisible wiring at the column's tail (no gap
     # mid-content, and it mounts after the head-rail toggles it syncs).
     body_c = (_breadcrumb(relpath, title), *content, mode_state())
@@ -201,7 +206,7 @@ def _shell(
         "body-r": (_toc(headings),),
         "foot-c": (Island(name="status", initial="documentation"),),
     }
-    return three_column(
+    return document_site(
         regions, title=f"{title} · switchboard-ui docs", right_width="16rem"
     )
 

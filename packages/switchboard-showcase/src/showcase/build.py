@@ -97,10 +97,10 @@ from switchboard_ui.components import (
 )
 from switchboard_ui.html import element, escape_text
 from switchboard_ui.model import Frame, Region, Slot
-from switchboard_ui.presets import three_column
+from switchboard_ui.presets import workbench
 
 # The gallery is a nav | content | inspector tool, the three columns of the
-# three_column preset used for what they mean. All three are projections of one
+# workbench preset used for what they mean. All three are projections of one
 # registry (`_gallery_specs`): the nav lists each component, the center renders it,
 # and the inspector shows its props and tokens. So a column placement is never
 # arbitrary — it is the component's row read in a different direction.
@@ -1033,7 +1033,7 @@ def build_showcase() -> Document:
     }
     # A wider right column than the default rail: the inspector holds props tables
     # and full token names, which the standard 200px inspector would clip.
-    return three_column(regions, title="switchboard-ui showcase", right_width="20rem")
+    return workbench(regions, title="switchboard-ui showcase", right_width="20rem")
 
 
 def showcase_scripts() -> tuple[str, ...]:
@@ -1519,7 +1519,7 @@ def build_theme_builder() -> Document:
         overflow="clip",
         class_="sb-rail sb-builder-header",
     )
-    # Not the three_column preset the gallery and docs use. The builder has two
+    # Not the workbench preset the gallery and docs use. The builder has two
     # width-hungry regions (the controls column and the side-by-side light/dark
     # preview), so the preset's one flex column between two narrow rails does not
     # fit. A left nav rail plus a two-pane main keeps rail-consistency with the

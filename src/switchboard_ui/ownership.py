@@ -266,6 +266,7 @@ STRUCTURAL_HOOKS: frozenset[str] = frozenset(
         "sb-root-viewport",
         "sb-rail",
         "sb-sticky-rail",
+        "sb-flow-body",
         "sb-head-row",
         "sb-body-row",
         "sb-foot-row",

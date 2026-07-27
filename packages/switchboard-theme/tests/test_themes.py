@@ -3,7 +3,7 @@
 import pytest
 
 import switchboard_theme as themes
-from switchboard_ui import render_document, three_column
+from switchboard_ui import render_document, workbench
 
 
 def test_head_returns_a_style_block_carrying_the_tokens() -> None:
@@ -34,7 +34,7 @@ def test_every_shipped_theme_resolves_to_a_style_block() -> None:
 
 def test_a_theme_enters_a_page_through_extra_head() -> None:
     """A themed page carries the theme's tokens in its head."""
-    html = render_document(three_column(title="t"), extra_head=themes.head("default"))
+    html = render_document(workbench(title="t"), extra_head=themes.head("default"))
     assert "<style>" in html
     assert "--sb-color-accent" in html
 

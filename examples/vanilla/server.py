@@ -6,7 +6,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
-from switchboard_ui import Island, render_document, three_column
+from switchboard_ui import Island, render_document, workbench
 
 ROOT = Path(__file__).resolve().parent
 DEFAULT_HOST = "127.0.0.1"
@@ -15,7 +15,7 @@ DEFAULT_PORT = 8001
 
 def build_page() -> str:
     """Render the example page."""
-    page = three_column(
+    page = workbench(
         {
             "head-c": (
                 Island(

@@ -38,7 +38,7 @@ Region = Literal[
     "foot-c",
     "foot-r",
 ]
-"""One of the nine named regions of the three-column preset."""
+"""One of the nine named regions both layout presets accept."""
 
 REGIONS: tuple[Region, ...] = get_args(Region)
 """All nine regions, in document (row-major) order."""
