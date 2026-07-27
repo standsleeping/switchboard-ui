@@ -49,6 +49,7 @@ from switchboard_ui.components import (
     modal_scripts,
     modal_styles,
     nav,
+    nav_scripts,
     nav_styles,
     popover,
     popover_scripts,
@@ -1423,6 +1424,89 @@ def test_nav_rejects_more_than_one_current_item() -> None:
             ),
             label="Site",
         )
+
+
+def test_nav_without_a_scroll_key_is_entirely_static() -> None:
+    """A nav that does not opt in ships no props and no script.
+
+    The persistence is an enhancement for shared chrome, not a tax on every nav.
+    """
+    island = _nav()
+    assert island.props == {}
+    assert "<script" not in island.initial
+
+
+def test_nav_with_a_scroll_key_emits_a_restore_script_before_the_nav() -> None:
+    """The restoring script is inline and sits before the markup it restores.
+
+    Position is the whole point, and it is counter-intuitive. Placed *after* the
+    nav the script reads more naturally and still works on a fast connection, but
+    a chunked response lets the parser finish the nav, yield, and paint the
+    finished rail at the top before reaching the next byte — measured at one
+    frame on a 2KB-chunked fixture. Starting before the nav means the script is
+    already re-applying as rows arrive, so no complete-and-unscrolled frame
+    exists to be seen.
+    """
+    island = nav(
+        sections=(NavSection(items=(NavItem(label="A", href="/a"),)),),
+        label="Site",
+        scroll_key="primary",
+    )
+    assert island.props == {"scrollKey": "primary"}
+    assert island.initial.index("<script") < island.initial.index("<nav")
+    [script] = find(island.initial, "script")
+    assert script["data-scroll-key"] == "primary"
+
+
+def test_the_restore_script_reads_a_namespaced_per_tab_key() -> None:
+    """Restoration is per-tab and namespaced, so two navs never collide.
+
+    sessionStorage rather than localStorage: the position wanted is navigation
+    continuity within one tab, not a durable preference that outlives the visit.
+    """
+    island = nav(
+        sections=(NavSection(items=(NavItem(label="A", href="/a"),)),),
+        label="Site",
+        scroll_key="primary",
+    )
+    assert "sessionStorage" in island.initial
+    assert "localStorage" not in island.initial
+    assert "sb-nav-scroll:" in island.initial
+
+
+def test_the_restore_script_survives_unavailable_storage() -> None:
+    """Storage throws in a private or blocked context; the nav must still work."""
+    island = nav(
+        sections=(NavSection(items=(NavItem(label="A", href="/a"),)),),
+        label="Site",
+        scroll_key="primary",
+    )
+    assert "try {" in island.initial and "catch" in island.initial
+
+
+def test_nav_scripts_ships_the_saving_adapter_only() -> None:
+    """The adapter saves; restoring ships inline with the markup.
+
+    Splitting them is the point: saving has no deadline, restoring has a hard one
+    (before first paint), and only the restoring half must therefore be inline.
+    """
+    (source,) = nav_scripts()
+    assert 'register("nav"' in source
+    assert "sessionStorage.setItem" in source
+    assert "scrollTop =" not in source  # the adapter never restores
+
+
+def test_the_saving_adapter_leaves_the_back_forward_cache_alone() -> None:
+    """A bfcache traversal reuses the live DOM, whose scroll the browser restored.
+
+    Writing to it on restore would fight the platform, so the adapter listens for
+    ``pagehide`` (which fires for both unload and bfcache suspension) and never
+    for ``pageshow``.
+    """
+    (source,) = nav_scripts()
+    assert "pagehide" in source
+    assert "pageshow" not in source
+    assert '"unload"' not in source
 
 
 def test_nav_styles_returns_the_structural_css() -> None:

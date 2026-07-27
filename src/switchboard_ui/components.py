@@ -1327,7 +1327,7 @@ def _nav_current_count(sections: Sequence[NavSection]) -> int:
     return sum(count(item) for section in sections for item in section.items)
 
 
-def nav(*, sections: Sequence[NavSection], label: str) -> Island:
+def nav(*, sections: Sequence[NavSection], label: str, scroll_key: str = "") -> Island:
     """A sidebar nav: sections of items to any depth, the current page marked.
 
     The canonical left-rail navigation — a static island (no adapter, no
@@ -1348,10 +1348,23 @@ def nav(*, sections: Sequence[NavSection], label: str) -> Island:
     an ancestor that opened or closed a branch would move the row the reader just
     clicked and every row after it.
 
-    ``label`` is the nav's accessible name (its ``aria-label``). Raises
-    :class:`ValueError` if ``label`` is blank, ``sections`` is empty, any item
-    has a blank label or href, or more than one item is marked current — so a
-    malformed nav fails where it is written. Validation errors name the item by
+    ``label`` is the nav's accessible name (its ``aria-label``).
+
+    ``scroll_key`` opts the nav into remembering its scroll position across
+    native page loads, for a rail that is shared chrome on every page. A forward
+    navigation builds a new document and therefore a new element scroll
+    container, which the browser starts at zero; the page's own position it
+    restores correctly, but an element's is the application's to keep. When the
+    key is non-empty the factory emits a tiny inline restoration script directly
+    after the nav — inline because the position must be applied before this
+    document's first paint, or the reader watches the rail snap — and the nav
+    adapter saves the position as it changes. The key namespaces the value, so
+    two navs on one site keep separate positions. Left empty, none of this is
+    emitted and the nav is entirely static.
+
+    Raises :class:`ValueError` if ``label`` is blank, ``sections`` is empty, any
+    item has a blank label or href, or more than one item is marked current — so
+    a malformed nav fails where it is written. Validation errors name the item by
     its path through the tree (``section 1 > item 0 > item 2``), which is stable
     under reordering and unambiguous across sections.
     """
@@ -1429,12 +1442,40 @@ def nav(*, sections: Sequence[NavSection], label: str) -> Island:
             )
         )
     initial = element("nav", {"class": "sb-nav", "aria-label": label}, blocks)
-    return Island(name="nav", initial=initial)
+    if scroll_key:
+        # Before the nav, not after it and not at the end of <body>. A document
+        # arrives in chunks, so a script placed after the markup can be reached
+        # only once the browser has already painted the finished rail at the top.
+        # Starting before it means the rail is never painted complete-and-wrong.
+        initial = (
+            element(
+                "script",
+                {"data-scroll-key": scroll_key},
+                [read_static("nav-restore.js")],
+            )
+            + initial
+        )
+    return Island(
+        name="nav",
+        props={"scrollKey": scroll_key} if scroll_key else {},
+        initial=initial,
+    )
 
 
 def nav_styles() -> str:
     """The nav structural CSS, for the host to inline in ``extra_head``."""
     return read_static("nav.css")
+
+
+def nav_scripts() -> tuple[str, ...]:
+    """The nav adapter (rail scroll persistence), for the host's ``extra_scripts``.
+
+    Only needed by a nav built with a ``scroll_key``; a nav without one carries
+    no props, so the adapter mounts and returns immediately. The restoring half
+    is not here — it ships inline with the nav markup, because it has to run
+    before first paint.
+    """
+    return (read_static("nav.js"),)
 
 
 def masthead(*, name: str, href: str = "/") -> Island:
