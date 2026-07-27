@@ -37,7 +37,7 @@ Island(name="bad", props={"x": object()})   # raises ValueError: non-JSON-serial
 
 ## `Frame`
 
-A frozen dataclass: a recursive layout node, a one-dimensional flex stack. The general layout primitive; presets such as [`three_column`](three-column.md) arrange frames into ready-made layouts.
+A frozen dataclass: a recursive layout node, a one-dimensional flex stack. The general layout primitive; presets such as [`workbench`](workbench.md) arrange frames into ready-made layouts.
 
 ```python
 from switchboard_ui import Frame, Island
@@ -78,7 +78,7 @@ Frame(direction="row", children=(
 | `child` | `Island \| Frame` | required | The content placed at this position. |
 | `basis` | `str \| None` | `None` | A CSS length or token pins the size (`flex: 0 0 <basis>`); `None` grows to share the remaining space (`flex: 1 1 0`). |
 
-The size renders as a `flex` style on the child's own element. A bare child (not wrapped) is content-sized, the browser's default flex item. `Slot` is the sizing mechanism for frames; the [`three_column`](three-column.md) preset uses it to size its rails.
+The size renders as a `flex` style on the child's own element. A bare child (not wrapped) is content-sized, the browser's default flex item. `Slot` is the sizing mechanism for frames; both presets use it to size their rails.
 
 ## `Document`
 
@@ -98,7 +98,7 @@ Document(
 | `body` | `Frame` | required | The root layout; rendered as the viewport-locked page root. |
 | `title` | `str` | `"switchboard-ui"` | The document `<title>`. |
 
-Render with [`render_document`](rendering.md#render_document). Build the document by hand, or from a preset such as [`three_column`](three-column.md).
+Render with [`render_document`](rendering.md#render_document). Build the document by hand, or from [`document_site`](document-site.md) or [`workbench`](workbench.md).
 
 ## `Region` and `REGIONS`
 
@@ -110,7 +110,7 @@ Render with [`render_document`](rendering.md#render_document). Build the documen
 "foot-l", "foot-c", "foot-r"
 ```
 
-`REGIONS` is the tuple of all nine names in document (row-major) order. They are the placement keys the [`three_column`](three-column.md) preset accepts.
+`REGIONS` is the tuple of all nine names in document (row-major) order. They are the placement keys both presets accept.
 
 ## `Json`
 

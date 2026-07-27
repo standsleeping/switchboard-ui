@@ -156,4 +156,4 @@ A few paint rules read a custom property that is not a registry token: the color
 ## See also
 
 - [Ownership](../explanation/ownership.md): the floor-and-surface split (tokens are the surface), and the `--sb-fit-*` contract as the one channel from theme to structure.
-- [The three-column preset](three-column.md): the structural CSS that consumes the fit tokens.
+- [The workbench preset](workbench.md): the structural CSS that consumes the fit tokens.

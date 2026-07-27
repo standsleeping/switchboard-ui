@@ -55,4 +55,4 @@ Five properties of the design are boundaries rather than omissions. Each is a fa
 ## See also
 
 - [Backend independence](backend-independence.md): why rendering returns a string.
-- [Layout](layout.md): the frame primitive, and the nine-region three-column layout as an example preset.
+- [Layout](layout.md): the frame primitive, explicit overflow, and the two nine-region presets.

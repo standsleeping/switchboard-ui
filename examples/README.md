@@ -1,6 +1,6 @@
 # switchboard-ui examples
 
-These examples show the same island contract implemented three ways. In every case, Python builds the page with `three_column` and renders it with `render_document`, one island publishes a count topic, and another island subscribes to it.
+These examples show the same island contract implemented three ways. In every case, Python builds the page with `workbench` and renders it with `render_document`, one island publishes a count topic, and another island subscribes to it.
 
 The package API stays the same:
 

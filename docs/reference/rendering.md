@@ -25,7 +25,7 @@ Renders a [`Document`](page-model.md#document) (a root layout frame plus a title
 | `extra_head` | `str` | `""` | Raw HTML inserted into `<head>`. |
 | `extra_scripts` | `Sequence[str]` | `()` | Script bodies inserted before `</body>`, each wrapped in its own `<script>`. |
 
-Build the `Document` by hand, or from a preset such as [`three_column`](three-column.md).
+Build the `Document` by hand, or from [`document_site`](document-site.md) or [`workbench`](workbench.md).
 
 ```python
 render_document(
@@ -75,7 +75,7 @@ render_frame(Frame(direction="row", children=(Island(name="a"), Island(name="b")
 # <div class="sb-frame sb-frame-row"><div class="sb-island" data-island="a"></div><div class="sb-island" data-island="b"></div></div>
 ```
 
-The [`three_column`](three-column.md) preset is one arrangement of frames built this way; you can build any other by hand.
+The [`document_site`](document-site.md) and [`workbench`](workbench.md) presets are two arrangements of frames built this way; you can build any other by hand.
 
 ## Escaping
 

@@ -12,8 +12,8 @@
 | Frame | A recursive layout node: a one-dimensional flex stack (`row` or `column`, the `Direction`) of islands or nested frames. The general layout primitive. |
 | Slot | A sized position in a frame: a child plus a fixed (`flex: 0 0 basis`) or flexible (`flex: 1 1 0`) main-axis size. |
 | Document | A full page: a root layout frame plus a title; renders to a complete HTML document. |
-| Preset | A function that assembles islands into a `Frame` and returns a `Document`; `three_column` is the bundled one. |
-| Region | One of the nine placement names the three-column preset accepts (`head`/`body`/`foot` by `l`/`c`/`r`). |
+| Preset | A function that assembles islands into a `Frame` and returns a `Document`; `document_site` and `workbench` are the bundled ones. |
+| Region | One of the nine placement names both presets accept (`head`/`body`/`foot` by `l`/`c`/`r`). |
 | Ownership | The rule that every spatial or visual decision has exactly one owning layer, so a theme is replaceable and a visual bug traces to one layer. See [Ownership](../explanation/ownership.md). |
 | Seam | The border line between two tiled regions; drawn exactly once, by a single owner. See [Seams](../explanation/seams.md). |
 | Geometry contract | The `--sb-fit-*` obligations: a themed component *requires* (intrinsic geometry projected from its causes), structure *grants* (a slot floored at the requirement). See [Ownership](../explanation/ownership.md). |

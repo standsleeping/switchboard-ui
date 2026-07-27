@@ -24,25 +24,25 @@ uv sync --all-groups
 
 ## 2. Render an empty page
 
-The simplest page comes from the `three_column` preset, which places islands into a nine-region layout and returns a `Document`. Rendering it produces a complete HTML document as a string.
+Pages come from a preset, chosen by what the page *is*. `workbench` builds a viewport-locked shell whose regions scroll independently, for a tool or dashboard; `document_site` builds a flowing page that scrolls as a whole, for an article or documentation. This tutorial builds a small interactive tool, so it uses `workbench`. Either one places islands into the same nine-region layout and returns a `Document`, and rendering it produces a complete HTML document as a string.
 
 ```python
-from switchboard_ui import render_document, three_column
+from switchboard_ui import render_document, workbench
 
-html = render_document(three_column(title="My first page"))
+html = render_document(workbench(title="My first page"))
 print(html)
 ```
 
-The output begins with `<!doctype html>` and contains the three-column structure. The cells are empty for now, and an empty cell collapses until an island fills it.
+The output begins with `<!doctype html>` and contains the nine-region structure. The cells are empty for now, and an empty cell collapses until an island fills it.
 
 ## 3. Place an island
 
 An `Island` is a descriptor: a plain data value naming the adapter that will fill it. Put one in the center column.
 
 ```python
-from switchboard_ui import Island, render_document, three_column
+from switchboard_ui import Island, render_document, workbench
 
-page = three_column(
+page = workbench(
     {
         "body-c": (
             Island(
@@ -70,7 +70,7 @@ The renderer turns this island into a `<div data-island="counter" data-props='{"
 The counter will announce a message; a readout will listen for it. You declare those topics on the descriptors, as data.
 
 ```python
-page = three_column(
+page = workbench(
     {
         "body-c": (
             Island(

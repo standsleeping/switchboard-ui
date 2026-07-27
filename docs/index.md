@@ -31,7 +31,8 @@ Information-oriented description of every surface.
 | [Page model](reference/page-model.md) | `Island`, `Frame`, `Slot`, `Document`, `Region`, `REGIONS`. |
 | [Components](reference/components.md) | The island component set: controls (segmented, slider, popover, modal, color input and picker) and surfaces (table, code block, breadcrumb, collapsible). |
 | [Rendering](reference/rendering.md) | `render_document`, `render_frame`, `render_island`, `RuntimeMode`. |
-| [The three-column preset](reference/three-column.md) | The nine-region preset built on `Frame`, and the structural layout CSS. |
+| [The document-site preset](reference/document-site.md) | The flowing nine-region preset: the page scrolls, the rails stick. |
+| [The workbench preset](reference/workbench.md) | The viewport-locked nine-region preset: the regions scroll, the page does not. |
 | [Theme tokens](reference/tokens.md) | Every `--sb-*` token: color, type, space, radius, border, shadow, the `--sb-fit-*` contract, and density. |
 | [The browser runtime](reference/browser-runtime.md) | `window.switchboard`, the bus, the registry, the mount loop. |
 | [The wiring analyzer](reference/analyzer.md) | `wiring`: the declared pub/sub graph recovered from rendered HTML. |
@@ -47,7 +48,7 @@ Understanding-oriented background on why the package is shaped the way it is.
 | [Design philosophy](explanation/philosophy.md) | The two founding commitments: align with the browser, and enumerate what leaks. |
 | [Architecture](explanation/architecture.md) | Islands, the event bus, and the one-descriptor-three-consumers spine. |
 | [Backend independence](explanation/backend-independence.md) | Why the output is a string, and what that buys. |
-| [Layout](explanation/layout.md) | The frame primitive, and the three-column layout as an example preset. |
+| [Layout](explanation/layout.md) | The frame primitive, explicit overflow, and the two page shapes. |
 | [Ownership](explanation/ownership.md) | Single ownership across the layers: which layer owns which decision, why that makes a theme replaceable, and how a visual bug traces to one layer. |
 | [Seams](explanation/seams.md) | How borders between tiled regions are drawn so each line has a single owner. |
 

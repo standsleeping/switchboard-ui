@@ -1,6 +1,6 @@
 # Seams
 
-A *seam* is the border line between two tiled regions of a layout. The three-column preset tiles the page into nine region cells (`head-l` through `foot-r`); the lines between those cells, and the frame around them, are seams. This page explains how the project draws them so that every line is crisp, uniform, and drawn exactly once.
+A *seam* is the border line between two tiled regions of a layout. Both nine-region presets tile the page into region cells (`head-l` through `foot-r`); the lines between those cells, and the frame around them, are seams. This page explains how the project draws them so that every line is crisp, uniform, and drawn exactly once.
 
 ## One line, one owner
 
@@ -12,7 +12,7 @@ Single ownership is not specific to borders. It is the organizing rule across ev
 
 ## The layout is nested flex, not one grid
 
-`three_column` builds nested flex frames: an outer column of three rows, each a row of three cells (see [Layout](layout.md) and [the three-column preset](../reference/three-column.md)). The nine cells never share a single parent, so there is no one grid container whose `gap` could paint every seam at once. Ownership is therefore assigned per edge: each seam is handed to one specific drawer. This page is the accepted cost of building the tiling from the recursive frame rather than one grid; [Layout](layout.md#why-nested-flex-not-grid) explains that choice.
+Both presets build nested flex frames: an outer column of three rows, each a row of three cells (see [Layout](layout.md), [the document-site preset](../reference/document-site.md), and [the workbench preset](../reference/workbench.md)). The nine cells never share a single parent, so there is no one grid container whose `gap` could paint every seam at once. Ownership is therefore assigned per edge: each seam is handed to one specific drawer. This page is the accepted cost of building the tiling from the recursive frame rather than one grid; [Layout](layout.md#why-nested-flex-not-grid) explains that choice.
 
 ## Three owners
 

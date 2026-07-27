@@ -10,7 +10,7 @@ npm run dev
 
 Open the URL printed by Vite, normally <http://127.0.0.1:5173>.
 
-The `predev` and `prebuild` scripts run `build.py`, which writes `index.html` from a `three_column` document. Vite then resolves `src/main.jsx` and bundles React.
+The `predev` and `prebuild` scripts run `build.py`, which writes `index.html` from a `workbench` document. Vite then resolves `src/main.jsx` and bundles React.
 
 Build and preview the production output:
 

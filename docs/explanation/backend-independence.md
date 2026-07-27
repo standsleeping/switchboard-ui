@@ -37,4 +37,4 @@ Either way the package stays pure. Only the application is coupled to a backend,
 
 ## The package documents itself
 
-Because rendering needs no host, switchboard-ui can render its own sandbox, storybook, and guides to static HTML and host the result anywhere. It demonstrates its own behavior with its own output. The bundled demo is the first instance of this: a page built by the same `three_column` and `render_document` an application would use, rendered to a self-contained file by the CLI. See [Render the demo and docs](../how-to/render-demo-and-docs.md).
+Because rendering needs no host, switchboard-ui can render its own sandbox, storybook, and guides to static HTML and host the result anywhere. It demonstrates its own behavior with its own output. The bundled demo is the first instance of this: a page built by the same `workbench` and `render_document` an application would use, rendered to a self-contained file by the CLI. See [Render the demo and docs](../how-to/render-demo-and-docs.md).

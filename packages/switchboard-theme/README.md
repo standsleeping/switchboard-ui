@@ -9,11 +9,11 @@ dependency is one-directional: `switchboard-theme` depends on `switchboard-ui`;
 the mechanism never depends on the theme.
 
 ```python
-from switchboard_ui import render_document, three_column
+from switchboard_ui import render_document, workbench
 import switchboard_theme
 
 html = render_document(
-    three_column(title="hello"),
+    workbench(title="hello"),
     extra_head=switchboard_theme.head("default"),
 )
 ```

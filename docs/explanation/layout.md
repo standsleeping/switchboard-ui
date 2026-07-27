@@ -1,6 +1,6 @@
 # Layout
 
-Layout is a recursive value. The package provides one general primitive, the `Frame`, and a preset that arranges it into a ready-made page. This page explains the primitive first, then the preset. For the preset's structure, see [The three-column preset](../reference/three-column.md).
+Layout is a recursive value. The package provides one general primitive, the `Frame`, and two presets that arrange it into ready-made pages. This page explains the primitive first, then the presets. For their structure, see [The document-site preset](../reference/document-site.md) and [The workbench preset](../reference/workbench.md).
 
 ## Layout is a recursive value
 
@@ -12,7 +12,7 @@ One mechanism (a flex stack) at every level means there is no separate page-leve
 
 A preset is an ordinary function that assembles islands into a frame tree and returns a `Document`. It owns no rendering path and no type of its own; it is sugar over the primitive, so anything a preset builds you could build by hand.
 
-`three_column` is the preset the demo uses: a column of three rows (content-driven head and foot rails around a flexible middle), each a row of three cells (fixed-width sides around a flexible center). Islands are placed by region name, and an omitted region collapses. It is built from `Frame` and `Slot` like any other layout; the side widths are plain CSS lengths the preset owns, while the rail floor comes from the theme's component-geometry contract.
+`workbench` is the preset the demo uses: a column of three rows (content-driven head and foot rails around a flexible middle), each a row of three cells (fixed-width sides around a flexible center). Islands are placed by region name, and an omitted region collapses. It is built from `Frame` and `Slot` like any other layout; the side widths are plain CSS lengths the preset owns, while the rail floor comes from the theme's component-geometry contract.
 
 ## Why nested flex, not grid
 
