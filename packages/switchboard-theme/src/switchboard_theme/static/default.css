@@ -712,6 +712,12 @@ button:focus-visible {
   gap: var(--sb-space-2xs);
   padding: var(--sb-space-md);
 }
+.sb-nav-list {
+  gap: var(--sb-space-2xs);
+}
+.sb-nav-node {
+  gap: var(--sb-space-2xs);
+}
 .sb-nav-group {
   color: var(--sb-color-faint);
   font-weight: var(--sb-font-weight-bold);
@@ -721,17 +727,22 @@ button:focus-visible {
   border-inline-start: var(--sb-border-width-accent) solid transparent;
   padding: var(--sb-space-xs);
 }
-.sb-nav-item + .sb-nav-group,
-.sb-nav-sublist + .sb-nav-group {
+.sb-nav-list + .sb-nav-group {
   border-block-start: var(--sb-border-width-thin) solid var(--sb-color-border);
 }
 .sb-nav-sublist {
-  gap: var(--sb-space-2xs);
   padding-inline-start: var(--sb-space-lg);
 }
 .sb-nav-sublist .sb-nav-item {
   font-size: var(--sb-font-size-sm);
   padding: var(--sb-space-xs);
+}
+/* The path to the current page, marked in the channel every row already
+ * reserves: an ancestor tints its edge with the plain border color, the current
+ * page recolors the same edge to the accent. Paint only — no branch opens, no
+ * row re-indents, and nothing after the marked row moves. */
+.sb-nav-node[data-current-ancestor] > .sb-nav-item {
+  border-inline-start-color: var(--sb-color-border);
 }
 .sb-nav-item {
   color: var(--sb-color-fg);
