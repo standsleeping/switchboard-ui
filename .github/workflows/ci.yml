@@ -42,3 +42,31 @@ jobs:
       - name: Type check (ty, non-blocking)
         run: just typecheck-ty
         continue-on-error: true
+
+  # Separate from `check` so a browser-install failure reads as a browser
+  # problem rather than a test failure, and so the fast gate stays green and
+  # legible while this job is doing its slower work.
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install just
+        run: uv tool install rust-just
+
+      - name: Sync dependencies (locked)
+        run: uv sync --locked --all-groups --all-packages
+
+      # One engine. The cases here test scroll restoration timing, sticky
+      # geometry, and first-paint behavior, none of which needs a matrix to be
+      # worth guarding; cross-engine differences are covered by the manual pass.
+      - name: Install Chromium
+        run: just browser-install
+
+      - name: Run browser regression tests
+        run: just browser-test
