@@ -139,19 +139,14 @@ def inline_styles(html: str) -> list[str]:
 # --- structural ownership policy ---------------------------------------------
 
 # The only properties the structural layer may declare: those that determine size,
-# position, and flow. `padding` is excluded outright — a box's inset is a density
-# decision the theme owns. `margin` is present but value-guarded: the property is
-# geometry, and the reason it was excluded was delegation (rhythm is the parent's
-# `gap`), not category. A zero reset on the generated envelope is the removal of a
-# user-agent default rather than a use of the spacing mechanism, so the guard
-# rejects any non-zero margin instead of the property name — the rule stated
-# rather than approximated. Appearance (color, background, border, font, shadow)
-# is absent: a structural sheet that names one fails the guard.
+# position, and flow. Box-spacing is absent — rhythm between siblings is the
+# parent's `gap` and a box's inset is a density decision the theme owns — and so
+# is appearance (color, background, border, font, shadow): a structural sheet
+# that names one fails the guard. The narrow exception is the reset layer below,
+# which is guarded by value rather than by name.
 LAYOUT_PROPERTIES: frozenset[str] = frozenset(
     {
         "display",
-        # the one value-guarded box-spacing property (see MARGIN_RESET_ONLY)
-        "margin",
         # flexbox (sibling distribution lives here, via `gap`)
         "flex",
         "flex-direction",
@@ -232,6 +227,55 @@ LAYOUT_PROPERTIES: frozenset[str] = frozenset(
         "position-try-fallbacks",
     }
 )
+
+UA_RESETS: dict[str, frozenset[str]] = {
+    "margin": frozenset({"0", "0px"}),
+    "padding": frozenset({"0", "0px"}),
+    "list-style": frozenset({"none"}),
+}
+"""The reset layer: user-agent defaults a structural sheet may neutralize, and
+the only values that count as neutralizing them.
+
+The delegation rules the structural layer obeys — rhythm is the parent's `gap`,
+insets are the theme's, appearance is never structure's — all presuppose a
+baseline with no user-agent presentation in it. Removing that presentation is not
+a *use* of the mechanism those rules delegate; a generated ``<body>`` with
+``margin: 0`` is not doing spacing, and a generated ``<ul>`` with ``padding: 0``
+and ``list-style: none`` is not insetting or painting. It is clearing the ground
+those rules describe.
+
+Which is why the entry is a property *and* its permitted values. Guarding the
+name alone would either ban the reset (forcing an exception per element) or admit
+the whole mechanism (``padding: var(--sb-space-md)`` would sail through). Guarding
+the value states the rule exactly, and it generalizes: a future generated element
+with its own user-agent default gets a row here rather than a special case.
+
+The package may only reset elements it generated and named. It never reaches for
+a bare ``ul`` or ``body`` selector in the host's document.
+"""
+
+
+def is_ua_reset(prop: str, value: str) -> bool:
+    """Whether ``prop: value`` neutralizes a user-agent default rather than using it."""
+    permitted = UA_RESETS.get(prop)
+    return permitted is not None and value.strip().lower() in permitted
+
+
+def non_structural_declarations(css: str) -> list[tuple[str, str, str]]:
+    """Every ``(selector, property, value)`` a structural sheet may not declare.
+
+    A declaration is admissible if its property is a geometry property, or if it
+    is a permitted reset of a user-agent default. Everything else is a breach:
+    paint in a structural sheet, or box-spacing used as spacing.
+    """
+    return [
+        (selector.strip(), name, value)
+        for selector, body in rules(css)
+        for name, value in declarations(body)
+        if name not in LAYOUT_PROPERTIES
+        if not is_ua_reset(name, value)
+    ]
+
 
 CONTRACT_TOKEN_PREFIX = "--sb-fit-"
 """The one token family structure may consume: the Component Geometry Contract

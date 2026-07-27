@@ -25,43 +25,39 @@ from switchboard_ui import model, ownership
 from switchboard_ui.assets import read_static
 
 
-def test_layout_css_declares_only_layout_properties() -> None:
-    """Every property in layout.css is a geometry property, never appearance."""
-    declared = ownership.declared_properties(read_static("layout.css"))
-    assert declared, "no properties parsed; the regex or file path is wrong"
-    non_layout = declared - ownership.LAYOUT_PROPERTIES
-    assert not non_layout, (
-        f"layout.css declares non-layout properties: {sorted(non_layout)}"
-    )
+def test_layout_css_declares_only_geometry_and_permitted_resets() -> None:
+    """Every declaration is geometry, or a permitted reset of a user-agent default.
+
+    The guard reads values, not just property names. Guarding names alone would
+    either ban the reset layer outright (forcing a documented exception per
+    generated element) or admit a whole mechanism the layer delegates: with a
+    bare `padding` allowance, `padding: var(--sb-space-md)` would sail through.
+    Reading the value states the rule exactly — clear a user-agent default, never
+    use box-spacing for spacing or name a paint property.
+    """
+    css = read_static("layout.css")
+    assert ownership.declared_properties(css), "nothing parsed; the path is wrong"
+    offenders = ownership.non_structural_declarations(css)
+    assert not offenders, f"layout.css declares non-structural values: {offenders}"
 
 
-def test_layout_css_bans_padding_outright() -> None:
-    """A box's inset is a density decision the theme owns, never structure's."""
-    declared = ownership.declared_properties(read_static("layout.css"))
-    padding = {p for p in declared if p.split("-", 1)[0] == "padding"}
-    assert not padding, f"layout.css uses banned padding: {sorted(padding)}"
+def test_box_spacing_in_layout_css_is_only_ever_a_zero_reset() -> None:
+    """Margin and padding may zero a user-agent default and nothing else.
 
-
-def test_layout_css_margin_is_only_ever_a_zero_reset() -> None:
-    """Margin may zero a user-agent default; it may never carry a spacing value.
-
-    The rule bans `margin` as a *spacing mechanism*, because rhythm between
-    siblings belongs to the parent's `gap`. Removing the user agent's default
-    body inset is not a use of that mechanism; it is the reset layer the rule
-    presupposes. So the guard reads values rather than property names: any
-    non-zero margin fails, which states the rule instead of approximating it and
-    generalizes to a future zero reset without a second exception.
+    Rhythm between siblings is the parent's `gap`; a box's inset is the theme's.
+    Neutralizing the user agent's own inset is neither of those, so it is
+    permitted at exactly the value that neutralizes it.
     """
     offenders = [
-        (selector.strip(), value)
+        (selector.strip(), name, value)
         for selector, body in ownership.rules(read_static("layout.css"))
         for name, value in ownership.declarations(body)
-        if name.split("-", 1)[0] == "margin"
-        if value.strip() not in {"0", "0px"}
+        if name.split("-", 1)[0] in {"margin", "padding"}
+        if not ownership.is_ua_reset(name, value)
     ]
     assert not offenders, (
-        f"layout.css carries non-zero margin {offenders}; structure may zero a "
-        "user-agent default, never use margin for spacing (rhythm is `gap`)"
+        f"layout.css carries non-zero box-spacing {offenders}; structure may zero "
+        "a user-agent default, never use it for spacing (rhythm is `gap`)"
     )
 
 
