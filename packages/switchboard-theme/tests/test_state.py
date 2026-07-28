@@ -3,10 +3,9 @@
 Philosophy §9 / companion §1: state changes must not unexpectedly alter layout
 geometry. A hover, focus, selected, or disabled rule in the theme may change paint
 (color, background, outline) freely, but it may not declare a property that changes
-the box's size or position. A second guard keeps the focus ring inside the box:
-now that every frame clips and the body cells scroll, an
-outward ring would be clipped, so the offset must be non-positive (or a reserved
-paint outset). These are theme guards, siblings to ``test_theme_css.py``.
+the box's size or position. A second guard keeps the focus ring inside the box: a
+frame that declares ``overflow: clip`` or ``auto`` would clip an outward ring, so
+the offset must be non-positive (or a reserved paint outset). These are theme guards, siblings to ``test_theme_css.py``.
 
 The CSS reader is the shared :mod:`switchboard_ui.ownership` engine; the
 state-markers and the geometry set are the theme's paint-side policy in

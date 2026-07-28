@@ -55,10 +55,11 @@ created, never the host's ``body`` as such.
 def _render_island(island: Island, *, style: str | None = None) -> str:
     """Render an island mount-point ``<div>``, optionally with a flex style.
 
-    The island is a bare mount point: the surrounding frames size it and the
-    enclosing frame clips. Overflow is owned by the structural frame policy (a
-    region opts into ``sb-scroll``) and, where a component scrolls its own
-    content, by that component's structural CSS — never by the mount point itself.
+    The island is a bare mount point: the surrounding frames size it, and what
+    happens to content that exceeds them is the enclosing frame's declared
+    ``overflow``. Overflow is owned by that frame's own value and, where a
+    component scrolls its own content, by that component's structural CSS —
+    never by the mount point itself.
     """
     attrs: dict[str, str | None] = {
         "class": classes("sb-island", island.class_),
