@@ -24,6 +24,13 @@ def _paragraphs(count: int, marker: str = "para") -> Island:
     return Island(name="article", initial=body)
 
 
+def font_bytes() -> bytes:
+    """The packaged typeface, for a fixture to serve at whatever speed it likes."""
+    from switchboard_theme import api as themes
+
+    return themes.font_bytes()
+
+
 def _nav_island(current: int, count: int, scroll_key: str) -> Island:
     """A rail long enough to scroll, with one item marked current."""
     return nav(
@@ -130,3 +137,33 @@ def site_routes(*, pages: int = 40, nav_items: int = 40) -> dict[str, str]:
         f"/page-{i}": document_page(current=i, nav_items=nav_items)
         for i in range(pages)
     } | {"/": document_page(current=0, nav_items=nav_items)}
+
+
+def font_page(*, font_src: str, paragraphs: int = 12) -> str:
+    """A flowing document whose text is set in the packaged face.
+
+    Uses the theme's own ``font_head``, so the case exercises the shipped
+    ``@font-face`` — its preload hint and its ``font-display`` value — rather
+    than a copy that could drift away from it.
+    """
+    from switchboard_theme import api as themes
+
+    # A non-wrapping ruler. Paragraph height is far too coarse to detect a swap:
+    # the packaged face and the fallback differ by a fraction of a percent in
+    # advance width, which rarely changes a line count and so rarely changes a
+    # height. An unwrapped run of text turns that fraction into pixels.
+    ruler = Island(
+        name="ruler",
+        initial=(
+            '<span id="font-ruler" style="white-space:pre">'
+            "The quick brown fox jumps over the lazy dog 0123456789"
+            "</span>"
+        ),
+    )
+    page = document_site(
+        {"body-c": (ruler, _paragraphs(paragraphs, marker="font"))},
+        title="Font",
+    )
+    return render_document(
+        page, extra_head=themes.head("default") + themes.font_head(font_src)
+    )

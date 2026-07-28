@@ -18,6 +18,7 @@ before it reaches the end of the body, which is what a real connection does.
 import threading
 import time
 from collections.abc import Callable, Iterator
+from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
@@ -25,15 +26,54 @@ import pytest
 Routes = dict[str, str]
 
 
-def _handler(routes: Routes, chunk_delay: float, chunk_size: int) -> type:
+@dataclass(frozen=True)
+class Asset:
+    """A non-HTML response: its bytes, its type, and how long to stall first.
+
+    ``delay`` is what makes a font test possible. ``font-display: optional``
+    gives a face a short block period and refuses to swap after it, so the
+    behaviour worth testing only appears when the face arrives *late*. Over
+    localhost it never does.
+    """
+
+    payload: bytes
+    content_type: str
+    delay: float = 0.0
+    cacheable: bool = True
+
+
+Assets = dict[str, Asset]
+
+
+def _handler(
+    routes: Routes, assets: Assets, chunk_delay: float, chunk_size: int
+) -> type:
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
 
         def log_message(self, *args: object) -> None:
             """Silence the per-request stderr logging."""
 
+        def _send(self, payload: bytes, content_type: str, *, store: bool) -> None:
+            self.send_response(200)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(payload)))
+            self.send_header("Cache-Control", "max-age=60" if store else "no-store")
+            self.end_headers()
+
         def do_GET(self) -> None:
             path = self.path.split("?", 1)[0]
+
+            asset = assets.get(path)
+            if asset is not None:
+                # Stall before the headers, the way a slow origin does, so the
+                # browser is genuinely waiting rather than parsing a slow body.
+                if asset.delay > 0:
+                    time.sleep(asset.delay)
+                self._send(asset.payload, asset.content_type, store=asset.cacheable)
+                self.wfile.write(asset.payload)
+                return
+
             body = routes.get(path)
             if body is None:
                 self.send_response(404)
@@ -41,13 +81,9 @@ def _handler(routes: Routes, chunk_delay: float, chunk_size: int) -> type:
                 self.end_headers()
                 return
             payload = body.encode("utf-8")
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Content-Length", str(len(payload)))
             # A fresh document per navigation: a cached one would let the browser
             # reuse state the test is trying to observe being rebuilt.
-            self.send_header("Cache-Control", "no-store")
-            self.end_headers()
+            self._send(payload, "text/html; charset=utf-8", store=False)
             if chunk_delay <= 0:
                 self.wfile.write(payload)
                 return
@@ -62,9 +98,16 @@ def _handler(routes: Routes, chunk_delay: float, chunk_size: int) -> type:
 class Site:
     """A running fixture server; ``url(path)`` addresses it."""
 
-    def __init__(self, routes: Routes, chunk_delay: float, chunk_size: int) -> None:
+    def __init__(
+        self,
+        routes: Routes,
+        chunk_delay: float,
+        chunk_size: int,
+        assets: Assets | None = None,
+    ) -> None:
         self._server = ThreadingHTTPServer(
-            ("127.0.0.1", 0), _handler(routes, chunk_delay, chunk_size)
+            ("127.0.0.1", 0),
+            _handler(routes, assets or {}, chunk_delay, chunk_size),
         )
         self.port = self._server.server_address[1]
         self._thread = threading.Thread(target=self._server.serve_forever, daemon=True)
@@ -80,12 +123,12 @@ class Site:
 
 
 @pytest.fixture
-def site() -> Iterator[Callable[[Routes], Site]]:
+def site() -> Iterator[Callable[..., Site]]:
     """Serve a route map in one flush (the fast path, for everything but timing)."""
     started: list[Site] = []
 
-    def serve(routes: Routes) -> Site:
-        running = Site(routes, chunk_delay=0.0, chunk_size=0)
+    def serve(routes: Routes, assets: Assets | None = None) -> Site:
+        running = Site(routes, chunk_delay=0.0, chunk_size=0, assets=assets)
         started.append(running)
         return running
 
@@ -95,7 +138,7 @@ def site() -> Iterator[Callable[[Routes], Site]]:
 
 
 @pytest.fixture
-def slow_site() -> Iterator[Callable[[Routes], Site]]:
+def slow_site() -> Iterator[Callable[..., Site]]:
     """Serve a route map in small delayed chunks, the way a real connection does.
 
     Without this, the parser reaches the end of the body in the same task that
@@ -106,8 +149,8 @@ def slow_site() -> Iterator[Callable[[Routes], Site]]:
     """
     started: list[Site] = []
 
-    def serve(routes: Routes) -> Site:
-        running = Site(routes, chunk_delay=0.02, chunk_size=2048)
+    def serve(routes: Routes, assets: Assets | None = None) -> Site:
+        running = Site(routes, chunk_delay=0.02, chunk_size=2048, assets=assets)
         started.append(running)
         return running
 
