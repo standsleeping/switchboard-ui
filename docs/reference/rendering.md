@@ -15,7 +15,7 @@ def render_document(
 ) -> str
 ```
 
-Renders a [`Document`](page-model.md#document) (a root layout frame plus a title) to a complete `<!doctype html>` page. The body frame becomes the viewport-locked page root. The document always includes a UTF-8 charset, a responsive viewport, and the escaped title.
+Renders a [`Document`](page-model.md#document) to a complete `<!doctype html>` page. The body frame becomes the page root, rendered under the document's declared [`RootMode`](page-model.md#rootmode). The `<body>` carries `sb-document`, the envelope class the package owns so it can clear the user agent's default body margin without reaching for a bare `body` selector in the host's document. The head always includes a UTF-8 charset, a responsive viewport, and the escaped title.
 
 | Parameter | Type | Default | Effect |
 |---|---|---|---|
