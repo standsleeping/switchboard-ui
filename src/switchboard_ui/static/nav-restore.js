@@ -1,4 +1,5 @@
-/* Pre-paint restoration of a shared nav rail's scroll position.
+/* Pre-paint placement of a shared nav rail: restore where the reader was, or on
+ * a first visit reveal where they are.
  *
  * Emitted inline by `nav(scroll_key=...)`, immediately *before* the nav markup.
  * It is inline and parser-blocking on purpose: the position has to be applied
@@ -13,15 +14,28 @@
  * before, the script starts running while the rail is still empty, so there is
  * no complete-and-wrong frame to see.
  *
- * The cost of being early is that the rail has no scroll range yet: writing 445
- * to an empty container clamps to 0. So it re-applies on every animation frame
- * until the target sticks or the document finishes loading. Each write lands on
- * whatever range exists at that moment, so the rail scrolls down as its content
- * arrives and is never painted complete-but-unscrolled.
+ * The cost of being early is that nothing it needs exists yet: the rail has no
+ * scroll range, and the current item has not been parsed. So it re-runs on every
+ * animation frame until its work sticks or the document finishes loading. Each
+ * pass lands on whatever exists at that moment, so the rail settles into place
+ * as its content arrives rather than being placed once and left wrong.
+ *
+ * Two jobs, and which one applies is decided by whether there is a stored offset:
+ *
+ *   Restore. A stored offset means the reader has been navigating this site and
+ *   had the rail somewhere. Put it back, exactly.
+ *
+ *   Reveal. No stored offset means a first visit — a deep link, a search result,
+ *   a shared URL. The rail opens at the top, and on a long rail the page the
+ *   reader actually landed on can be far below the fold, so the nav says nothing
+ *   about where they are. Scroll by the *smallest* amount that brings the
+ *   current item into view. Minimal on purpose: anything more (centring it, say)
+ *   moves rows the reader has no reason to expect to move, and an item already
+ *   on screen is left exactly where it is.
  *
  * It stops the moment the reader takes over. A reader who scrolls during load
- * has said where they want to be, and continuing to re-apply a stored offset
- * would drag them back — the same class of defect as the reset it fixes.
+ * has said where they want to be, and continuing to place the rail would drag
+ * them back — the same class of defect as the reset this fixes.
  *
  * Everything is guarded: storage throws in a private or blocked context, and a
  * failure here must cost the enhancement and nothing else. The links are real
@@ -32,17 +46,17 @@
   var key = script.getAttribute("data-scroll-key");
   if (!key) return;
 
-  var stored;
+  var stored = null;
   try {
     stored = sessionStorage.getItem("sb-nav-scroll:" + key);
   } catch (e) {
-    return;
+    /* storage unavailable: fall through to revealing the current item */
   }
-  if (stored === null) return;
 
-  var target = parseFloat(stored);
-  // Reject NaN, Infinity, and negatives: a corrupted value must move nothing.
-  if (!isFinite(target) || target <= 0) return;
+  var target = stored === null ? NaN : parseFloat(stored);
+  // Reject NaN, Infinity, and negatives: a corrupted value must not be trusted
+  // as a position. Revealing the current item is still worth doing.
+  var restoring = isFinite(target) && target > 0;
 
   var owner = script.parentElement;
   while (owner && owner !== document.documentElement) {
@@ -52,9 +66,9 @@
   }
   if (!owner || owner === document.documentElement) return;
 
-  // While restoration is in flight the rail's position is this script's, not
-  // the reader's. The saving adapter watches for this marker and holds off, so
-  // a navigation that happens mid-restore cannot persist an offset the reader
+  // While this is in flight the rail's position is this script's, not the
+  // reader's. The saving adapter watches for this marker and holds off, so a
+  // navigation that happens mid-placement cannot persist an offset the reader
   // never chose — which would silently overwrite the very position being
   // restored, and lose their place for good.
   owner.setAttribute("data-sb-restoring", "");
@@ -73,11 +87,12 @@
 
   // A frame budget, so a pathological page cannot leave this looping forever.
   var frames = 300;
+  // The last position this script wrote, so it can tell its own work from
+  // someone else's. Null until it has written anything.
+  var placed = null;
 
-  function apply() {
-    if (done) return;
+  function restore() {
     owner.scrollTop = target;
-
     // The furthest the target can reach in the range that exists right now. A
     // rail still filling in has less range than it will end up with, so landing
     // short is expected and is not a reason to give up.
@@ -85,7 +100,56 @@
     var reachable = range > 0 ? Math.min(target, range) : 0;
     // Sub-pixel tolerance: a fractional device pixel ratio makes scrollTop land
     // a hair off an integer target, which is settled for every purpose here.
-    var settled = Math.abs(owner.scrollTop - reachable) < 1;
+    return Math.abs(owner.scrollTop - reachable) < 1;
+  }
+
+  function reveal() {
+    var current = owner.querySelector('[aria-current="page"]');
+    // Not parsed yet. Not settled either, so the loop keeps looking.
+    if (!current) return false;
+    var view = owner.getBoundingClientRect();
+    var item = current.getBoundingClientRect();
+    // The nearest edge, and only that far: scroll up if the item sits above the
+    // visible band, down if it sits below, and not at all if it is already in.
+    if (item.top < view.top) {
+      owner.scrollTop += item.top - view.top;
+    } else if (item.bottom > view.bottom) {
+      owner.scrollTop += item.bottom - view.bottom;
+    }
+    // Settled only if it actually landed in view. Finding the item is not
+    // enough: a rail still filling in may not yet have the range to reach it,
+    // and the write clamps short. Re-measured rather than assumed.
+    item = current.getBoundingClientRect();
+    return item.top >= view.top - 1 && item.bottom <= view.bottom + 1;
+  }
+
+  function apply() {
+    if (done) return;
+
+    if (!restoring) {
+      // Revealing is a courtesy for a rail nobody has touched. If the position
+      // changed between frames and this script did not change it, something
+      // else did — the reader, or the host page — and it wins. The wheel and
+      // key listeners catch a reader's intent, but not every way a rail can be
+      // moved fires one, so the position itself is the reliable signal.
+      if (placed !== null && Math.abs(owner.scrollTop - placed) > 1) {
+        stop();
+        return;
+      }
+      // Revealing finishes the moment the item is in view. It must *not* wait
+      // for the document, and must not re-run once satisfied: unlike a stored
+      // offset, this target does not move as the rail grows (rows arrive below
+      // it), so a second pass has nothing to correct and everything to break —
+      // it would undo scrolling that happened in between, and hold the marker
+      // that keeps the saving adapter quiet for the whole load.
+      if (reveal()) stop();
+      else if (--frames <= 0) stop();
+      else {
+        placed = owner.scrollTop;
+        requestAnimationFrame(apply);
+      }
+      return;
+    }
 
     // Stop only once the write has actually taken *and* the document has
     // finished growing. Stopping on readyState alone loses a race that a fast
@@ -93,7 +157,7 @@
     // "complete" before the first frame callback runs, so the single write
     // lands on a container that has not been laid out yet, clamps to zero, and
     // the rail stays at the top for good.
-    if (settled && document.readyState === "complete") {
+    if (restore() && document.readyState === "complete") {
       stop();
       return;
     }

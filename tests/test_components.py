@@ -1474,6 +1474,23 @@ def test_the_restore_script_reads_a_namespaced_per_tab_key() -> None:
     assert "sb-nav-scroll:" in island.initial
 
 
+def test_the_restore_script_reveals_the_current_item_without_a_stored_offset() -> None:
+    """A first visit places the rail by the current item, not by a stored value.
+
+    A deep link, a search result, or a shared URL arrives with nothing stored, so
+    the rail opens at the top; on a long rail that hides which page the reader is
+    on. The script therefore carries both jobs, and picks between them on whether
+    a usable offset exists.
+    """
+    island = nav(
+        sections=(NavSection(items=(NavItem(label="A", href="/a"),)),),
+        label="Site",
+        scroll_key="primary",
+    )
+    assert 'aria-current="page"' in island.initial  # the reveal target selector
+    assert "getBoundingClientRect" in island.initial  # the nearest calculation
+
+
 def test_the_restore_script_survives_unavailable_storage() -> None:
     """Storage throws in a private or blocked context; the nav must still work."""
     island = nav(

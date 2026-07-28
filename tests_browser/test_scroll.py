@@ -167,13 +167,108 @@ def test_the_complete_rail_is_never_painted_at_zero(
     assert not short, f"a partly-built rail wasted the range it had: {short}"
 
 
-def test_a_direct_load_with_no_stored_offset_leaves_the_rail_at_zero(
+def test_a_direct_load_reveals_a_current_item_below_the_fold(
     page: Page, site: Serve
 ) -> None:
-    """A first visit has nothing to restore, and must not invent a position."""
+    """A first visit scrolls the rail just enough to show where the reader is.
+
+    A deep link, a search result, or a shared URL arrives with no stored offset,
+    so the rail opens at the top. On a long rail the page actually being read can
+    sit far below the fold, and a nav that does not show your position is worse
+    than no nav: it silently asserts you are somewhere near the beginning.
+    """
     server = site(site_routes())
-    page.goto(server.url("/page-2"))
+    page.goto(server.url("/page-38"))
+    page.wait_for_load_state("load")
+    # Placement finishes in a frame callback, so it can land after `load`. The
+    # rail advertises that it is in flight, which is a fact about the code rather
+    # than a guess about the machine, so wait on that and then assert the result.
+    page.wait_for_function(
+        "() => !document.querySelector('.sb-body-l').hasAttribute('data-sb-restoring')"
+    )
+    revealed = page.evaluate(
+        "(() => {const rail = document.querySelector('.sb-body-l');"
+        " const cur = rail.querySelector('[aria-current=page]');"
+        " const i = cur.getBoundingClientRect(), v = rail.getBoundingClientRect();"
+        " return {top: rail.scrollTop, label: cur.textContent.trim(),"
+        "  visible: i.top >= v.top - 1 && i.bottom <= v.bottom + 1}})()"
+    )
+    assert revealed["visible"], f"current item not revealed: {revealed}"
+    assert revealed["top"] > 0, "the rail never moved, so nothing was revealed"
+
+
+def test_revealing_scrolls_by_the_smallest_amount_that_works(
+    page: Page, site: Serve
+) -> None:
+    """The current item lands against the nearest edge, not centred.
+
+    Minimal on purpose. Scrolling further than necessary moves rows the reader
+    has no reason to expect to move, and on a first visit they have no mental
+    model of the rail yet to absorb the surprise.
+    """
+    server = site(site_routes())
+    page.goto(server.url("/page-38"))
+    page.wait_for_load_state("load")
+    # Placement finishes in a frame callback, so it can land after `load`. The
+    # rail advertises that it is in flight, which is a fact about the code rather
+    # than a guess about the machine, so wait on that and then assert the result.
+    page.wait_for_function(
+        "() => !document.querySelector('.sb-body-l').hasAttribute('data-sb-restoring')"
+    )
+    flush = page.evaluate(
+        "(() => {const rail = document.querySelector('.sb-body-l');"
+        " const cur = rail.querySelector('[aria-current=page]');"
+        " const i = cur.getBoundingClientRect(), v = rail.getBoundingClientRect();"
+        " return Math.round(i.bottom - v.bottom)})()"
+    )
+    # Scrolled down to reach it, so it sits against the trailing edge.
+    assert abs(flush) <= 1, f"item is {flush}px from the near edge, not flush"
+
+
+def test_a_direct_load_leaves_an_already_visible_current_item_alone(
+    page: Page, site: Serve
+) -> None:
+    """Nothing moves when the current item is already on screen.
+
+    Revealing is a repair for a rail that hides your position, not a habit. A
+    rail that already shows it should open exactly as authored.
+    """
+    server = site(site_routes())
+    page.goto(server.url("/page-0"))
+    page.wait_for_load_state("load")
+    # Placement finishes in a frame callback, so it can land after `load`. The
+    # rail advertises that it is in flight, which is a fact about the code rather
+    # than a guess about the machine, so wait on that and then assert the result.
+    page.wait_for_function(
+        "() => !document.querySelector('.sb-body-l').hasAttribute('data-sb-restoring')"
+    )
     assert page.evaluate("document.querySelector('.sb-body-l').scrollTop") == 0
+
+
+def test_a_stored_offset_takes_precedence_over_revealing(
+    page: Page, site: Serve
+) -> None:
+    """Continuing a visit beats introducing one.
+
+    Once the reader has a position in the rail it is theirs, even if it does not
+    show the current page. Overriding it to reveal would undo the continuity the
+    stored offset exists to provide.
+    """
+    server = site(site_routes())
+    page.goto(server.url("/page-0"))
+    page.evaluate("document.querySelector('.sb-body-l').scrollTop = 120")
+    page.evaluate(
+        "document.querySelector('.sb-body-l').dispatchEvent(new Event('scroll'))"
+    )
+    page.wait_for_function(
+        "() => sessionStorage.getItem('sb-nav-scroll:fixture-nav') === '120'"
+    )
+    page.click("a[href='/page-4']")
+    page.wait_for_url("**/page-4")
+    page.wait_for_function(
+        "() => document.querySelector('.sb-body-l').scrollTop === 120",
+        timeout=3000,
+    )
 
 
 def test_a_corrupt_stored_offset_is_ignored(page: Page, site: Serve) -> None:
