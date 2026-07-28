@@ -64,7 +64,7 @@ A frozen dataclass: one directed wiring edge. `publisher` announces `topic`; `su
 ## `unreachable_content`
 
 ```python
-unreachable_content(document: Document) -> bool
+def unreachable_content(document: Document) -> bool
 ```
 
 Whether a viewport-locked page renders content nothing can scroll to.
