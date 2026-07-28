@@ -14,6 +14,13 @@
 | Document | A full page: a root layout frame plus a title; renders to a complete HTML document. |
 | Preset | A function that assembles islands into a `Frame` and returns a `Document`; `document_site` and `workbench` are the bundled ones. |
 | Region | One of the nine placement names both presets accept (`head`/`body`/`foot` by `l`/`c`/`r`). |
+| Root mode | Whether a `Document`'s root flows with the page or is locked to the viewport; a required field, never inferred. |
+| Document site | The flowing page shape: the page is the primary scroll owner and side rails are sticky. Built by `document_site`. |
+| Workbench | The viewport-locked page shape: the page never scrolls and named regions own their scroll. Built by `workbench`. |
+| Overflow policy | A `Frame`'s declared answer for content that exceeds it: `visible`, `clip`, or `auto`. Every frame carries exactly one. |
+| Scroll owner | The frame that scrolls its own overflow, i.e. one declaring `overflow="auto"`. In the flowing shape the page itself is the primary one. |
+| Reset layer | The narrow set of user-agent defaults a structural sheet may clear (a body margin, a list's marker and indent), permitted at exactly the values that neutralize them. |
+| Envelope | The generated `<body class="sb-document">`, named by the package so it can be reset without styling a host element. |
 | Ownership | The rule that every spatial or visual decision has exactly one owning layer, so a theme is replaceable and a visual bug traces to one layer. See [Ownership](../explanation/ownership.md). |
 | Seam | The border line between two tiled regions; drawn exactly once, by a single owner. See [Seams](../explanation/seams.md). |
 | Geometry contract | The `--sb-fit-*` obligations: a themed component *requires* (intrinsic geometry projected from its causes), structure *grants* (a slot floored at the requirement). See [Ownership](../explanation/ownership.md). |

@@ -61,6 +61,30 @@ A frozen dataclass: one directed wiring edge. `publisher` announces `topic`; `su
 | `publisher` | `str` |
 | `subscriber` | `str` |
 
+## `unreachable_content`
+
+```python
+unreachable_content(document: Document) -> bool
+```
+
+Whether a viewport-locked page renders content nothing can scroll to.
+
+A `root="viewport"` page never scrolls at the page level, so anything past the viewport is reachable only through a descendant that declared `overflow="auto"`. If no frame in the tree declares one, content below the fold cannot be reached by scrolling, by keyboard, or by the user agent's own scroll-into-view — because `clip` and `visible` create no scroll container to move.
+
+```python
+from switchboard_ui import Document, Frame, unreachable_content
+
+trapped = Document(
+    body=Frame(direction="column", overflow="clip", children=(...,)),
+    root="viewport",
+)
+unreachable_content(trapped)    # True
+```
+
+This cannot live in the dataclasses. Each frame's policy is valid in isolation; only the combination of a locked root and a descendant chain that never scrolls is the defect, and that is a property of the whole tree. Typing the policy makes the mistake visible; this makes it checkable.
+
+A `root="flow"` page is never reported: the page itself is the scroll owner, so there is nothing to be unreachable.
+
 ## See also
 
 - [Architecture](../explanation/architecture.md): the one-descriptor-three-consumers spine this module completes.
