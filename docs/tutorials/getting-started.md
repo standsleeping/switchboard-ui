@@ -22,9 +22,33 @@ An **adapter** is the browser-side code that brings an island to life: a functio
 uv sync --all-groups
 ```
 
-## 2. Render an empty page
+## 2. Render a page
 
-Pages come from a preset, chosen by what the page *is*. `workbench` builds a viewport-locked shell whose regions scroll independently, for a tool or dashboard; `document_site` builds a flowing page that scrolls as a whole, for an article or documentation. This tutorial builds a small interactive tool, so it uses `workbench`. Either one places islands into the same nine-region layout and returns a `Document`, and rendering it produces a complete HTML document as a string.
+A page is a `Document`: a layout, and a statement about how that layout meets the viewport. Build one by hand first, so nothing is hidden.
+
+```python
+from switchboard_ui import Document, Frame, render_document
+
+page = Document(
+    body=Frame(direction="column"),
+    root="flow",
+    title="My first page",
+)
+html = render_document(page)
+print(html)
+```
+
+The output begins with `<!doctype html>` and contains one empty flex stack.
+
+`root="flow"` is the browser's normal document: the root is content-sized and the *page* scrolls, which is what an article does and what find-in-page, fragment anchors, and the back button all expect. The alternative is `root="viewport"`, which locks the root to the screen so the page never scrolls and each region scrolls on its own — an application shell rather than a document.
+
+There is no default. The two are different kinds of page rather than one page with a setting, so every document says which it is.
+
+## 3. Reach for a preset
+
+Hand-built frames are the primitive; a preset is a ready-made arrangement of them, chosen by what the page *is*. `document_site` builds the flowing shape for an article or documentation. `workbench` builds the viewport-locked shape for a tool or dashboard, and names `root="viewport"` itself.
+
+This tutorial builds a small interactive counter, so it uses `workbench`.
 
 ```python
 from switchboard_ui import render_document, workbench
@@ -33,9 +57,9 @@ html = render_document(workbench(title="My first page"))
 print(html)
 ```
 
-The output begins with `<!doctype html>` and contains the nine-region structure. The cells are empty for now, and an empty cell collapses until an island fills it.
+Both presets place islands into the same nine-region layout. The cells are empty for now, and an empty cell collapses until an island fills it.
 
-## 3. Place an island
+## 4. Place an island
 
 An `Island` is a descriptor: a plain data value naming the adapter that will fill it. Put one in the center column.
 
@@ -65,7 +89,7 @@ html = render_document(page)
 
 The renderer turns this island into a `<div data-island="counter" data-props='{"start":0}'>` holding the button. Nothing interactive happens yet, because no adapter named `counter` has been registered.
 
-## 4. Declare the wiring
+## 5. Declare the wiring
 
 The counter will announce a message; a readout will listen for it. You declare those topics on the descriptors, as data.
 
@@ -98,11 +122,11 @@ page = workbench(
 
 Because the wiring is declared as data, the connection from `counter` to `readout` is visible in the rendered HTML without running anything.
 
-## 5. Write the two adapters
+## 6. Write the two adapters
 
 An adapter is browser code that registers under a name and receives the element, the props, and the bus. It returns a teardown function.
 
-The markup already arrived with the page (the `initial` HTML from step 3), so each adapter finds its element and enhances it in place. An adapter wires behavior; it never builds or resizes the markup.
+The markup already arrived with the page (the `initial` HTML from step 4), so each adapter finds its element and enhances it in place. An adapter wires behavior; it never builds or resizes the markup.
 
 ```javascript
 window.switchboard.register("counter", function (el, props, bus) {
@@ -126,13 +150,13 @@ window.switchboard.register("readout", function (el, props, bus) {
 });
 ```
 
-## 6. Ship the adapters with the page
+## 7. Ship the adapters with the page
 
 Pass the adapter source to the renderer so it is included in the document.
 
 ```python
-counter_js = "...the counter adapter from step 5..."
-readout_js = "...the readout adapter from step 5..."
+counter_js = "...the counter adapter from step 6..."
+readout_js = "...the readout adapter from step 6..."
 
 html = render_document(page, extra_scripts=(counter_js, readout_js))
 ```

@@ -1,18 +1,38 @@
 # Layout
 
-Layout is a recursive value. The package provides one general primitive, the `Frame`, and two presets that arrange it into ready-made pages. This page explains the primitive first, then the presets. For their structure, see [The document-site preset](../reference/document-site.md) and [The workbench preset](../reference/workbench.md).
+A page is described by three independent decisions, each carried by its own value: how the frames are *arranged*, what each frame does with content that *exceeds* it, and how the root relates to the *viewport*. They are independent in the sense that changing one leaves the others meaning what they meant. The rest of this page takes them in turn, then the presets that combine them.
 
-## Layout is a recursive value
+## Arrangement is a recursive value
 
 A `Frame` is a one-dimensional flex stack (a row or a column) whose children are islands or nested frames. Composition to arbitrary depth is the same mechanism repeated, so a region can hold a nested sub-layout as naturally as it holds islands. A child may be wrapped in a `Slot` to pin its size (a fixed rail) or let it grow (an elastic pane), so layouts of fixed and flexible parts compose from the same primitive. A `Document` wraps a root frame as a full page.
 
 One mechanism (a flex stack) at every level means there is no separate page-level layout system to learn: the outermost arrangement and the deepest nested one are the same kind of value. The event bus is global, so nesting is a layout concern only; an island anywhere in the tree coordinates with any other over the same bus.
 
-## A preset is just an arrangement of frames
+## Overflow is declared, not inherited
 
-A preset is an ordinary function that assembles islands into a frame tree and returns a `Document`. It owns no rendering path and no type of its own; it is sugar over the primitive, so anything a preset builds you could build by hand.
+Every `Frame` names what it does with content that exceeds it: `visible`, `clip`, or `auto`. The renderer emits exactly one class for that value, so the policy is readable in the Python, in the HTML, and in the stylesheet under one name.
 
-`workbench` is the preset the demo uses: a column of three rows (content-driven head and foot rails around a flexible middle), each a row of three cells (fixed-width sides around a flexible center). Islands are placed by region name, and an omitted region collapses. It is built from `Frame` and `Slot` like any other layout; the side widths are plain CSS lengths the preset owns, while the rail floor comes from the theme's component-geometry contract.
+The point is what it stops being. Scroll ownership used to be a property of the *stylesheet*: frames clipped by default, a region opted out by carrying an extra class, and the opt-out took effect only by winning an equal-specificity tie — so which element scrolled depended on the order rules happened to appear in, and reordering the sheet could change it silently. Now a frame that scrolls says so, and nothing above or beside it can decide otherwise.
+
+Naming it also makes a whole-tree question askable. `clip` creates no scroll container at all, not even for the user agent's own scroll-a-focused-descendant-into-view behaviour, so a viewport-locked page whose frames are all `clip` or `visible` renders content nothing can reach. Each frame is valid alone; only the combination is the defect, which is why [`unreachable_content`](../reference/analyzer.md#unreachable_content) checks the tree rather than the node.
+
+## Root policy is the page's shape
+
+Every `Document` names how its root relates to the viewport: `flow`, where the root is content-sized and the *page* scrolls, or `viewport`, where the root is fixed and the page never scrolls.
+
+This is the decision that determines where the reader's position lives, and therefore which of the browser's own behaviours can look after it — scroll restoration, find-in-page, fragment anchors, overscroll. [Scroll ownership and navigation state](scroll-ownership.md) is the long version.
+
+It is **required**, not defaulted. These are two different kinds of page rather than one page with a setting, and defaulting either would privilege it while every call site quietly inherited it. Requiring it costs one word per document and buys a diff in which every page's shape is visible. The mode is also never inferred — not from content, region names, viewport size, or the presence of a nav — because a shape guessed from content changes when the content does.
+
+## A preset combines the three
+
+A preset is an ordinary function that combines the three decisions above into a page shape people actually build. It owns no rendering path and no type of its own; it is sugar over the primitives, so anything a preset builds you could build by hand.
+
+There are two, named for the shapes rather than for the number of columns they happen to have. [`document_site`](../reference/document-site.md) returns a flowing document: the centre column is `visible` so the page scrolls the article, and the side cells are sticky `auto` rails. [`workbench`](../reference/workbench.md) returns a viewport-locked shell: the three body cells are `auto` and everything above them `clip`.
+
+Both are a column of three rows (content-driven head and foot rails around a middle), each a row of three cells (fixed-width sides around a flexible center). Islands are placed by region name, and an omitted region collapses. The side widths are plain CSS lengths the preset owns, while the rail floor comes from the theme's component-geometry contract.
+
+They are two assemblies rather than one constructor with a flag, because a flag would keep two page semantics hidden inside one convenient name. They share the nine region names and the three row hooks, so a page can move between shapes without learning a second placement vocabulary and a seam owner means the same thing in both.
 
 ## Why nested flex, not grid
 
