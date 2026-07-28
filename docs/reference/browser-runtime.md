@@ -89,3 +89,21 @@ An element is mounted at most once (tracked in a `WeakSet`). If no adapter is re
 ## Writing adapters
 
 See [Write an island adapter](../how-to/write-an-island-adapter.md) for the practical guide.
+
+## Rail scroll persistence
+
+A nav built with a `scroll_key` keeps its scroll position across native page loads. The boundary it addresses is the platform's: a forward navigation builds a new document, so an element scroll container starts at zero. The browser restores what it owns — the page's own position, and the whole DOM on a back/forward-cache traversal — but an element's scroll offset in a freshly built document is the application's to carry.
+
+The work is split across two scripts, because only one half has a deadline.
+
+**Placement** ships inline, immediately *before* the nav markup, and runs as the parser reaches it. It has to precede the paint of a complete rail: anything later paints the rail at the top and then corrects it, which the reader sees as a jump. Before the nav rather than after, because a document arrives in chunks and the parser can finish the nav, yield, and let the browser paint before reaching the next byte.
+
+It does one of two things. With a stored offset it restores that offset exactly, re-applying each frame as the rail gains scroll range, since a rail still filling in cannot yet reach the target. With no stored offset — a deep link, a search result, a shared URL — it scrolls by the smallest amount that brings the current item into view, and leaves an already-visible item alone.
+
+Either way it stands down the moment the reader takes over, on a wheel, touch, or key gesture, or on any scroll it did not cause itself.
+
+**Saving** is an ordinary adapter (`nav_scripts()`), mounted with everything else. It writes the position on scroll (throttled to one write per frame), on link activation, and on `pagehide`. It holds off while placement is still in flight, which the two coordinate through a `data-sb-restoring` marker on the scroll owner: leaving a page mid-placement would otherwise persist a position the reader never chose over the one being restored.
+
+Storage is `sessionStorage` under `sb-nav-scroll:<key>`, so the position is per-tab navigation continuity rather than a durable preference; two tabs scroll their rails independently and closing the tab forgets. Every access is guarded, since storage throws in a private or blocked context. A back/forward-cache traversal is left alone entirely: it reuses the live DOM, whose element scroll the browser has already restored.
+
+Two boundaries worth knowing. The inline script needs `'unsafe-inline'` or a nonce under a strict Content-Security-Policy; the package emits no nonce, so a host with such a policy silently loses the enhancement and the rail simply starts at zero. And nothing is persisted for a nav without a `scroll_key` — the adapter mounts, finds no key, and returns.

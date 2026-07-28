@@ -149,10 +149,18 @@ A native `<details>`/`<summary>` section, so toggling, keyboard, and open/closed
 ### `nav`
 
 ```python
-def nav(*, sections: Sequence[NavSection], label: str) -> Island
+def nav(*, sections: Sequence[NavSection], label: str, scroll_key: str = "") -> Island
 ```
 
-A sidebar `<nav>` of link sections, the canonical left rail. Each `NavSection` renders an optional uppercase group heading over its `NavLink` rows; a link's optional `meta` annotation (a count, a status) sits at the row's far edge, and the `current` link carries `aria-current="page"`. A run of `nested` links is grouped into an indented sublist under the preceding top-level row (the same model as the toc), so a row's sub-pages sit visually inside it while every row keeps a square inset. Every row reserves the active-edge channel, so marking the current page never shifts a row. A static island: the links navigate natively. Raises `ValueError` if `label` is blank, `sections` is empty, or any link has a blank label or href. Companion: `nav.css`.
+A sidebar `<nav>` of item sections, the canonical left rail. Each `NavSection` renders an optional uppercase group heading over a semantic `<ul>`; each `NavItem` is an `<li>` holding an `<a>`, and an item with `children` renders a nested `<ul>` inside its own `<li>`, to any depth. An item's optional `meta` annotation (a count, a status) sits at the row's far edge, and the current item carries `aria-current="page"`.
+
+Nesting is the shape of the value: a child belongs to the item it is written inside, so reordering rows cannot silently reparent them and a grandchild is expressible. Every ancestor of the current item carries `data-current-ancestor`, computed server-side, so revealing the current path costs no script and no reflow. Every branch renders expanded; disclosure is a separate concern, and an ancestor that opened or closed a branch would move the row the reader just clicked and every row after it.
+
+Every row reserves the active-edge channel, so marking the current page never shifts a row, and the indent belongs to the sublist container rather than to each row, so a row keeps a square inset at every depth.
+
+`scroll_key` opts the nav into keeping its scroll position across native page loads, for a rail that is shared chrome on every page. See [rail scroll persistence](browser-runtime.md#rail-scroll-persistence). Left empty, nothing is emitted and the nav is entirely static.
+
+Raises `ValueError` if `label` is blank, `sections` is empty, any item has a blank label or href, or more than one item is marked current. Validation errors name the item by its path through the tree (`section 1 > item 0 > item 2`), which is stable under reordering and unambiguous across sections. Companion: `nav.css`; adapter: `nav_scripts()`.
 
 ### `toc`
 
@@ -227,7 +235,7 @@ Public types in `switchboard_ui.components` used by the factories above:
 | `FilterControl(label, control)` | `filter_table` | One labelled control in a filter bar, wrapping any publishing island. |
 | `MatchMode` | `filter_table` | `Literal["substring", "exact"]`: how a published value is matched against a row key. |
 | `SORT_VALUES` | `filter_table` | `("none", "asc", "desc")`: the values a sort control publishes. |
-| `NavLink(label, href, current, meta, nested)` | `nav` | One nav row: a route link, optionally current, with an optional far-edge annotation; `nested` places it in the sublist under the preceding top-level row. |
+| `NavItem(label, href, current, meta, children)` | `nav` | One nav row: a route link, optionally current, with an optional far-edge annotation and any number of nested children. |
 | `NavSection(links, heading)` | `nav` | A run of nav links under an optional group heading. |
 | `TocEntry(text, anchor, nested)` | `toc` | One on-this-page row; `nested` places it in the indented sublist. |
 | `ArmBinding(topic, token, arm)` | `theme_state`, `theme_export` | Edits one scheme arm (`"light"` or `"dark"`) of a color token, re-declaring its `light-dark()`. |
