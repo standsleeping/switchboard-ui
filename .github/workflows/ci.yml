@@ -1,19 +1,21 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
@@ -49,7 +51,7 @@ jobs:
   browser:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
@@ -62,11 +64,51 @@ jobs:
       - name: Sync dependencies (locked)
         run: uv sync --locked --all-groups --all-packages
 
-      # One engine. The cases here test scroll restoration timing, sticky
-      # geometry, and first-paint behavior, none of which needs a matrix to be
-      # worth guarding; cross-engine differences are covered by the manual pass.
-      - name: Install Chromium
+      # All three engines: Blink, Gecko, and WebKit differ exactly where these
+      # cases live (sticky geometry, scroll restoration timing, scrollbar
+      # gutters), and this runner's classic scrollbars exercise the gutter
+      # cases that overlay-scrollbar development machines cannot.
+      - name: Install browser engines
         run: just browser-install
 
       - name: Run browser regression tests
         run: just browser-test
+
+      # The classic-scrollbar cases only run on this runner (development
+      # machines have overlay bars), so for them a failure here has no local
+      # reproduction; the screenshot and trace are the whole report.
+      - name: Upload failure screenshots and traces
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-test-results
+          path: test-results
+          if-no-files-found: ignore
+
+  # Real Safari through Apple's safaridriver, which only exists on macOS.
+  # Dispatch-only: the engine under test changes on the runner image's cadence,
+  # not the repository's, and macOS minutes are the expensive pool.
+  safari:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install just
+        run: uv tool install rust-just
+
+      - name: Sync dependencies (locked)
+        run: uv sync --locked --all-groups --all-packages
+
+      # The runner allows passwordless sudo; this is the documented switch
+      # that lets safaridriver create sessions.
+      - name: Enable safaridriver
+        run: sudo safaridriver --enable
+
+      - name: Run real-Safari regression tests
+        run: just safari-test

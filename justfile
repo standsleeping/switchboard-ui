@@ -35,12 +35,23 @@ test:
     uv run pytest
     uv run --directory packages/switchboard-theme pytest
 
-# Run the real-browser regression tests (needs `just browser-install` once).
-# Deliberately outside `check`: those are the tests that need no browser, so a
-# contributor without one still runs the same gate CI runs for them.
+# Run the real-browser regression tests in all three engines (needs
+# `just browser-install` once). Deliberately outside `check`: those are the
+# tests that need no browser, so a contributor without one still runs the same
+# gate CI runs for them. A failing case leaves its screenshot and trace under
+# test-results/, which matters most for the cases that only run under classic
+# scrollbars: those never fail on an overlay-scrollbar machine, so the
+# artifact is the whole reproduction.
 browser-test:
-    uv run pytest tests_browser -p no:cacheprovider --no-header -q --no-cov
+    uv run pytest tests_browser -p no:cacheprovider --no-header -q --no-cov --browser chromium --browser firefox --browser webkit --screenshot only-on-failure --tracing retain-on-failure --output test-results
 
-# Install the one engine the browser tests use.
+# Install the three engines the browser tests run in.
 browser-install:
-    uv run playwright install --with-deps chromium
+    uv run playwright install --with-deps chromium firefox webkit
+
+# Run the real-Safari regression tests (macOS only; needs `safaridriver
+# --enable` once). Safari opens real windows while these run: safaridriver has
+# no headless mode, which is also why this is a separate target rather than a
+# fourth engine in `browser-test`.
+safari-test:
+    uv run --group safari pytest tests_safari -p no:cacheprovider --no-header -q --no-cov
