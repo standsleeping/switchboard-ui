@@ -7,7 +7,7 @@ The package does not feature-detect, polyfill, or branch on any of them. Every o
 | Feature | Used for | Without it |
 |---|---|---|
 | `overflow: clip` | Containment that creates no scroll container | Falls back to the UA's handling of an unknown value, i.e. `visible`. Content that should be clipped is painted outside its frame. |
-| `scrollbar-gutter: stable` | Reserving a classic scrollbar's width so a column's inline geometry does not move | The declaration is ignored. On a classic-scrollbar platform the intermittent shift returns; on an overlay-scrollbar platform there was nothing to reserve and nothing changes. |
+| `scrollbar-gutter: stable` | Reserving a classic scrollbar's width so a column's inline geometry does not move | The declaration is ignored. On a classic-scrollbar platform the intermittent shift returns; on an overlay-scrollbar platform there was nothing to reserve and nothing changes. Support also differs by placement; see the scrollbar stance below. |
 | `position: sticky` on a flex child | Side rails that stay in view as the article scrolls past | The rail scrolls away with the page. The nav still works; it is simply not persistent. |
 | Small viewport units (`svb`) | The flow root's floor and the sticky rail's cap | The length is invalid and ignored, so the root loses its minimum height and the rail loses its cap. A rail taller than the screen runs past the bottom instead of scrolling within itself. |
 
@@ -24,6 +24,8 @@ A scroll container uses `overflow: auto`, and the platform paints its own bar, t
 Reserving the space that bar will occupy is a different thing from styling it: the platform still paints, sizes, and themes the bar, and the user's OS scrollbar preference is untouched. A gutter exists only where a classic scrollbar exists, so the reservation is inert under overlay scrollbars and converts an intermittent inline shift into a constant inset under classic ones.
 
 This matters for testing more than it looks. macOS uses overlay scrollbars by default, so a developer working there never sees the shift they ship. Set "Show scroll bars: Always" in system settings, or attach a mouse, to make the classic behaviour observable.
+
+Where the reservation is declared matters as much as whether the engine knows the property. An element scroller's own `scrollbar-gutter` is applied by every engine the browser suite runs. The viewport's gutter can only be declared from the root element (per CSS Overflow 3 it never propagates from `body`), and not every engine applies the root's declaration to the viewport: Chromium ignores it even though the computed value reads `stable`, so under classic scrollbars the page bar takes its width from the article's end rather than from a reserved gutter. The shared edges hold regardless, because the rails' bases are fixed, and at widths where the article sits at its measure cap nothing visible moves; below that cap the article narrows by the bar's width when the page begins to scroll. The browser suite guards both halves separately: the element-level reservation wherever bars are classic, and the viewport-level reservation wherever the engine applies it, detected by measurement so the guard strengthens by itself when an engine's behaviour changes.
 
 ## The progressive enhancement
 
