@@ -58,6 +58,12 @@ browser = [
     "playwright>=1.61",
     "pytest-playwright>=0.8",
 ]
+# Real Safari via Apple's safaridriver, which Playwright cannot drive. macOS
+# only, and needs `safaridriver --enable` once; the harness skips itself
+# anywhere else, so keeping the group synced costs nothing.
+safari = [
+    "selenium>=4.30",
+]
 
 [tool.mypy]
 files = ["src"]
