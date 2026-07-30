@@ -158,13 +158,24 @@ def test_the_complete_rail_is_never_painted_at_zero(
     )
     # While the rail is still filling, every frame is scrolled as far as the
     # range that exists allows. A rail shorter than the viewport has no range at
-    # all, so zero is the only possible answer there and is not a defect.
-    short = [
-        (height, top, client)
-        for height, top, client in painted
+    # all, so zero is the only possible answer there and is not a defect. One
+    # more allowance is inherent to the design: re-application runs in frame
+    # callbacks, so a paint can land between the parser growing the rail and
+    # the next callback, showing the offset that was correct for the previous
+    # height. A single such stale frame is that lag; the defect is a wrong
+    # offset that persists into the next sampled frame at the same height,
+    # because that frame had its range and did not use it.
+    stale = [
+        index
+        for index, (height, top, client) in enumerate(painted)
         if height > client and top != min(445, height - client)
     ]
-    assert not short, f"a partly-built rail wasted the range it had: {short}"
+    wasted = [
+        painted[index]
+        for index in stale
+        if index + 1 < len(painted) and painted[index + 1][:2] == painted[index][:2]
+    ]
+    assert not wasted, f"a partly-built rail wasted the range it had: {wasted}"
 
 
 def test_a_direct_load_reveals_a_current_item_below_the_fold(
@@ -355,6 +366,12 @@ def test_marking_the_current_item_moves_no_row(page: Page, site: Serve) -> None:
     """
     server = site({"/": document_page()})
     page.goto(server.url("/"))
+    # The fixture's current item sits below the fold, so placement reveals it
+    # in a frame callback after load; measuring before that lands would catch
+    # the reveal's scroll between the two reads and blame the repaint for it.
+    page.wait_for_function(
+        "() => !document.querySelector('.sb-body-l').hasAttribute('data-sb-restoring')"
+    )
     measure = (
         "[...document.querySelectorAll('.sb-nav-item')]"
         ".map(a => {const r = a.getBoundingClientRect();"
