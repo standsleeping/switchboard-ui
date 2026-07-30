@@ -35,3 +35,16 @@ def test_theme_does_not_position_or_transform() -> None:
             f"theme {name!r} uses {forbidden}; the theme does not position or transform "
             "(structure owns coordinate systems; transforms are alignment hacks)"
         )
+
+
+def test_theme_never_animates_scrolling() -> None:
+    """`scroll-behavior` is absent from every theme: jumps stay instant.
+
+    Anchor landings and restorations are single-step in every engine, and a
+    reader's reduced-motion preference needs nothing disabled, because no theme
+    introduces an animation to disable.
+    """
+    for name, css in _theme_sheets():
+        assert "scroll-behavior" not in ownership.declared_properties(css), (
+            f"theme {name!r} declares scroll-behavior; scrolling is never animated"
+        )

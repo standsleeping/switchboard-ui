@@ -137,6 +137,17 @@ def test_the_layer_never_styles_the_scrollbar_itself() -> None:
     assert "::-webkit-scrollbar" not in css
 
 
+def test_the_layer_never_animates_scrolling() -> None:
+    """`scroll-behavior` is never declared: every jump the layer causes is instant.
+
+    Instant is also the accessible default: a reader who asks the platform to
+    reduce motion needs nothing disabled here, because nothing animates.
+    """
+    assert "scroll-behavior" not in ownership.declared_properties(
+        read_static("layout.css")
+    )
+
+
 def test_each_root_mode_has_one_rule_and_only_viewport_positions() -> None:
     """Root sizing belongs to the root mode, and only the locked mode positions.
 
