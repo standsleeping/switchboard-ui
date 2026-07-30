@@ -11,7 +11,17 @@ from switchboard_ui import (
     render_document,
     workbench,
 )
-from switchboard_ui.components import NavItem, NavSection, nav, nav_scripts, nav_styles
+from switchboard_ui.components import (
+    NavItem,
+    NavSection,
+    code_block,
+    code_block_styles,
+    nav,
+    nav_scripts,
+    nav_styles,
+    prose,
+    prose_styles,
+)
 
 
 def _paragraphs(count: int, marker: str = "para") -> Island:
@@ -80,6 +90,123 @@ def document_page(
         title=f"Page {current}",
     )
     return render_document(page, extra_head=_head(), extra_scripts=nav_scripts())
+
+
+def themed_document_page(*, paragraphs: int, nav_items: int) -> str:
+    """A flowing document carrying the theme head, the way a shipped page does.
+
+    The structural sheet can reserve an element scroller's gutter, but the
+    viewport's own gutter can only be declared from the root element, and that
+    declaration is the theme's. A case about page-bar geometry therefore needs
+    the theme head present, or it exercises a configuration no shipped page has.
+    """
+    from switchboard_theme import api as themes
+
+    page = document_site(
+        {
+            "head-c": (Island(name="brand", initial="<b>Fixture</b>"),),
+            "body-l": (_nav_island(0, nav_items, ""),),
+            "body-c": (_paragraphs(paragraphs),),
+            "foot-c": (Island(name="status", initial="footer"),),
+        },
+        title="Themed",
+    )
+    return render_document(page, extra_head=themes.head("default") + _head())
+
+
+def anchor_page(*, filler: int = 30) -> str:
+    """A themed document whose prose carries an in-page link and its target.
+
+    The theme gives prose headings a scroll margin, so an anchor jump must land
+    the heading below the scroll owner's edge rather than flush against it. The
+    target sits between two runs of filler: the run before it makes the jump a
+    real scroll, and the run after it gives the page enough range below the
+    target for the jump to actually reach the margin position.
+    """
+    from switchboard_theme import api as themes
+
+    def _filler(count: int, marker: str) -> str:
+        return "".join(
+            f'<p id="{marker}-{i}">Filler {i}. ' + ("Body text. " * 14) + "</p>"
+            for i in range(count)
+        )
+
+    body = (
+        '<p><a href="#landing">Jump to the landing section</a></p>'
+        + _filler(filler, "before")
+        + '<h2 id="landing">Landing</h2>'
+        + _filler(filler // 2, "after")
+    )
+    page = document_site({"body-c": (prose(html=body),)}, title="Anchors")
+    return render_document(
+        page, extra_head=themes.head("default") + f"<style>{prose_styles()}</style>"
+    )
+
+
+def nested_nav_page() -> str:
+    """A document whose rail nests three levels deep, six rows in all.
+
+    Small on purpose: every row has a name a keyboard case can list in full, so
+    an assertion about traversal order reads as the order itself.
+    """
+    rail = nav(
+        sections=(
+            NavSection(
+                heading="Pages",
+                items=(
+                    NavItem(
+                        label="Top 0",
+                        href="/t0",
+                        children=(
+                            NavItem(
+                                label="Mid 0",
+                                href="/m0",
+                                children=(
+                                    NavItem(label="Leaf 0", href="/l0"),
+                                    NavItem(label="Leaf 1", href="/l1"),
+                                ),
+                            ),
+                            NavItem(label="Mid 1", href="/m1"),
+                        ),
+                    ),
+                    NavItem(label="Top 1", href="/t1", current=True),
+                ),
+            ),
+        ),
+        label="Fixture nav",
+        scroll_key="",
+    )
+    page = document_site(
+        {"body-l": (rail,), "body-c": (_paragraphs(5),)},
+        title="Nested",
+    )
+    return render_document(page, extra_head=_head(), extra_scripts=nav_scripts())
+
+
+def wide_code_page() -> str:
+    """A document holding a code block far wider than any viewport under test.
+
+    The block's contract is that long lines scroll inside it and never push the
+    page; a single 240-term expression makes the line wider than a 1920px
+    viewport, so the contract is exercised rather than assumed at every width.
+    Carries the theme head because the two halves of the contract are split
+    across the layers: structure owns the block's overflow, the theme owns the
+    `white-space: pre` that makes a long line wide at all.
+    """
+    from switchboard_theme import api as themes
+
+    wide = "value = " + " + ".join(f"column_{i}" for i in range(240))
+    block = code_block(code=wide, label="A deliberately wide line", copy=False)
+    page = document_site(
+        {"body-c": (block, _paragraphs(6))},
+        title="Wide code",
+    )
+    return render_document(
+        page,
+        extra_head=themes.head("default")
+        + _head()
+        + f"<style>{code_block_styles()}</style>",
+    )
 
 
 def workbench_page(*, paragraphs: int = 40) -> str:
