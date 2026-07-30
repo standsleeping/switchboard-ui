@@ -60,6 +60,12 @@ def font_head(src: str) -> str:
     navigation has it in cache and uses it. The alternative, ``swap``, paints in
     the fallback and corrects a few milliseconds later — invisible in a
     filmstrip, plainly visible as a flicker on every navigation.
+
+    One engine boundary attaches to that claim: Gecko sometimes paints the
+    first frame in the fallback and promotes a face that arrived in time —
+    prompt or cached — one frame later, a sub-pixel re-render of text set
+    moments earlier. The browser suite tolerates exactly that case, by name,
+    and still fails on any other post-paint change.
     """
     return (
         f'<link rel="preload" href="{src}" as="font" type="font/woff2" crossorigin>'
