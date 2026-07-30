@@ -54,6 +54,7 @@ Understanding-oriented background on why the package is shaped the way it is.
 | [Scroll ownership and navigation state](explanation/scroll-ownership.md) | What scrolls, why the shape decides who keeps the reader's place, and the one piece of state worth carrying. |
 | [Ownership](explanation/ownership.md) | Single ownership across the layers: which layer owns which decision, why that makes a theme replaceable, and how a visual bug traces to one layer. |
 | [Seams](explanation/seams.md) | How borders between tiled regions are drawn so each line has a single owner. |
+| [Verification](explanation/verification.md) | The four testing rungs, when each one runs, and why a green run cannot be vacuous. |
 
 ## Where to start
 
