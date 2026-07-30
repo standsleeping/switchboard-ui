@@ -22,8 +22,33 @@ from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
+from playwright.sync_api import Page
 
 Routes = dict[str, str]
+
+
+@pytest.fixture(autouse=True)
+def strict_console(page: Page) -> Iterator[None]:
+    """Fail any case whose page throws or logs an error.
+
+    JavaScript fails silently from a behavioural assertion's point of view: a
+    broken adapter import or a runtime exception leaves the page half-alive,
+    and the assertion can still pass against the half that survived. Uncaught
+    exceptions and error-level console output therefore fail the case that
+    provoked them, in whichever engine logged them.
+    """
+    errors: list[str] = []
+    page.on("pageerror", lambda error: errors.append(f"pageerror: {error}"))
+    page.on(
+        "console",
+        lambda message: (
+            errors.append(f"console.error: {message.text}")
+            if message.type == "error"
+            else None
+        ),
+    )
+    yield
+    assert not errors, "the page reported errors:\n" + "\n".join(errors)
 
 
 @dataclass(frozen=True)
