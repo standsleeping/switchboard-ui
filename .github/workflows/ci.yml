@@ -66,17 +66,13 @@ jobs:
 
       # All three engines: Blink, Gecko, and WebKit differ exactly where these
       # cases live (sticky geometry, scroll restoration timing, scrollbar
-      # gutters). Modern GTK defaults to overlay scrolling, so classic bars
-      # must be forced for the gutter cases to run at all; the variable
-      # reaches Firefox and WebKit's GTK builds. Chromium keeps overlay bars
-      # here and its gutter cases skip by name.
+      # gutters). The gutter cases force classic bars themselves, per engine,
+      # at launch; everything else runs under the platform's defaults.
       - name: Install browser engines
         run: just browser-install
 
       - name: Run browser regression tests
         run: just browser-test
-        env:
-          GTK_OVERLAY_SCROLLING: "0"
 
       # The classic-scrollbar cases only run on this runner (development
       # machines have overlay bars), so for them a failure here has no local

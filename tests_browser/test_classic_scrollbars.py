@@ -3,8 +3,10 @@
 Overlay scrollbars reserve nothing, so every case here first measures the
 platform's own bar and skips when it has no width: under overlay bars these
 assertions pass without exercising anything, and a skip records that honestly.
-On runners whose bars are classic — Linux and Windows by default, macOS with
-"Show scroll bars: Always" — the same measurements are the ones that can fail.
+Because overlay is the default on every current desktop, these cases launch
+their engines with the classic-bar switch each engine offers (see the module's
+``page`` fixture); wherever the switch takes — or the user has set classic
+bars themselves — the same measurements are the ones that can fail.
 
 Two levels are tested separately because they are owned separately. An element
 scroller's gutter is the structural sheet's (`.sb-overflow-auto` reserves it),
@@ -14,15 +16,41 @@ root's declaration to the viewport at all, so the case that depends on it
 probes for that first and skips where the declaration is inert.
 """
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 
 import pytest
-from playwright.sync_api import Page
+from playwright.sync_api import Page, Playwright
 
 from .conftest import Routes, Site
 from .pages import themed_document_page, workbench_page
 
 Serve = Callable[[Routes], Site]
+
+
+@pytest.fixture
+def page(playwright: Playwright, browser_name: str) -> Iterator[Page]:
+    """A page in an engine launched with its classic-scrollbar switch thrown.
+
+    Overlay bars are the default on every current desktop, including the CI
+    runners, so a platform whose bars are classic cannot be waited for. Two
+    engines offer a switch — Chromium a feature flag, Firefox a preference —
+    and throwing it here scopes classic bars to exactly these cases. WebKit
+    offers none, and macOS imposes the system setting on every engine, so the
+    probe below still makes the final call and skips where nothing is
+    reserved.
+    """
+    launcher = getattr(playwright, browser_name)
+    options: dict[str, object] = {}
+    if browser_name == "chromium":
+        options["args"] = ["--disable-features=OverlayScrollbar"]
+    if browser_name == "firefox":
+        options["firefox_user_prefs"] = {"widget.gtk.overlay-scrolling.enabled": False}
+    browser = launcher.launch(**options)
+    try:
+        yield browser.new_page()
+    finally:
+        browser.close()
+
 
 _BAR_PROBE = (
     "(() => {const p = document.createElement('div');"
