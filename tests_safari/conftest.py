@@ -33,6 +33,10 @@ def safari() -> Iterator[Safari]:
         driver = Safari()
     except Exception as error:
         pytest.skip(f"no safaridriver session ({error}); run: safaridriver --enable")
+    # An explicit window size: on a CI runner the automation window's default
+    # geometry is not a real screen's, and interactions against a degenerate
+    # window fail in ways that read as the page's fault.
+    driver.set_window_size(1280, 900)
     yield driver
     driver.quit()
 
