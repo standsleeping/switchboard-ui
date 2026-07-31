@@ -19,7 +19,7 @@ from tests_browser.pages import (
     workbench_page,
 )
 
-from .conftest import wait_until
+from .conftest import activate, wait_until
 
 Serve = Callable[[Routes], Site]
 
@@ -92,7 +92,7 @@ def test_the_rail_offset_survives_a_real_cross_page_navigation(
     # A row already on screen at this offset: the driver scrolls a target into
     # view before clicking, so a row above the fold would move the rail and the
     # case would measure its own side effect.
-    safari.find_element(By.CSS_SELECTOR, "a[href='/page-20']").click()
+    activate(safari, safari.find_element(By.CSS_SELECTOR, "a[href='/page-20']"))
     wait_until(safari, "location.pathname === '/page-20'")
     wait_until(safari, "document.querySelector('.sb-body-l').scrollTop === 445")
 
@@ -115,7 +115,7 @@ def test_a_back_navigation_restores_the_rail(safari: Safari, site: Serve) -> Non
         "r.scrollTop = 300; r.dispatchEvent(new Event('scroll'))"
     )
     wait_until(safari, "sessionStorage.getItem('sb-nav-scroll:fixture-nav') === '300'")
-    safari.find_element(By.CSS_SELECTOR, "a[href='/page-14']").click()
+    activate(safari, safari.find_element(By.CSS_SELECTOR, "a[href='/page-14']"))
     wait_until(safari, "location.pathname === '/page-14'")
 
     safari.back()
@@ -164,7 +164,7 @@ def test_an_anchor_jump_lands_the_heading_below_the_edge_by_its_margin(
     )
     assert margin > 0, "precondition: the theme must give the heading a scroll margin"
 
-    safari.find_element(By.CSS_SELECTOR, "a[href='#landing']").click()
+    activate(safari, safari.find_element(By.CSS_SELECTOR, "a[href='#landing']"))
     top = safari.execute_script(
         "return document.getElementById('landing').getBoundingClientRect().top"
     )

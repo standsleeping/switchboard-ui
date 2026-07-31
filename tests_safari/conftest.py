@@ -15,6 +15,7 @@ binds a fresh port, and web storage is scoped per origin, so a new server is a
 clean slate.
 """
 
+import contextlib
 import sys
 import time
 from collections.abc import Iterator
@@ -39,6 +40,30 @@ def safari() -> Iterator[Safari]:
     driver.set_window_size(1280, 900)
     yield driver
     driver.quit()
+
+
+def activate(driver: Safari, element: object) -> None:
+    """Click an element, falling back to a script-dispatched activation.
+
+    On hosted macOS runners safaridriver accepts a click and performs nothing:
+    the session is healthy, the element is found, and no navigation or scroll
+    follows. A script-dispatched click still runs the element's native
+    activation behaviour — the navigation, the fragment jump — and skips only
+    the synthesized input pipeline those runners drop. A machine whose input
+    pipeline works never reaches the fallback, so locally the click stays
+    real. The stale-element guard covers the click that was merely slow: if
+    the document is already gone, the native click landed.
+    """
+    probe = "return location.href + '|' + window.scrollY"
+    before = driver.execute_script(probe)
+    element.click()  # type: ignore[attr-defined]
+    deadline = time.monotonic() + 2.0
+    while time.monotonic() < deadline:
+        if driver.execute_script(probe) != before:
+            return
+        time.sleep(0.05)
+    with contextlib.suppress(Exception):
+        driver.execute_script("arguments[0].click()", element)
 
 
 def wait_until(driver: Safari, script: str, timeout: float = 5.0) -> None:
