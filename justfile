@@ -45,6 +45,14 @@ test:
 browser-test:
     uv run pytest tests_browser -p no:cacheprovider --no-header -q --no-cov --browser chromium --browser firefox --browser webkit --screenshot only-on-failure --tracing retain-on-failure --output test-results
 
+# Run the classic-scrollbar cases once more, headed: a real widget layer can
+# present classic bars that headless rendering never does, and the Firefox and
+# WebKit gutter verdicts only exist there. On Linux this needs a display
+# server (CI wraps it in xvfb-run); the GTK variable reaches the headed GTK
+# builds and is inert everywhere else. The probe still decides per engine.
+classic-test $GTK_OVERLAY_SCROLLING="0":
+    uv run pytest tests_browser/test_classic_scrollbars.py -p no:cacheprovider --no-header -q --no-cov --browser chromium --browser firefox --browser webkit --headed --screenshot only-on-failure --output test-results
+
 # Install the three engines the browser tests run in.
 browser-install:
     uv run playwright install --with-deps chromium firefox webkit

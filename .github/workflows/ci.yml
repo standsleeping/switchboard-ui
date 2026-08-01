@@ -74,6 +74,13 @@ jobs:
       - name: Run browser regression tests
         run: just browser-test
 
+      # The classic-scrollbar cases again, headed under a virtual display: a
+      # real widget layer can present classic bars that headless rendering
+      # never does, and the Firefox and WebKit gutter verdicts only exist
+      # there.
+      - name: Run classic-scrollbar cases headed
+        run: xvfb-run --auto-servernum just classic-test
+
       # The classic-scrollbar cases only run on this runner (development
       # machines have overlay bars), so for them a failure here has no local
       # reproduction; the screenshot and trace are the whole report.
