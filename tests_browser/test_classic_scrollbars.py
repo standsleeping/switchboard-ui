@@ -42,9 +42,16 @@ def page(playwright: Playwright, browser_name: str) -> Iterator[Page]:
     launcher = getattr(playwright, browser_name)
     options: dict[str, object] = {}
     if browser_name == "chromium":
+        # The launcher hides scrollbars entirely in headless mode by default,
+        # which reads as overlay to the probe; the classic-vs-overlay switch
+        # only matters once the bars exist at all.
+        options["ignore_default_args"] = ["--hide-scrollbars"]
         options["args"] = ["--disable-features=OverlayScrollbar"]
     if browser_name == "firefox":
-        options["firefox_user_prefs"] = {"widget.gtk.overlay-scrolling.enabled": False}
+        options["firefox_user_prefs"] = {
+            "widget.gtk.overlay-scrolling.enabled": False,
+            "ui.useOverlayScrollbars": 0,
+        }
     browser = launcher.launch(**options)
     try:
         yield browser.new_page()
