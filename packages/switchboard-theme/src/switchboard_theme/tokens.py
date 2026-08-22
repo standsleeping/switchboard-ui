@@ -670,11 +670,15 @@ button:focus-visible {
  * surface, mono semibold uppercase with wide tracking — while the body cells stay
  * natural case. Square corners, no zebra: the grid reads from the hairlines and
  * the header band alone. Values align to the start edge (logical, so it follows
- * writing direction). */
+ * writing direction). The whole grid is set at the small size, the size every
+ * other structural label in the theme uses, so a table reads as a data surface
+ * rather than as prose and its header band matches the section meta beside it;
+ * inline code in a cell inherits that size rather than stepping down again. */
 .sb-table-grid {
   border-collapse: collapse;
   background: var(--sb-color-bg);
   color: var(--sb-color-fg);
+  font-size: var(--sb-font-size-sm);
 }
 .sb-table-grid th,
 .sb-table-grid td {
