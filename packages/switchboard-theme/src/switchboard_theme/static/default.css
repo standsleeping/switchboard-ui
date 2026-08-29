@@ -180,9 +180,17 @@
  * The gutter must be on the root element: per CSS Overflow 3 the user agent
  * applies the root element's `scrollbar-gutter` to the viewport, and, unlike
  * `overflow`, it is never propagated from `body`. So the structural sheet
- * cannot reserve it, and the element scrollers' own gutters do not reach it. */
+ * cannot reserve it, and the element scrollers' own gutters do not reach it.
+ *
+ * It is reserved for the flow root only, the page that scrolls. A viewport root
+ * never scrolls at the page level, and a reservation there shrinks the initial
+ * containing block, so the locked root (`position: fixed; inset: 0`) would stop
+ * one classic scrollbar short of the window, a dead strip no bar can occupy.
+ * Every Document declares a root mode, so the positive form needs no default. */
 :root {
   background: var(--sb-color-bg);
+}
+:root:has(.sb-root-flow) {
   scrollbar-gutter: stable;
 }
 
@@ -199,16 +207,34 @@
 }
 
 /* The head and foot rails read as chrome. Each full-width horizontal seam has
- * one row owner; border-box keeps the hairline inside the rail's promised size. */
+ * one row owner; border-box keeps the hairline inside the rail's promised size.
+ * In the flowing document the rails stay put while the page scrolls under
+ * them, so each paints its own ground; otherwise the article would show
+ * through. */
 .sb-head-row,
 .sb-foot-row {
   box-sizing: border-box;
+  background: var(--sb-color-bg);
 }
 .sb-head-row {
   border-block-end: var(--sb-border-width-thin) solid var(--sb-color-border);
 }
 .sb-foot-row {
   border-block-start: var(--sb-border-width-thin) solid var(--sb-color-border);
+}
+
+/* The two column seams. The centre column owns both, and draws each only where
+ * a rendered neighbour shares the edge: a rail holding no island collapses,
+ * and a seam with nothing on its far side would be a perimeter fragment the
+ * rails above and below do not continue. The guard is the same test the
+ * structural sheet collapses by — an island within the rail — so the seam and
+ * the cell it separates from cannot disagree. (`:empty` would be a weaker
+ * test: a rail can hold frames yet no island, and it collapses then too.) */
+.sb-body-l:has(.sb-island) + .sb-body-c {
+  border-inline-start: var(--sb-border-width-thin) solid var(--sb-color-border);
+}
+.sb-body-c:has(+ .sb-body-r .sb-island) {
+  border-inline-end: var(--sb-border-width-thin) solid var(--sb-color-border);
 }
 
 /* The single accent signals "interactive". Square inset plus a min-width floor for
@@ -248,11 +274,20 @@ button:focus-visible {
   border: none;
   border-block-end: var(--sb-border-width-accent) solid transparent;
   padding: var(--sb-space-sm);
+  gap: var(--sb-space-xs);
   cursor: pointer;
 }
 .sb-segmented-option[aria-checked="true"] {
   color: var(--sb-color-fg);
   border-block-end-color: var(--sb-color-accent);
+}
+/* The shortcut badge: quieter than its option's label, and purely typographic
+ * — no border, no padding, no size change — so a keyed option and a plain one
+ * stay the same height in one control. `font: inherit` clears the user agent's
+ * `kbd` font-family swap (the no-UA-default rule). */
+.sb-segmented-key {
+  font: inherit;
+  color: var(--sb-color-subtle);
 }
 .sb-segmented-sep {
   color: var(--sb-color-subtle);
@@ -539,9 +574,11 @@ button:focus-visible {
   letter-spacing: var(--sb-font-tracking-wide);
 }
 
-/* Code block: a raised, hairline-bordered surface. A chrome strip (a muted
- * uppercase language tag, the copy action) sits over the code area, separated by a
- * hairline seam the chrome owns at its block-end. The code is mono (the UI family
+/* Code block: a raised, hairline-bordered surface. A surface with its own
+ * ground is a box by nature, and a box inside an inset column needs all four
+ * edges; a rule on two sides only reads as a box missing two. A chrome strip (a
+ * muted uppercase language tag, the copy action) sits over the code area,
+ * separated by a hairline seam the chrome owns at its block-end. The code is mono (the UI family
  * already is) at the small size and never wraps (`white-space: pre`); the area
  * owns the horizontal scroll declared in the structural sheet. The copy button is
  * a quiet accent-text action, not the accent fill — it beats the base `button`
@@ -667,6 +704,12 @@ button:focus-visible {
 .sb-collapsible {
   border-block-end: var(--sb-border-width-thin) solid var(--sb-color-border);
 }
+/* Inside a table cell the rule is the grid's: a collapsible placed in one (a
+ * source disclosure in a gallery row) draws no second line under itself. One
+ * edge, one owner, at component nesting as between tiled cells. */
+.sb-table .sb-collapsible {
+  border-block-end: none;
+}
 .sb-collapsible-summary {
   gap: var(--sb-space-md);
   padding: var(--sb-space-sm);
@@ -703,18 +746,26 @@ button:focus-visible {
   color: var(--sb-color-fg);
 }
 
-/* Sidebar nav: a quiet column of group labels and link rows. Every child
- * reserves the active-edge channel as a transparent inline-start border
- * (recolored only on the current page), so marking it never shifts a row and
- * headings align with row labels (peer edge reservation). The current page
- * carries the full three-channel mark: the recolored edge, the accent-soft
- * wash, and the bold label (weight is reflow-safe in mono: the advance width
- * does not change). A heading that follows rows opens a new section, drawn
- * with a thin separator rule. The optional meta annotation sits faint at the
- * row's far edge. */
+/* Sidebar nav: a quiet column of group labels and link rows, set at the
+ * chrome scale throughout (the small size; the body size belongs to the
+ * article), so a rail of theorem titles reads as one column rather than a
+ * stack of headings. Every child reserves the active-edge channel as a
+ * transparent inline-start border (recolored only on the current page), so
+ * marking it never shifts a row and headings align with row labels (peer edge
+ * reservation). The rail has two rhythms: a wider gap between sections and a
+ * tight one within, each owned by its container, so a group label sits close
+ * to its rows and apart from the rows above it, and the rail draws no rules of
+ * its own. A label that must wrap breaks balanced, so a two-line row reads as
+ * set rather than as overflow. The current page is marked in one channel plus
+ * colour: the recolored edge and the accent label (weight is reflow-safe in
+ * mono: the advance width does not change). The optional meta annotation sits
+ * faint at the row's far edge. */
 .sb-nav {
-  gap: var(--sb-space-2xs);
+  gap: var(--sb-space-md);
   padding: var(--sb-space-md);
+}
+.sb-nav-section {
+  gap: var(--sb-space-2xs);
 }
 .sb-nav-list {
   gap: var(--sb-space-2xs);
@@ -731,15 +782,11 @@ button:focus-visible {
   border-inline-start: var(--sb-border-width-accent) solid transparent;
   padding: var(--sb-space-xs);
 }
-.sb-nav-list + .sb-nav-group {
-  border-block-start: var(--sb-border-width-thin) solid var(--sb-color-border);
-}
 .sb-nav-sublist {
-  padding-inline-start: var(--sb-space-lg);
+  padding-inline-start: var(--sb-space-md);
 }
-.sb-nav-sublist .sb-nav-item {
-  font-size: var(--sb-font-size-sm);
-  padding: var(--sb-space-xs);
+.sb-nav-label {
+  text-wrap: balance;
 }
 /* The path to the current page, marked in the channel every row already
  * reserves: an ancestor tints its edge with the plain border color, the current
@@ -751,8 +798,9 @@ button:focus-visible {
 .sb-nav-item {
   color: var(--sb-color-fg);
   text-decoration: none;
+  font-size: var(--sb-font-size-sm);
   border-inline-start: var(--sb-border-width-accent) solid transparent;
-  padding: var(--sb-space-sm);
+  padding: var(--sb-space-xs);
   gap: var(--sb-space-sm);
 }
 .sb-nav-item:hover {
@@ -761,8 +809,7 @@ button:focus-visible {
 .sb-nav-item[aria-current="page"] {
   color: var(--sb-color-accent);
   border-inline-start-color: var(--sb-color-accent);
-  background: var(--sb-color-accent-soft);
-  font-weight: var(--sb-font-weight-bold);
+  font-weight: var(--sb-font-weight-medium);
 }
 .sb-nav-item[aria-current="page"] .sb-nav-meta {
   color: var(--sb-color-accent);
@@ -901,7 +948,10 @@ button:focus-visible {
  * cap at the reading measure while tables and code take the column's full width.
  * An h1 is the document's own title, so it takes the display type the hero uses;
  * an h2 opens a block over the same hairline a section heading draws. Headings
- * clear the scroll owner's edge when an anchor lands on them. The lead is the
+ * clear the scroll owner's edge, plus whatever chrome is pinned above it, when
+ * an anchor lands on them: the pinned chrome's depth is the structural sheet's
+ * published fact, zero at an end with no rendered chrome rail and unset outside
+ * a flowing root, which the fallback covers. The lead is the
  * same prose voice one step quieter: the opening line of a hero or a section. */
 .sb-prose {
   gap: var(--sb-space-md);
@@ -911,7 +961,7 @@ button:focus-visible {
 .sb-prose h3,
 .sb-prose h4 {
   font-weight: var(--sb-font-weight-bold);
-  scroll-margin-block-start: var(--sb-space-md);
+  scroll-margin-block-start: calc(var(--sb-chrome-block-start, 0px) + var(--sb-space-md));
 }
 .sb-prose h1 {
   font-size: var(--sb-font-size-display);

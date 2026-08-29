@@ -49,6 +49,24 @@ def test_theme_never_pads_a_structural_hook() -> None:
                 )
 
 
+def test_the_viewport_gutter_is_reserved_for_the_flow_root_only() -> None:
+    """The page that scrolls reserves its bar's width; the locked page never does.
+
+    Reserving on every root shrinks a viewport root's initial containing block
+    by one classic scrollbar, so the locked root stops one bar short of the
+    window with a dead strip no bar can occupy. Every Document declares a root
+    mode, so the positive form needs no default.
+    """
+    for name in themes.THEMES:
+        css = read_asset("switchboard_theme", f"{name}.css")
+        reserving = {
+            selectors.strip()
+            for selectors, body in ownership.rules(css)
+            if "scrollbar-gutter" in body
+        }
+        assert reserving == {":root:has(.sb-root-flow)"}
+
+
 def test_theme_uses_no_margin() -> None:
     """The theme never uses margin; rhythm is gap, inset is padding."""
     for name, css in _theme_sheets():

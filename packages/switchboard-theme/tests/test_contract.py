@@ -50,3 +50,21 @@ def test_every_consumed_obligation_is_defined_by_a_theme() -> None:
         consumed |= set(_CONSUMPTION.findall(css))
     dangling = sorted(consumed - _defined_obligations())
     assert not dangling, f"contract tokens consumed but defined by no theme: {dangling}"
+
+
+# A structural fact in a definition position. The fact family (``--sb-chrome-*``)
+# is the treaty's other direction: structure computes the pinned chrome's depth
+# from what renders; a theme may compose a fact (an anchor clearing the pinned
+# chrome) but never define one.
+_FACT_DEFINITION = re.compile(r"(--sb-chrome-[\w-]+)\s*:")
+
+
+def test_a_theme_never_defines_a_structural_fact() -> None:
+    """Themes compose --sb-chrome-* facts; only structure defines them.
+
+    A theme that redefined the chrome depth would fork a geometry two
+    consumers — the sticky rail and the anchor clearance — must agree on.
+    """
+    for name, css in _theme_sheets():
+        defined = sorted(set(_FACT_DEFINITION.findall(css)))
+        assert not defined, f"theme {name!r} defines structural facts {defined}"
