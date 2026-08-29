@@ -37,8 +37,18 @@
   flex-direction: column;
 }
 
-/* An empty frame (a region cell with no islands) takes no space. */
+/* A frame that holds no island takes no space. An omitted region is an empty
+ * cell; a rail whose three regions are all omitted is a row of empty cells, and
+ * would otherwise keep its floor under its seam as a band of nothing. `:empty`
+ * carries the cell case; the second rule carries the row case, whose cells are
+ * elements. Two rules, not one selector list: an invalid selector drops the
+ * whole list it appears in, so sharing a list would cost an engine without
+ * `:has()` the cell collapse too. Kept apart, such an engine loses only the
+ * row case and keeps that rail's floor. */
 .sb-frame:empty {
+  display: none;
+}
+.sb-frame:not(:has(.sb-island)) {
   display: none;
 }
 
@@ -72,10 +82,17 @@
  * the obligation the theme publishes (`--sb-fit-rail-block`), and grows past it
  * if its content is taller. `flex: 0 0 auto` keeps the flexible body from either
  * crushing the rail or letting it claim slack; the floor is the only fixed
- * promise, and it is the theme's number, not a structural guess. */
+ * promise, and it is the theme's number, not a structural guess.
+ *
+ * A rail distributes its cells to its ends. Its centre is the only flexible
+ * cell, and an omitted centre collapses, leaving two fixed cells with nothing
+ * between them to push the trailing one to the row's end; distribution does
+ * that, and is inert whenever the centre renders, since a flexible centre takes
+ * every free pixel first. */
 .sb-rail {
   flex: 0 0 auto;
   min-block-size: var(--sb-fit-rail-block);
+  justify-content: space-between;
 }
 
 /* The two root policies.
@@ -88,9 +105,14 @@
  * browser chrome collapses and expands, so a length written in it has a
  * mid-scroll geometry change built into the unit — the exact defect class this
  * layer exists to eliminate. The small viewport unit is the always-visible area
- * and never changes during a scroll. */
+ * and never changes during a scroll.
+ *
+ * The flow root also zeroes the chrome depth facts, which the conditions
+ * further down raise where a chrome rail renders (see them for the concept). */
 .sb-root-flow {
   min-block-size: 100svb;
+  --sb-chrome-block-start: 0px;
+  --sb-chrome-block-end: 0px;
 }
 
 /* Viewport containment: the root is locked to the viewport, robust to any host
@@ -113,16 +135,53 @@
   flex: 1 1 auto;
 }
 
-/* A sticky rail: a side column in a flowing document that stays put while the
- * page scrolls past it. `align-self: flex-start` stops the flex row from
- * stretching it to the article's height (which would leave nothing to stick),
- * and the cap keeps a rail taller than the screen scrollable within itself
- * rather than running off the bottom. Capped in `svb` for the reason above. */
-.sb-sticky-rail {
+/* The flowing document's chrome stays while the page scrolls under it: the
+ * head rail at the top of the viewport, the foot rail at the bottom. Both are
+ * content-driven with the theme's floor, so their sizes are the one geometry
+ * the rails below can be measured against. `z-index` keeps them above the
+ * article, which is painted later in the tree. The theme paints their ground. */
+.sb-root-flow > .sb-head-row {
   position: sticky;
   inset-block-start: 0;
+  z-index: 1;
+}
+.sb-root-flow > .sb-foot-row {
+  position: sticky;
+  inset-block-end: 0;
+  z-index: 1;
+}
+
+/* The chrome depth: how far the pinned chrome reaches into the flowing
+ * viewport at each end, zeroed on the flow root above. A rail that renders
+ * contributes its floor; an omitted rail collapses and contributes nothing.
+ * Each condition states its fact once, and every consumer — the sticky rail
+ * below, the theme's anchor clearance — composes the same two values, so a
+ * page with no head rail starts its rails at the viewport's top rather than a
+ * floor below it. The depth is the floor, the size a rail has at rest: chrome
+ * grown past its floor reaches deeper than the stated depth (an enumerated
+ * limit; see the docs). The zero fallback keeps the facts valid on a page
+ * without a theme, where no floor obligation is defined: an invalid custom
+ * property would not fall back to the zero these rules override, it would
+ * invalidate every consumer, and the rail would stop sticking. */
+.sb-root-flow:has(> .sb-head-row .sb-island) {
+  --sb-chrome-block-start: var(--sb-fit-rail-block, 0px);
+}
+.sb-root-flow:has(> .sb-foot-row .sb-island) {
+  --sb-chrome-block-end: var(--sb-fit-rail-block, 0px);
+}
+
+/* A sticky rail: a side column in a flowing document that stays put while the
+ * page scrolls past it, sized to the window between whatever chrome renders so
+ * that a part pinned at its end (a control below the navigation) sits at the
+ * bottom of the screen in every scroll state, and a rail taller than that
+ * window scrolls within itself. `align-self: flex-start` stops the flex row
+ * from stretching it to the article's height, which would leave nothing to
+ * stick. Sized in `svb` for the reason above. */
+.sb-sticky-rail {
+  position: sticky;
+  inset-block-start: var(--sb-chrome-block-start);
   align-self: flex-start;
-  max-block-size: 100svb;
+  block-size: calc(100svb - var(--sb-chrome-block-start) - var(--sb-chrome-block-end));
 }
 
 /* An island fills its cell; its geometry comes from the surrounding frames. */

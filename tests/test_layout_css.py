@@ -71,27 +71,37 @@ def test_layout_css_selects_only_sb_classes() -> None:
     assert not foreign, f"layout.css selects non-sb elements: {foreign}"
 
 
-def test_layout_css_admits_only_contract_tokens() -> None:
-    """Structure may consume contract obligations (--sb-fit-*), no other token, never theming.
+def test_layout_css_admits_only_contract_tokens_and_its_own_facts() -> None:
+    """Structure consumes obligations (--sb-fit-*) and facts it declares itself, nothing else.
 
     The three-way split: the layout layer stays free of paint tokens and of
     light/dark theming (those are *causes*, the theme's to own), but it may
     consume the projected *obligations* the theme publishes as ``--sb-fit-*``
     (a rail floors itself to ``--sb-fit-rail-block`` rather than guessing a
-    fixed height). ``test_contract.py`` enforces that the flow is one-way.
+    fixed height), and the geometry *facts* it publishes itself as
+    ``--sb-chrome-*`` — each of which must be declared in this sheet, so no
+    fact is consumed dangling. ``test_contract.py`` enforces that each family
+    flows one way.
     """
     css = read_static("layout.css")
     assert "light-dark(" not in css  # theming is a cause, never consumed by structure
-    non_contract = sorted(
+    declared_facts = {
+        name
+        for _, body in ownership.rules(css)
+        for name, _ in ownership.declarations(body)
+        if name.startswith(ownership.FACT_TOKEN_PREFIX)
+    }
+    offenders = sorted(
         {
             t
             for t in ownership.referenced_tokens(css)
             if not t.startswith(ownership.CONTRACT_TOKEN_PREFIX)
+            if t not in declared_facts
         }
     )
-    assert not non_contract, (
-        f"layout.css references non-contract tokens {non_contract}; "
-        "structure may consume only --sb-fit-* obligations"
+    assert not offenders, (
+        f"layout.css references tokens {offenders} that are neither --sb-fit-* "
+        "obligations nor --sb-chrome-* facts the sheet declares"
     )
 
 
@@ -126,6 +136,38 @@ def test_auto_overflow_reserves_a_stable_scrollbar_gutter() -> None:
     """
     body = ownership.rule_body(read_static("layout.css"), ".sb-overflow-auto")
     assert dict(ownership.declarations(body)).get("scrollbar-gutter") == "stable"
+
+
+def test_a_rail_distributes_its_cells_to_its_ends() -> None:
+    """A rail's centre is its only flexible cell, and an omitted centre collapses.
+
+    Two fixed cells with nothing between them would sit flush at the row's
+    start; distribution puts the trailing cell at the row's end, and is inert
+    whenever the centre renders, because a flexible centre takes every free
+    pixel first.
+    """
+    body = ownership.rule_body(read_static("layout.css"), ".sb-rail")
+    assert dict(ownership.declarations(body)).get("justify-content") == "space-between"
+
+
+def test_a_frame_holding_no_island_collapses() -> None:
+    """An empty cell and a rail of empty cells both take no space.
+
+    `:empty` carries the cell; `:not(:has(.sb-island))` carries the rail, which
+    is never empty itself (its three cells are there, collapsed) but would
+    otherwise keep its floor under its seam as a band of nothing. The two are
+    separate rules, never one selector list: an invalid selector drops the
+    whole list it appears in, so a shared list would cost an engine without
+    `:has()` the cell collapse too.
+    """
+    css = read_static("layout.css")
+    collapsing_lists = [
+        {selector.strip() for selector in selectors.split(",")}
+        for selectors, body in ownership.rules(css)
+        if dict(ownership.declarations(body)).get("display") == "none"
+    ]
+    assert {".sb-frame:empty"} in collapsing_lists
+    assert {".sb-frame:not(:has(.sb-island))"} in collapsing_lists
 
 
 def test_the_layer_never_styles_the_scrollbar_itself() -> None:
@@ -176,21 +218,69 @@ def test_each_root_mode_has_one_rule_and_only_viewport_positions() -> None:
     )
 
 
-def test_the_sticky_rail_never_stretches_and_is_capped() -> None:
-    """A sticky rail aligns to the start and caps at the viewport.
+def test_the_chrome_depth_counts_only_rails_that_render() -> None:
+    """Each end's chrome depth is the rail's floor if it renders, else zero.
 
-    Without ``align-self: flex-start`` the flex row stretches the rail to the
-    article's height, leaving nothing to stick; without the cap a rail taller
-    than the screen runs off the bottom instead of scrolling within itself.
+    The conditions state the facts; every consumer (the sticky rail here, the
+    theme's anchor clearance) composes the same two values. The gate is the
+    same test the collapse rule uses — an island within the rail — so a page
+    with no head rail starts its side rails at the viewport's top rather than
+    a floor below it.
     """
-    rail = dict(
+    css = read_static("layout.css")
+    defaults = dict(ownership.declarations(ownership.rule_body(css, ".sb-root-flow")))
+    assert defaults.get("--sb-chrome-block-start") == "0px"
+    assert defaults.get("--sb-chrome-block-end") == "0px"
+    with_head = dict(
         ownership.declarations(
-            ownership.rule_body(read_static("layout.css"), ".sb-sticky-rail")
+            ownership.rule_body(css, ".sb-root-flow:has(> .sb-head-row .sb-island)")
         )
     )
+    assert with_head == {"--sb-chrome-block-start": "var(--sb-fit-rail-block, 0px)"}
+    with_foot = dict(
+        ownership.declarations(
+            ownership.rule_body(css, ".sb-root-flow:has(> .sb-foot-row .sb-island)")
+        )
+    )
+    assert with_foot == {"--sb-chrome-block-end": "var(--sb-fit-rail-block, 0px)"}
+
+
+def test_the_sticky_rail_never_stretches_and_fills_the_window() -> None:
+    """A sticky rail aligns to the start and is sized to the window between the chrome.
+
+    Without ``align-self: flex-start`` the flex row stretches the rail to the
+    article's height, leaving nothing to stick. The size is the viewport less
+    the chrome depth at each end, so a part pinned at the rail's end sits at
+    the bottom of the screen in every scroll state and a taller rail scrolls
+    within itself.
+    """
+    css = read_static("layout.css")
+    rail = dict(ownership.declarations(ownership.rule_body(css, ".sb-sticky-rail")))
     assert rail.get("position") == "sticky"
+    assert rail.get("inset-block-start") == "var(--sb-chrome-block-start)"
     assert rail.get("align-self") == "flex-start"
-    assert rail.get("max-block-size") == "100svb"
+    assert rail.get("block-size") == (
+        "calc(100svb - var(--sb-chrome-block-start) - var(--sb-chrome-block-end))"
+    )
+
+
+def test_the_flowing_documents_chrome_rails_stay() -> None:
+    """The head rail sticks to the top and the foot rail to the bottom of the viewport.
+
+    The page still scrolls (the shape's defining property); only the chrome
+    holds still, which is what lets a side rail be measured against it. Both
+    sit above the article, which the tree paints later.
+    """
+    css = read_static("layout.css")
+    head = dict(
+        ownership.declarations(ownership.rule_body(css, ".sb-root-flow > .sb-head-row"))
+    )
+    foot = dict(
+        ownership.declarations(ownership.rule_body(css, ".sb-root-flow > .sb-foot-row"))
+    )
+    assert head.get("position") == "sticky" and head.get("inset-block-start") == "0"
+    assert foot.get("position") == "sticky" and foot.get("inset-block-end") == "0"
+    assert head.get("z-index") == "1" and foot.get("z-index") == "1"
 
 
 def test_the_flow_body_row_grows_without_a_zero_basis() -> None:
