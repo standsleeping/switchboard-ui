@@ -261,12 +261,30 @@ def is_ua_reset(prop: str, value: str) -> bool:
     return permitted is not None and value.strip().lower() in permitted
 
 
+def is_published_fact(prop: str, value: str) -> bool:
+    """Whether ``prop: value`` publishes a structural geometry fact.
+
+    A fact is a ``--sb-chrome-*`` custom property whose value is itself
+    structural: a zero length, or a contract obligation the theme publishes,
+    optionally with a zero fallback for a page carrying no theme. Any other
+    value — a paint token, a bare magic length — stays a breach.
+    """
+    if not prop.startswith(FACT_TOKEN_PREFIX):
+        return False
+    v = value.strip()
+    if v in {"0", "0px"}:
+        return True
+    obligation = rf"var\(\s*{CONTRACT_TOKEN_PREFIX}[\w-]+\s*(,\s*0(px)?\s*)?\)"
+    return re.fullmatch(obligation, v) is not None
+
+
 def non_structural_declarations(css: str) -> list[tuple[str, str, str]]:
     """Every ``(selector, property, value)`` a structural sheet may not declare.
 
-    A declaration is admissible if its property is a geometry property, or if it
-    is a permitted reset of a user-agent default. Everything else is a breach:
-    paint in a structural sheet, or box-spacing used as spacing.
+    A declaration is admissible if its property is a geometry property, if it is
+    a permitted reset of a user-agent default, or if it publishes a structural
+    geometry fact. Everything else is a breach: paint in a structural sheet, or
+    box-spacing used as spacing.
     """
     return [
         (selector.strip(), name, value)
@@ -274,13 +292,23 @@ def non_structural_declarations(css: str) -> list[tuple[str, str, str]]:
         for name, value in declarations(body)
         if name not in LAYOUT_PROPERTIES
         if not is_ua_reset(name, value)
+        if not is_published_fact(name, value)
     ]
 
 
 CONTRACT_TOKEN_PREFIX = "--sb-fit-"
-"""The one token family structure may consume: the Component Geometry Contract
-obligations the theme publishes. Structure consumes obligations (a rail floors
-itself to ``--sb-fit-rail-block``), never paint causes."""
+"""The one token family structure may consume without declaring it: the
+Component Geometry Contract obligations the theme publishes. Structure consumes
+obligations (a rail floors itself to ``--sb-fit-rail-block``), never paint
+causes."""
+
+FACT_TOKEN_PREFIX = "--sb-chrome-"
+"""The one token family structure may publish: geometry facts the sheet
+computes from what renders (the pinned chrome's depth at each end of a flowing
+viewport). The two families are the treaty's two directions, each one-way: the
+theme defines obligations and structure consumes them; structure defines facts
+and the theme may compose them (an anchor clearing the pinned chrome) but
+never define one."""
 
 STRUCTURAL_LINK_TOKENS: frozenset[str] = frozenset({"--sb-anchor"})
 """Per-instance link values structure may consume beside the contract: identity

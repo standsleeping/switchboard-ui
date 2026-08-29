@@ -115,7 +115,34 @@ def test_structural_policy_constants_are_populated() -> None:
     assert "display" in ownership.LAYOUT_PROPERTIES
     assert "background" not in ownership.LAYOUT_PROPERTIES
     assert ownership.CONTRACT_TOKEN_PREFIX == "--sb-fit-"
+    assert ownership.FACT_TOKEN_PREFIX == "--sb-chrome-"
     assert ownership.INLINE_VALUE_PREFIX == "--sb-"
+
+
+def test_a_published_fact_is_a_chrome_token_with_a_structural_value() -> None:
+    """A fact declaration is admissible only as a zero or a contract obligation.
+
+    The name must carry the fact prefix and the value must itself be
+    structural; a paint token, a bare length, or any other custom property is
+    a breach the structural guard keeps reporting.
+    """
+    assert ownership.is_published_fact("--sb-chrome-block-start", "0px")
+    assert ownership.is_published_fact("--sb-chrome-block-end", "0")
+    assert ownership.is_published_fact(
+        "--sb-chrome-block-start", "var(--sb-fit-rail-block)"
+    )
+    assert ownership.is_published_fact(
+        "--sb-chrome-block-start", "var(--sb-fit-rail-block, 0px)"
+    )
+    assert not ownership.is_published_fact(
+        "--sb-chrome-block-start", "var(--sb-fit-rail-block, 48px)"
+    )
+    assert not ownership.is_published_fact("--sb-chrome-block-start", "48px")
+    assert not ownership.is_published_fact(
+        "--sb-chrome-block-start", "var(--sb-space-md)"
+    )
+    assert not ownership.is_published_fact("--sb-other-token", "0px")
+    assert not ownership.is_published_fact("background", "0px")
 
 
 def test_structural_hooks_are_the_no_inset_layout_vocabulary() -> None:
