@@ -26,10 +26,10 @@ Interactive components. Each publishes its value on a `topic` you choose, so oth
 ### `segmented`
 
 ```python
-def segmented(*, topic: str, options: Sequence[tuple[str, str]], value: str, label: str, listen: str | None = None) -> Island
+def segmented(*, topic: str, options: Sequence[tuple[str, str] | Option], value: str, label: str, listen: str | None = None) -> Island
 ```
 
-Pick one of `options` (each a `(value, label)` pair) and publish its value on `topic`. The markup is a radio group (`role="radiogroup"` of `role="radio"` options with roving `tabindex`), not a tab list, because a single-select that emits a value owns no `tabpanel` to control. `label` is the group's required accessible name. Raises `ValueError` if `options` is empty, `label` is blank, or `value` is not among the options. Companions: `segmented.js`, `segmented.css`.
+Pick one of `options` and publish its value on `topic`. An entry is a `(value, label)` pair, or an [`Option`](#supporting-types) carrying a shortcut `key` besides them for an option the host binds to a keyboard shortcut: the key renders as a decorative badge before the label, so the option announces as its label alone ("browse", not "B browse"), and is advertised as `aria-keyshortcuts` on the option, the channel assistive tech reads for it. The binding itself is the host's: the component shows and advertises the key but does not listen for it. Labels and keys are escaped. The markup is a radio group (`role="radiogroup"` of `role="radio"` options with roving `tabindex`), not a tab list, because a single-select that emits a value owns no `tabpanel` to control. `label` is the group's required accessible name. Raises `ValueError` if `options` is empty, `label` is blank, or `value` is not among the options. Companions: `segmented.js`, `segmented.css`.
 
 ### `color_input`
 
@@ -152,7 +152,7 @@ A native `<details>`/`<summary>` section, so toggling, keyboard, and open/closed
 def nav(*, sections: Sequence[NavSection], label: str, scroll_key: str = "") -> Island
 ```
 
-A sidebar `<nav>` of item sections, the canonical left rail. Each `NavSection` renders an optional uppercase group heading over a semantic `<ul>`; each `NavItem` is an `<li>` holding an `<a>`, and an item with `children` renders a nested `<ul>` inside its own `<li>`, to any depth. An item's optional `meta` annotation (a count, a status) sits at the row's far edge, and the current item carries `aria-current="page"`.
+A sidebar `<nav>` of item sections, the canonical left rail. Each `NavSection` renders, in its own container, an optional uppercase group heading over a semantic `<ul>`, so the rail has two rhythms (between sections, and within one) that the theme sets apart; each `NavItem` is an `<li>` holding an `<a>`, and an item with `children` renders a nested `<ul>` inside its own `<li>`, to any depth. An item's optional `meta` annotation (a count, a status) sits at the row's far edge, and the current item carries `aria-current="page"`.
 
 Nesting is the shape of the value: a child belongs to the item it is written inside, so reordering rows cannot silently reparent them and a grandchild is expressible. Every ancestor of the current item carries `data-current-ancestor`, computed server-side, so revealing the current path costs no script and no reflow. Every branch renders expanded; disclosure is a separate concern, and an ancestor that opened or closed a branch would move the row the reader just clicked and every row after it.
 
@@ -232,6 +232,7 @@ Public types in `switchboard_ui.components` used by the factories above:
 | Type | Used by | Meaning |
 |---|---|---|
 | `Cell(html: str)` | `table` | A trusted, already-rendered inline-HTML table cell. |
+| `Option(value, label, key="")` | `segmented` | One option with a shortcut key the host binds, rendered as a decorative badge and advertised as `aria-keyshortcuts`. |
 | `FilterControl(label, control)` | `filter_table` | One labelled control in a filter bar, wrapping any publishing island. |
 | `MatchMode` | `filter_table` | `Literal["substring", "exact"]`: how a published value is matched against a row key. |
 | `SORT_VALUES` | `filter_table` | `("none", "asc", "desc")`: the values a sort control publishes. |

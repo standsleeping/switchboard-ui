@@ -23,6 +23,7 @@ from switchboard_ui.components import (
     FilterControl,
     NavItem,
     NavSection,
+    Option,
     TocEntry,
     ValueBinding,
     breadcrumb,
@@ -142,6 +143,73 @@ def test_segmented_separates_options() -> None:
     separators = find(_make().initial, "span", **{"class": "sb-segmented-sep"})
     assert len(separators) == len(_OPTIONS) - 1
     assert all(s.get("aria-hidden") == "true" for s in separators)
+
+
+def test_segmented_renders_a_shortcut_badge() -> None:
+    """An Option's key becomes a decorative badge plus the standard advertisement.
+
+    The badge is aria-hidden, so the option announces as its label alone; the
+    binding is advertised as aria-keyshortcuts on the option itself, the
+    channel assistive tech actually reads. The host owns the binding.
+    """
+    island = segmented(
+        topic="view:changed",
+        options=(Option("overview", "browse", key="B"),),
+        value="overview",
+        label=_LABEL,
+    )
+    badges = find(island.initial, "kbd")
+    assert len(badges) == 1
+    assert badges[0]["class"] == "sb-segmented-key"
+    assert badges[0]["aria-hidden"] == "true"
+    (radio,) = find(island.initial, "button", role="radio")
+    assert radio["aria-keyshortcuts"] == "B"
+
+
+def test_segmented_escapes_label_and_key_alike() -> None:
+    """Option labels and keys are character data: markup in them is escaped."""
+    island = segmented(
+        topic="view:changed",
+        options=(Option("overview", "<b>browse</b>", key="<B>"),),
+        value="overview",
+        label=_LABEL,
+    )
+    assert "<b>" not in island.initial
+    assert "&lt;b&gt;browse&lt;/b&gt;" in island.initial
+    assert "&lt;B&gt;" in island.initial
+
+
+def test_segmented_mixes_tuples_and_options() -> None:
+    """The two entry kinds compose in one option set; a tuple gets no badge.
+
+    A tuple is an Option with no key, so an unkeyed option carries neither a
+    badge nor an aria-keyshortcuts advertisement.
+    """
+    island = segmented(
+        topic="view:changed",
+        options=(Option("overview", "browse", key="B"), ("api", "API")),
+        value="overview",
+        label=_LABEL,
+    )
+    assert len(find(island.initial, "kbd")) == 1
+    radios = find(island.initial, "button", role="radio")
+    assert [r.get("aria-keyshortcuts") for r in radios] == ["B", None]
+
+
+def test_segmented_option_does_not_disturb_radio_semantics() -> None:
+    """A keyed option changes the option's content, nothing about its role."""
+    island = segmented(
+        topic="view:changed",
+        options=(Option("overview", "browse", key="B"), ("api", "API")),
+        value="api",
+        label=_LABEL,
+    )
+    radios = find(island.initial, "button", role="radio")
+    assert [r["data-value"] for r in radios] == ["overview", "api"]
+    assert {r["data-value"]: r["tabindex"] for r in radios} == {
+        "overview": "-1",
+        "api": "0",
+    }
 
 
 def test_segmented_rejects_empty_options() -> None:
@@ -1238,6 +1306,29 @@ def test_nav_renders_sections_with_headings_over_items() -> None:
     assert ">Groups<" in island.initial
     hrefs = [a["href"] for a in find(island.initial, "a", **{"class": "sb-nav-item"})]
     assert hrefs == ["/", "/types/", "/layout/"]
+
+
+def test_nav_wraps_each_section_in_its_own_container() -> None:
+    """Each section is one container holding its optional heading over its list.
+
+    The container is what gives the rail two rhythms a theme can set apart (the
+    space between sections and the space within one) without any row carrying
+    space that is not its own. A headingless section still gets its container,
+    so the between-sections rhythm never depends on whether a heading exists.
+    """
+    island = _nav()
+    structure = [
+        attrs["class"]
+        for _, attrs in elements(island.initial)
+        if attrs.get("class") in {"sb-nav-section", "sb-nav-group", "sb-nav-list"}
+    ]
+    assert structure == [
+        "sb-nav-section",
+        "sb-nav-list",
+        "sb-nav-section",
+        "sb-nav-group",
+        "sb-nav-list",
+    ]
 
 
 def test_nav_marks_only_the_current_item() -> None:

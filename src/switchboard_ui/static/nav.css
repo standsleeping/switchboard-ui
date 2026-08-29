@@ -8,12 +8,20 @@
  * same .sb-* hooks. The guard in tests/test_components.py holds this file to the
  * geometry-only, token-free, .sb-*-only contract.
  *
- * The markup is `nav > ul > li > a`, with a nested `ul` inside any `li` that has
- * children, to any depth. The list is what carries the hierarchy to assistive
- * technology, so the rules here undo the user agent's list *presentation*
- * without flattening the structure that presentation describes. */
+ * The markup is `nav > div.sb-nav-section > ul > li > a`, with a nested `ul`
+ * inside any `li` that has children, to any depth. The section container holds
+ * one group heading (optional) over its list, so the rail has two rhythms the
+ * theme can set apart: between sections and within one. The list is what
+ * carries the hierarchy to assistive technology, so the rules here undo the
+ * user agent's list *presentation* without flattening the structure that
+ * presentation describes. */
 
 .sb-nav {
+  display: flex;
+  flex-direction: column;
+}
+
+.sb-nav-section {
   display: flex;
   flex-direction: column;
 }

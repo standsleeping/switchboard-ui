@@ -74,39 +74,76 @@ def _control_props(topic: str, listen: str | None) -> dict[str, Json]:
     return props
 
 
-def _option(value: str, label: str, *, checked: bool) -> str:
+@dataclass(frozen=True)
+class Option:
+    """One segmented option: its value, its label, and an optional shortcut key.
+
+    The plain ``(value, label)`` tuple covers an option that is just words;
+    ``Option`` adds ``key``, the keyboard shortcut the host binds to the
+    option, rendered as a badge before the label. The badge is decorative
+    (``aria-hidden``), so the option still announces as its label alone, and
+    the binding is advertised as ``aria-keyshortcuts`` on the option — the
+    standard channel, which a badge in the content could never set. The
+    binding itself stays the host's: the component shows and advertises the
+    key but does not listen for it, since only the host knows its page's key
+    map. Label and key are both escaped; an option label is character data,
+    never markup.
+    """
+
+    value: str
+    label: str
+    key: str = ""
+
+
+def _option(option: Option, *, checked: bool) -> str:
     """One radio option, server-rendered so it is present and focus-ordered at first paint.
 
     The checked option is the group's single tab stop (``tabindex="0"``); the rest
     are reachable only by the arrow keys (``tabindex="-1"``, roving tabindex).
     """
+    content: list[str] = []
+    if option.key:
+        # No text between badge and label: the option is a flex row, which
+        # drops whitespace-only children; the space between the two is the
+        # option's own gap, the theme's to size.
+        content.append(
+            element(
+                "kbd",
+                {"class": "sb-segmented-key", "aria-hidden": "true"},
+                [escape_text(option.key)],
+            )
+        )
+    content.append(escape_text(option.label))
     return element(
         "button",
         {
             "class": "sb-segmented-option",
             "type": "button",
             "role": "radio",
-            "data-value": value,
+            "data-value": option.value,
             "aria-checked": "true" if checked else "false",
+            "aria-keyshortcuts": option.key or None,
             "tabindex": "0" if checked else "-1",
         },
-        [escape_text(label)],
+        content,
     )
 
 
 def segmented(
     *,
     topic: str,
-    options: Sequence[tuple[str, str]],
+    options: Sequence[tuple[str, str] | Option],
     value: str,
     label: str,
     listen: str | None = None,
 ) -> Island:
     """A segmented toggle: pick one of ``options``, publish its value on ``topic``.
 
-    ``options`` is an ordered sequence of ``(value, label)`` pairs; ``value`` is
-    the initially-selected option's value and must be one of them; ``label`` names
-    the group for assistive tech (a radio group's required accessible name).
+    ``options`` is an ordered sequence of entries, each a ``(value, label)``
+    pair or an :class:`Option` carrying a shortcut ``key`` besides them;
+    ``value`` is the initially-selected option's value and must be one of
+    them; ``label`` names the group for assistive tech (a radio group's
+    required accessible name).
     Selecting an option publishes its value on ``topic``. ``listen`` names an
     optional topic the control follows: a value published there moves the
     selection in place — without stealing focus and without republishing, so
@@ -119,15 +156,16 @@ def segmented(
         raise ValueError("segmented requires at least one option")
     if not label:
         raise ValueError("segmented requires a non-empty label (the group's name)")
-    values = [v for v, _ in options]
+    opts = [entry if isinstance(entry, Option) else Option(*entry) for entry in options]
+    values = [o.value for o in opts]
     if value not in values:
         msg = f"segmented value {value!r} is not among options {values!r}"
         raise ValueError(msg)
     items: list[str] = []
-    for index, (opt_value, opt_label) in enumerate(options):
+    for index, opt in enumerate(opts):
         if index:
             items.append(_SEPARATOR)
-        items.append(_option(opt_value, opt_label, checked=opt_value == value))
+        items.append(_option(opt, checked=opt.value == value))
     initial = element(
         "div",
         {"class": "sb-segmented", "role": "radiogroup", "aria-label": label},
@@ -1332,7 +1370,8 @@ def nav(*, sections: Sequence[NavSection], label: str, scroll_key: str = "") -> 
 
     The canonical left-rail navigation — a static island (no adapter, no
     pub/sub): the links navigate natively, and no click is intercepted. Each
-    section renders its optional group heading over a semantic ``<ul>``; each
+    section renders, in its own container, its optional group heading over a
+    semantic ``<ul>``; each
     item is an ``<li>`` holding an ``<a>`` whose label sits at the row's start
     and whose optional ``meta`` annotation sits at the far edge. An item with
     children renders a nested ``<ul>`` inside its own ``<li>``, so the document
@@ -1421,17 +1460,21 @@ def nav(*, sections: Sequence[NavSection], label: str, scroll_key: str = "") -> 
             contents,
         )
 
+    # Each section is its own flow container (heading over list), so the rail's
+    # rhythm has two levels the theme can set apart: the gap between sections
+    # and the gap within one, without any row carrying space that is not its own.
     blocks: list[str] = []
     for section_index, section in enumerate(sections):
+        parts: list[str] = []
         if section.heading:
-            blocks.append(
+            parts.append(
                 element(
                     "div",
                     {"class": "sb-nav-group"},
                     [escape_text(section.heading)],
                 )
             )
-        blocks.append(
+        parts.append(
             element(
                 "ul",
                 {"class": "sb-nav-list"},
@@ -1441,6 +1484,7 @@ def nav(*, sections: Sequence[NavSection], label: str, scroll_key: str = "") -> 
                 ],
             )
         )
+        blocks.append(element("div", {"class": "sb-nav-section"}, parts))
     initial = element("nav", {"class": "sb-nav", "aria-label": label}, blocks)
     if scroll_key:
         # Before the nav, not after it and not at the end of <body>. A document
