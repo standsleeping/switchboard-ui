@@ -33,6 +33,7 @@ obligation and lets content drive above it (see ``static/layout.css``).
 """
 
 from collections.abc import Mapping, Sequence
+from dataclasses import replace
 
 from switchboard_ui.model import Document, Frame, Island, Overflow, Region, Slot
 
@@ -41,8 +42,16 @@ from switchboard_ui.model import Document, Frame, Island, Overflow, Region, Slot
 _LEFT_WIDTH = "220px"
 _RIGHT_WIDTH = "200px"
 
-Placement = Mapping[Region, Sequence[Island]]
-"""Islands addressed by region name, the placement both presets accept."""
+Placement = Mapping[Region, Sequence[Island] | Frame]
+"""What each region holds, by region name: the placement both presets accept.
+
+A region holds a sequence of islands, stacked in a column the preset builds, or
+a :class:`Frame` the host built, which becomes the cell itself: the preset adds
+the region's hook class (and its structural role) and leaves the frame's own
+overflow policy in force, so a rail can be a scrolling part over a pinned part,
+with the boundary between them a frame edge rather than a line drawn inside a
+scroll owner.
+"""
 
 
 def _cell(
@@ -58,12 +67,21 @@ def _cell(
     ``overflow`` is the cell's declared policy, decided by the preset that placed
     it. ``role`` adds a structural role class where the cell has one (a sticky
     rail in a flowing document); the region hook always comes first.
+
+    A region given a :class:`Frame` instead of islands supplies the cell itself:
+    it keeps its own overflow policy (the host declared it, knowing what is
+    inside) and gains the hook and role classes, so the theme and the structural
+    sheet address it exactly as they would the preset's own cell.
     """
+    hook = f"sb-{region} {role}" if role else f"sb-{region}"
+    content = placed.get(region, ())
+    if isinstance(content, Frame):
+        return replace(content, class_=f"{hook} {content.class_}".strip())
     return Frame(
         direction="column",
-        children=tuple(placed.get(region, ())),
+        children=tuple(content),
         overflow=overflow,
-        class_=f"sb-{region} {role}" if role else f"sb-{region}",
+        class_=hook,
     )
 
 

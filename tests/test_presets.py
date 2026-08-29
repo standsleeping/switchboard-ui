@@ -233,3 +233,40 @@ def test_document_sites_center_column_is_stretched_not_content_sized() -> None:
     # that, and they draw no seam.
     assert "sb-sticky-rail" not in cell.class_
     assert cell.class_ == "sb-body-c"
+
+
+def test_a_region_given_a_frame_supplies_the_cell_itself() -> None:
+    """A host frame in a region becomes the cell: hooked, roled, and its own policy.
+
+    The preset adds the region hook (and the sticky-rail role where the cell has
+    one) and leaves the frame's overflow as the host declared it, so a rail can
+    be a scrolling part over a pinned part with the boundary a frame edge.
+    """
+    scroller = Frame(
+        direction="column", children=(Island(name="nav"),), overflow="auto"
+    )
+    pinned = Frame(direction="column", children=(Island(name="lens"),), overflow="clip")
+    rail = Frame(
+        direction="column",
+        children=(Slot(scroller), pinned),
+        overflow="clip",
+        class_="host-rail",
+    )
+    doc = document_site({"body-l": rail, "body-c": (Island(name="article"),)})
+    body_row = doc.body.children[1]
+    assert isinstance(body_row, Frame)
+    left = body_row.children[0]
+    assert isinstance(left, Slot)
+    cell = left.child
+    assert isinstance(cell, Frame)
+    assert cell.overflow == "clip"
+    assert cell.class_ == "sb-body-l sb-sticky-rail host-rail"
+    assert cell.children == (Slot(scroller), pinned)
+    # The workbench hands the same frame its hook and no role.
+    tool = workbench({"body-l": rail, "body-c": (Island(name="stage"),)})
+    tool_row = tool.body.children[1]
+    assert isinstance(tool_row, Slot) and isinstance(tool_row.child, Frame)
+    tool_left = tool_row.child.children[0]
+    assert isinstance(tool_left, Slot) and isinstance(tool_left.child, Frame)
+    assert tool_left.child.class_ == "sb-body-l host-rail"
+    assert tool_left.child.overflow == "clip"
