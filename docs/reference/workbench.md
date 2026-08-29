@@ -31,11 +31,13 @@ html = render_document(page)
   fixed    flexible  fixed
 ```
 
-The preset builds an outer **column** of three rows: content-driven head and foot rails around a flexible middle. Each row is a **row** of three cells: fixed-width sides around a flexible center. Islands are placed by region name (`head-l` through `foot-r`), the keys the `regions` argument accepts, drawn from [`REGIONS`](page-model.md#region-and-regions). An omitted region is an empty cell that collapses. The rows carry identity hooks so full-width horizontal *seams* can have one owner; see [Seams](../explanation/seams.md).
+The preset builds an outer **column** of three rows: content-driven head and foot rails around a flexible middle. Each row is a **row** of three cells: fixed-width sides around a flexible center. Islands are placed by region name (`head-l` through `foot-r`), the keys the `regions` argument accepts, drawn from [`REGIONS`](page-model.md#region-and-regions). A region holds a sequence of islands, which the preset stacks in a column, or a [`Frame`](page-model.md#frame) the host built, which becomes the cell itself: the preset adds the region's hook class (and its structural role) and leaves the frame's own overflow policy in force. A rail that holds a scrolling navigation over a pinned control is the case this serves: a column of an `auto` frame in a flexible `Slot` over a `clip` frame, with the boundary between them the pinned frame's own edge, which reaches both edges of the rail because it is outside the scroll owner. The frame case serves the rails: the body cells' `auto` policies are what keep every region reachable inside the locked root, so a frame handed to a body cell that declares `visible` renders content nothing can scroll to (the combination [`unreachable_content`](analyzer.md#unreachable_content) reports). An omitted region is an empty cell that collapses. The rows carry identity hooks so full-width horizontal *seams* can have one owner; see [Seams](../explanation/seams.md).
+
+A rail distributes its cells to its two ends, so a page that fills only `head-l` and `head-r` (a brand at one end, a control at the other) gets them at the row's edges with the collapsed centre between them; a rail whose three regions are all omitted collapses entirely, seam included. Distribution places what renders: a rail that fills only one side cell has a single cell to place, and it sits at the row's start whichever region it came from.
 
 | Parameter | Type | Default | Effect |
 |---|---|---|---|
-| `regions` | `Mapping[Region, Sequence[Island]] \| None` | `None` | Islands to place, keyed by region name. |
+| `regions` | `Mapping[Region, Sequence[Island] \| Frame] \| None` | `None` | What each region holds, keyed by region name: islands to stack, or a frame that is the cell. |
 | `title` | `str` | `"switchboard-ui"` | The document `<title>`. |
 | `left_width` | `str` | `"220px"` | The left column's fixed width. |
 | `right_width` | `str` | `"200px"` | The right column's fixed width. |
@@ -102,7 +104,7 @@ The shipped theme sheet paints components, never regions: a region is part of th
 
 | Helper | Region | What it paints |
 |---|---|---|
-| `switchboard_theme.chrome.content_column_styles()` | `body-c` | The document shape: both inline seams, the column's square inset, one gap between islands, and an island cap at `--sb-fit-content-inline`. Anchored elements clear the scroll owner's top edge. |
+| `switchboard_theme.chrome.content_column_styles()` | `body-c` | The document shape: the column's square inset, one gap between islands, and an island cap at `--sb-fit-content-inline`. Anchored elements clear the scroll owner's top edge. The column's seams are the theme sheet's, in both shapes. |
 | `switchboard_theme.modes.mode_switch_styles()` | `head-r` | The mode switch's rail chrome: the cell as an end-aligned row, plus the trigger and panel. |
 
 A page with a different shape (a gallery filling the viewport width) simply omits the helper, or overrides the few declarations after it. Nothing here is load-bearing: the layout stands up unpainted.

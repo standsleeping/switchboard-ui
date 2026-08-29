@@ -33,11 +33,13 @@ html = render_document(page)
   sticky   flowing   sticky
 ```
 
-Islands are placed by region name (`head-l` through `foot-r`), the keys the `regions` argument accepts, drawn from [`REGIONS`](page-model.md#region-and-regions). An omitted region is an empty cell that collapses. The rows carry identity hooks so full-width horizontal *seams* can have one owner; see [Seams](../explanation/seams.md).
+Islands are placed by region name (`head-l` through `foot-r`), the keys the `regions` argument accepts, drawn from [`REGIONS`](page-model.md#region-and-regions). A region holds a sequence of islands, which the preset stacks in a column, or a [`Frame`](page-model.md#frame) the host built, which becomes the cell itself: the preset adds the region's hook class (and its structural role) and leaves the frame's own overflow policy in force. A rail that holds a scrolling navigation over a pinned control is the case this serves: a column of an `auto` frame in a flexible `Slot` over a `clip` frame, with the boundary between them the pinned frame's own edge, which reaches both edges of the rail because it is outside the scroll owner. The frame case serves the rails: the centre's `visible` policy is what makes the page the scroller, so a frame handed to `body-c` that declares its own scroll moves the page's scroll into a cell, and the page stops behaving as a document. An omitted region is an empty cell that collapses. The rows carry identity hooks so full-width horizontal *seams* can have one owner; see [Seams](../explanation/seams.md).
+
+A rail distributes its cells to its two ends, so a page that fills only `head-l` and `head-r` (a brand at one end, a control at the other) gets them at the row's edges with the collapsed centre between them; a rail whose three regions are all omitted collapses entirely, seam included. Distribution places what renders: a rail that fills only one side cell has a single cell to place, and it sits at the row's start whichever region it came from.
 
 | Parameter | Type | Default | Effect |
 |---|---|---|---|
-| `regions` | `Mapping[Region, Sequence[Island]] \| None` | `None` | Islands to place, keyed by region name. |
+| `regions` | `Mapping[Region, Sequence[Island] \| Frame] \| None` | `None` | What each region holds, keyed by region name: islands to stack, or a frame that is the cell. |
 | `title` | `str` | `"switchboard-ui"` | The document `<title>`. |
 | `left_width` | `str` | `"220px"` | The left rail's fixed width. |
 | `right_width` | `str` | `"200px"` | The right rail's fixed width. |
@@ -76,9 +78,9 @@ The preset is plain frames and slots, so it renders through [`render_document`](
 | `.sb-document` | The generated body envelope. Carries the one owned reset: the user agent's default body margin. |
 | `.sb-root` + `.sb-root-flow` | The document root and its root mode. A flow root is content-sized with a floor of `100svb`, so a short page still fills the screen. |
 | `.sb-flow-body` | The body row, `flex: 1 1 auto`: it takes the slack a short page leaves so the foot rail sits at the bottom, while its own content still sizes it. |
-| `.sb-sticky-rail` | A side column that stays in view as the page scrolls past, capped at `100svb` and aligned to the start so its row cannot stretch it. |
+| `.sb-sticky-rail` | A side column that stays in view as the page scrolls past: it sticks beneath whatever chrome renders and is sized to the window between, measured with the chrome depth facts the structural sheet publishes (`--sb-chrome-block-start` / `--sb-chrome-block-end`: a rendered chrome rail's floor, else zero), so a part pinned at its end sits at the bottom of the screen. Aligned to the start so its row cannot stretch it. |
 | `.sb-overflow-visible` / `-clip` / `-auto` | The frame's declared overflow policy; every frame carries exactly one. |
-| `.sb-head-row`, `.sb-body-row`, `.sb-foot-row` | Row identity hooks; themes use the head and foot hooks to own full-width horizontal seams. |
+| `.sb-head-row`, `.sb-body-row`, `.sb-foot-row` | Row identity hooks; themes use the head and foot hooks to own full-width horizontal seams. In this shape the head and foot rows stay at the top and bottom of the viewport while the page scrolls under them, and the theme paints their ground. |
 | `.sb-rail` | A content-driven head or foot row with a theme-published minimum block size. |
 | `.sb-<region>` | A cell's region identity (`sb-head-l` through `sb-foot-r`), a theming hook. |
 | `.sb-island` | A mount point inside a cell. |
@@ -103,7 +105,7 @@ The shipped theme sheet paints components, never regions: a region is part of th
 
 | Helper | Region | What it paints |
 |---|---|---|
-| `switchboard_theme.chrome.content_column_styles()` | `body-c` | The document shape: both inline seams, the column's square inset, one gap between islands, and an island cap at `--sb-fit-content-inline`. Anchored elements clear the scroll owner's top edge. |
+| `switchboard_theme.chrome.content_column_styles()` | `body-c` | The document shape: the column's square inset, one gap between islands, and an island cap at `--sb-fit-content-inline`. A wide island opts out of the cap with `sb-bleed-column` (its grid wraps at the inset width) or `sb-bleed-content` (its grid sizes to content): it keeps its start edge on the prose line and widens by exactly the column's end inset, so its scroll window ends at the column's end seam rather than mid-air. The same classes on a block-level wrapper inside an island bleed the wrapper past the prose line by the same inset; the wrapper is measured from its island, which keeps its cap, so its edge meets the end seam only while the column is no wider than the measure and stands a token-sized overhang into the margin past that. Anchored elements clear the scroll owner's top edge plus the pinned chrome's depth. The column's seams are the theme sheet's, in both shapes. |
 | `switchboard_theme.modes.mode_switch_styles()` | `head-r` | The mode switch's rail chrome: the cell as an end-aligned row, plus the trigger and panel. |
 
 A page with a different shape simply omits the helper, or overrides the few declarations after it. Nothing here is load-bearing: the layout stands up unpainted.

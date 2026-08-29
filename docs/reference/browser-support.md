@@ -1,6 +1,6 @@
 # Browser support
 
-The structural layer uses four platform features that are newer than the rest of what it relies on. Each is listed with what it does, what happens without it, and whether the package compensates.
+The structural layer uses five platform features that are newer than the rest of what it relies on. Each is listed with what it does, what happens without it, and whether the package compensates.
 
 The package does not feature-detect, polyfill, or branch on any of them. Every one degrades to something readable, which is the condition for using a feature this way at all.
 
@@ -8,8 +8,9 @@ The package does not feature-detect, polyfill, or branch on any of them. Every o
 |---|---|---|
 | `overflow: clip` | Containment that creates no scroll container | Falls back to the UA's handling of an unknown value, i.e. `visible`. Content that should be clipped is painted outside its frame. |
 | `scrollbar-gutter: stable` | Reserving a classic scrollbar's width so a column's inline geometry does not move | The declaration is ignored. On a classic-scrollbar platform the intermittent shift returns; on an overlay-scrollbar platform there was nothing to reserve and nothing changes. Support also differs by placement; see the scrollbar stance below. |
-| `position: sticky` on a flex child | Side rails that stay in view as the article scrolls past | The rail scrolls away with the page. The nav still works; it is simply not persistent. |
-| Small viewport units (`svb`) | The flow root's floor and the sticky rail's cap | The length is invalid and ignored, so the root loses its minimum height and the rail loses its cap. A rail taller than the screen runs past the bottom instead of scrolling within itself. |
+| `position: sticky` on a flex child | The flowing document's chrome rails, which stay at the top and bottom of the viewport, and its side rails, which stay in view beneath the head | Chrome and rails scroll away with the page. The nav still works; it is simply not persistent. |
+| Small viewport units (`svb`) | The flow root's floor and the sticky rail's window | The length is invalid and ignored, so the root loses its minimum height and the rail its size. A rail taller than the screen runs past the bottom instead of scrolling within itself. |
+| `:has()` | Collapsing a rail whose regions are all omitted (a row of empty cells), raising the chrome depth where a chrome rail renders, and, in the theme, reserving the viewport gutter for the flow root only and drawing a column seam only beside a rendered rail | The selector is invalid and its rule is dropped — and every `:has()` rule stands alone in its own selector list, so nothing else is dropped with it. An empty region cell still collapses (`:empty` needs no `:has()`), but an all-empty rail keeps its floor under its seam; the chrome depth stays zero, so a sticky side rail runs the full window and its top sits under the head rail's floor; the viewport gutter is reserved on no page, so the classic-scrollbar shift returns on flowing pages; the column seams are not drawn. Every page stays readable. |
 
 ## Notes on two of them
 

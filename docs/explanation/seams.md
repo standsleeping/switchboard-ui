@@ -21,7 +21,7 @@ The page's seams use three ownership patterns:
 | Seam | Owner | Why it stays single |
 |---|---|---|
 | The perimeter (the four outer edges) | the root frame, `.sb-root`, with one all-sides border | no cell sits outside the frame, so nothing shares the outer edge |
-| The two internal column seams | the center column cells, drawing both their inline-start and inline-end borders; the side columns draw neither | each vertical seam is owned by the center, never also by the rail beside it |
+| The two internal column seams | the center column cell, drawing its inline-start border when the left rail renders and its inline-end border when the right rail renders; the side columns draw neither | each vertical seam is owned by the center, never also by the rail beside it, and exists only where a rail is there to share it |
 | The head/body seam | `.sb-head-row`, with `border-block-end` | one continuous row border replaces three cell-border fragments |
 | The body/foot seam | `.sb-foot-row`, with `border-block-start` | one continuous row border replaces three cell-border fragments |
 
@@ -33,7 +33,17 @@ A seam is a `border` on the owning box's edge, and nothing else. The border sits
 
 ## Empty regions collapse
 
-An omitted region is an empty cell that collapses (`display: none`), so optional slots leave no gap. The horizontal seams are unaffected because their row owners always render. A cell-owned vertical seam still requires its owner to render. The showcase already has real content in all three center cells, and a narrowly scoped CSS override reveals its empty corner cells for the 3×3 visualization. No placeholder islands are added: paint changes visibility, not application topology.
+An omitted region is an empty cell that collapses (`display: none`), so optional slots leave no gap. A rail whose three regions are all omitted is a row of empty cells and collapses too, taking its horizontal seam with it; a row that renders any region draws its seam at full width. The column seams follow the same rule from the other side: the centre draws a seam only beside a rail that renders, since a seam with nothing on its far side would be a perimeter fragment the rails above and below never continue. The showcase already has real content in all three center cells, and a narrowly scoped CSS override reveals its empty corner cells for the 3×3 visualization. No placeholder islands are added: paint changes visibility, not application topology.
+
+## A scroll owner's gutter is inside it
+
+A frame that declares `overflow="auto"` reserves a stable scrollbar gutter at its inline end: `layout.css` pairs the two, so a cell's geometry does not shift the moment its content grows past the fold. That gutter is part of the frame's *inside*. It sits between the frame's content box and its border box.
+
+Seams are unaffected by it. A seam is a border on the owning box's edge, and a border is outside the content box, so it is outside the gutter too. This is the same property that keeps an opaque child from painting over a seam.
+
+What the gutter does reach is any line drawn by *content within* a scrolling box. Such a line cannot reach that box's own seam: it stops one gutter short. A rule spanning the full width of an island inside a scrolling rail therefore lands flush against one edge and a gutter short of the other, which reads as a line that tried to meet the seam and missed. The shortfall is not even a constant, because the gutter's width is the platform's: zero under overlay scrollbars, a dozen-odd pixels under classic ones, and the same page shows both as the user agent switches between them.
+
+The remedy is not to make the line reach. It is to **inset every rule drawn inside a scroll owner**, so it reads as an inset rule rather than a failed seam. The bundled [`nav`](../reference/components.md#nav) draws no rules of its own, and insets its rows by its own padding; a host adding a rule to a rail (a divider above a control pinned at the rail's end) should match that inset, so every horizontal in the rail shares the same two positions and none of them appears to be reaching for the seam. The inset is the padding at the start edge and the padding plus the gutter at the end edge, so under classic scrollbars the rule is still asymmetric; what the convention buys is that no line in the rail reads as a seam.
 
 ## The guard
 

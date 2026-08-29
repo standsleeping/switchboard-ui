@@ -30,7 +30,7 @@ A preset is an ordinary function that combines the three decisions above into a 
 
 There are two, named for the shapes rather than for the number of columns they happen to have. [`document_site`](../reference/document-site.md) returns a flowing document: the centre column is `visible` so the page scrolls the article, and the side cells are sticky `auto` rails. [`workbench`](../reference/workbench.md) returns a viewport-locked shell: the three body cells are `auto` and everything above them `clip`.
 
-Both are a column of three rows (content-driven head and foot rails around a middle), each a row of three cells (fixed-width sides around a flexible center). Islands are placed by region name, and an omitted region collapses. The side widths are plain CSS lengths the preset owns, while the rail floor comes from the theme's component-geometry contract.
+Both are a column of three rows (content-driven head and foot rails around a middle), each a row of three cells (fixed-width sides around a flexible center). Islands are placed by region name (or a region is handed a frame, which becomes its cell), and an omitted region collapses. The side widths are plain CSS lengths the preset owns, while the rail floor comes from the theme's component-geometry contract.
 
 They are two assemblies rather than one constructor with a flag, because a flag would keep two page semantics hidden inside one convenient name. They share the nine region names and the three row hooks, so a page can move between shapes without learning a second placement vocabulary and a seam owner means the same thing in both.
 

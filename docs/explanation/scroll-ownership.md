@@ -6,18 +6,18 @@ Every page has to answer one question: what scrolls? The answer is not a styling
 
 A page is a *document* or a *workbench*, and it says which in [`Document.root`](../reference/page-model.md#rootmode).
 
-In a document the page itself scrolls. The reader's position lives in the document, which is where the browser's scroll restoration, find-in-page, fragment anchors, and overscroll all operate. Side rails are sticky and capped, and they are the only contained scrollers.
+In a document the page itself scrolls. The reader's position lives in the document, which is where the browser's scroll restoration, find-in-page, fragment anchors, and overscroll all operate. The chrome rails stay at the top and bottom of the viewport while the article passes under them; the side rails stick beneath the head rail, sized to the window between the chrome, and they are the only contained scrollers.
 
 ```
 ┌──────────────────────────────────────┐
-│ head rail                            │   scrolls away with the page
+│ head rail                            │   stays at the top
 ├────────┬───────────────────┬─────────┤
 │ nav    │ article           │ toc     │
 │ sticky │ ...               │ sticky  │   the PAGE scrolls
-│ capped │ ...               │ capped  │   the rails stick and stay
-│        │ ...               │         │
+│ window │ ...               │ window  │   the rails fill the window
+│ -sized │ ...               │ -sized  │   between the chrome rails
 ├────────┴───────────────────┴─────────┤
-│ foot rail                            │
+│ foot rail                            │   stays at the bottom
 └──────────────────────────────────────┘
 ```
 
