@@ -18,15 +18,14 @@ Tiebreak for the inevitable hybrids: a token's category is its dominant value ty
 shadow lives in ``shadow`` even though its color varies by scheme; the scheme variance
 rides the arm model, an orthogonal axis, not a second category.
 
-Regenerate after editing this module:
+Two artifacts are rendered from this registry: the CSS here, and the reference page
+``docs/reference/tokens.md`` (:mod:`switchboard_theme.reference`). Regenerate both
+after editing this module:
 
-    uv run --directory packages/switchboard-theme python -c \\
-        "from switchboard_theme.tokens import render_css; \\
-         import switchboard_theme, pathlib; \\
-         (pathlib.Path(switchboard_theme.__file__).parent / 'static' / 'default.css') \\
-             .write_text(render_css(), encoding='utf-8')"
+    just generate
 
-``test_generated.py`` fails the build if the committed CSS drifts from this source.
+``test_generated.py`` fails the build if either committed artifact drifts from this
+source.
 """
 
 from dataclasses import dataclass
@@ -84,12 +83,19 @@ class Derived:
 
 @dataclass(frozen=True)
 class Token:
-    """One design token: its category (name prefix), value type, and value."""
+    """One design token: its category (name prefix), value type, value, and role.
+
+    ``doc`` is the token's role in one phrase. It is a field rather than a comment
+    because the reference page is rendered from this registry too
+    (:mod:`switchboard_theme.reference`): a token cannot land here without the
+    sentence that documents it, so the page cannot fall behind the registry.
+    """
 
     category: Category
     role: str
     type: ValueType
     value: Themed | Fixed | Derived
+    doc: str
 
     @property
     def name(self) -> str:
@@ -97,57 +103,100 @@ class Token:
         return f"--sb-{self.category.value}-{self.role}"
 
 
-def _color(role: str, light: str, dark: str) -> Token:
+def _color(role: str, light: str, dark: str, doc: str) -> Token:
     """A scheme-varying color token (the common case)."""
-    return Token(Category.COLOR, role, ValueType.COLOR, Themed(light, dark))
+    return Token(Category.COLOR, role, ValueType.COLOR, Themed(light, dark), doc)
 
 
-def _len(category: Category, role: str, value: str) -> Token:
+def _len(category: Category, role: str, value: str, doc: str) -> Token:
     """A scheme-invariant length token."""
-    return Token(category, role, ValueType.LENGTH, Fixed(value))
+    return Token(category, role, ValueType.LENGTH, Fixed(value), doc)
 
 
-def _num(role: str, value: str) -> Token:
+def _num(role: str, value: str, doc: str) -> Token:
     """A unitless number token (weights, line-height) in the font category."""
-    return Token(Category.FONT, role, ValueType.NUMBER, Fixed(value))
+    return Token(Category.FONT, role, ValueType.NUMBER, Fixed(value), doc)
 
 
 REGISTRY: tuple[Token, ...] = (
     # Color: scheme-varying, authored per -light / -dark arm.
-    _color("bg", "#ffffff", "#16181d"),
-    _color("bg-raised", "#f6f7f9", "#1c1f27"),
-    _color("fg", "#1b1d22", "#e6e8ec"),
-    _color("muted", "#6b7280", "#9aa1ad"),
-    _color("subtle", "#9ca3af", "#6b7280"),
+    _color("bg", "#ffffff", "#16181d", "Base surface"),
+    _color(
+        "bg-raised",
+        "#f6f7f9",
+        "#1c1f27",
+        "Raised surface (panels, code, the table header band)",
+    ),
+    _color("fg", "#1b1d22", "#e6e8ec", "Primary text"),
+    _color("muted", "#6b7280", "#9aa1ad", "Secondary text"),
+    _color("subtle", "#9ca3af", "#6b7280", "Tertiary text, separator glyphs"),
     # The third gray tier: the label chrome that recedes furthest — uppercase
     # group labels, counts, faint annotations. Muted stays secondary text;
     # subtle stays separator glyphs.
-    _color("faint", "#8b919c", "#666d79"),
-    _color("border", "#e3e5e9", "#2b2f37"),
-    _color("accent", "#5b4bd6", "#9d8bff"),
-    _color("accent-fg", "#ffffff", "#16181d"),
+    _color(
+        "faint",
+        "#8b919c",
+        "#666d79",
+        "The label chrome that recedes furthest: uppercase group labels, counts,"
+        " faint annotations",
+    ),
+    _color("border", "#e3e5e9", "#2b2f37", "Lines and seams"),
+    _color("accent", "#5b4bd6", "#9d8bff", "The single accent"),
+    _color("accent-fg", "#ffffff", "#16181d", "Text on the accent fill"),
     # The accent's tinted surface: the ground of a callout that should read as
     # marked, not interactive — pale enough that fg stays the text color on it.
-    _color("accent-soft", "#efedfb", "#23203a"),
-    _color("danger", "#c2334b", "#ff6b81"),
-    _color("danger-fg", "#ffffff", "#16181d"),
+    _color(
+        "accent-soft",
+        "#efedfb",
+        "#23203a",
+        "The accent's tinted surface: the ground of a callout that reads as marked,"
+        " not interactive",
+    ),
+    _color("danger", "#c2334b", "#ff6b81", "Error / invalid"),
+    _color("danger-fg", "#ffffff", "#16181d", "Text on danger"),
     # The diagnostic pair, scoped to before/after code annotation (a removed
     # line, its replacement). Not control states: destructive UI stays on
     # danger, and nothing else may take these.
-    _color("diag-bad", "#b4252e", "#ff8a8f"),
-    _color("diag-good", "#1f7a4d", "#69d49a"),
+    _color(
+        "diag-bad",
+        "#b4252e",
+        "#ff8a8f",
+        "The removed line in a before/after code annotation",
+    ),
+    _color(
+        "diag-good",
+        "#1f7a4d",
+        "#69d49a",
+        "Its replacement in a before/after code annotation",
+    ),
     # The popover backdrop. Transparent by default (a non-modal popover does not
     # dim the page); arms so a host can opt into a faint scrim per scheme without
     # leaking the UA ::backdrop color (no-UA-default).
-    _color("popover-scrim", "rgb(0 0 0 / 0)", "rgb(0 0 0 / 0)"),
+    _color(
+        "popover-scrim",
+        "rgb(0 0 0 / 0)",
+        "rgb(0 0 0 / 0)",
+        "Popover backdrop (transparent: a non-modal popover does not dim the page)",
+    ),
     # The modal backdrop. Unlike the popover scrim it dims the page (a modal is
     # the sole focus); darker in the dark scheme so the dimming reads against the
     # darker ground. Arms keep it off the UA ::backdrop color (no-UA-default).
-    _color("modal-scrim", "rgb(0 0 0 / 0.4)", "rgb(0 0 0 / 0.6)"),
+    _color(
+        "modal-scrim",
+        "rgb(0 0 0 / 0.4)",
+        "rgb(0 0 0 / 0.6)",
+        "Modal backdrop (dims the page; darker in the dark scheme)",
+    ),
     # The color-picker handle ring. Near-white so the drag handle stays visible
     # over any spectrum color beneath it, in either scheme (holding contrast
     # against an unknown ground).
-    _color("handle-ring", "#ffffff", "#f6f7f9"),
+    _color(
+        "handle-ring",
+        "#ffffff",
+        "#f6f7f9",
+        "Color-picker handle ring (near-white in both arms so it stays visible over"
+        " any spectrum color)",
+    ),
     # Type. One variable typeface (Recursive) carries every role; the UI and prose
     # families differ only in their fallback stacks, because the real distinction is
     # the axis tokens below. The face itself ships in this distribution's static/
@@ -161,70 +210,146 @@ REGISTRY: tuple[Token, ...] = (
             '"Recursive", ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas,'
             " monospace"
         ),
+        "The UI family: everything structural, over a monospace fallback stack",
     ),
     Token(
         Category.FONT,
         "family-prose",
         ValueType.FONT_FAMILY,
         Fixed('"Recursive", ui-sans-serif, system-ui, sans-serif'),
+        "The prose family: running text, over a proportional fallback stack",
     ),
     # Variable-font axis positions: MONO (proportional 0 to monospace 1) and CASL
     # (linear 0 to casual 1). The UI arm is strict mono; the prose arm is
     # proportional with a warm cast. Weight stays on font-weight (the registered
     # wght axis follows it), so these settings never fight the weight tokens.
-    _num("axis-mono", "1"),
-    _num("axis-casual", "0"),
-    _num("axis-mono-prose", "0"),
-    _num("axis-casual-prose", "0.36"),
-    _len(Category.FONT, "size-sm", "0.8125rem"),
-    _len(Category.FONT, "size-base", "0.9375rem"),
-    _len(Category.FONT, "size-lg", "1.125rem"),
-    _num("weight-normal", "400"),
-    _num("weight-medium", "500"),
-    _num("weight-bold", "700"),
-    _num("line-height", "1.5"),
-    _len(Category.FONT, "tracking", "0"),
-    _len(Category.FONT, "tracking-wide", "0.04em"),
+    _num(
+        "axis-mono", "1", "MONO position for the UI arm (proportional `0` to mono `1`)"
+    ),
+    _num("axis-casual", "0", "CASL position for the UI arm (linear `0` to casual `1`)"),
+    _num("axis-mono-prose", "0", "MONO position for the prose arm: proportional"),
+    _num("axis-casual-prose", "0.36", "CASL position for the prose arm: a warm cast"),
+    _len(
+        Category.FONT,
+        "size-sm",
+        "0.8125rem",
+        "The chrome scale: structural labels, table grids, code, rail rows",
+    ),
+    _len(
+        Category.FONT,
+        "size-base",
+        "0.9375rem",
+        "The body size, and a density cause",
+    ),
+    _len(Category.FONT, "size-lg", "1.125rem", "Section titles and prose `h2`"),
+    _num("weight-normal", "400", "Running text"),
+    _num("weight-medium", "500", "The current nav row"),
+    _num("weight-bold", "700", "Headings, table headers, structural labels"),
+    _num(
+        "line-height",
+        "1.5",
+        "The body line box, and a cause of `--sb-fit-control-block`",
+    ),
+    _len(Category.FONT, "tracking", "0", "Natural-case text: no extra tracking"),
+    _len(
+        Category.FONT,
+        "tracking-wide",
+        "0.04em",
+        "Uppercase structural labels: table headers, group labels, badges",
+    ),
     # Display type: the page-title role. A size well clear of body, the weight
     # step past bold, and the tight leading and slight negative tracking that
     # large sizes need; consumed together so an h1 reads as display, not as a
     # bolder body line.
-    _len(Category.FONT, "size-display", "1.9rem"),
-    _num("weight-display", "800"),
-    _num("line-height-display", "1.12"),
-    _len(Category.FONT, "tracking-tight", "-0.02em"),
+    _len(
+        Category.FONT,
+        "size-display",
+        "1.9rem",
+        "The page-title size, well clear of body",
+    ),
+    _num("weight-display", "800", "The page title's weight, the step past bold"),
+    _num("line-height-display", "1.12", "The tight leading a display size needs"),
+    _len(
+        Category.FONT,
+        "tracking-tight",
+        "-0.02em",
+        "The slight negative tracking a display size needs",
+    ),
     # The prose reading measure: the comfortable line length for running text,
     # narrower than a content column's cap so paragraphs stay readable while
     # wide surfaces (tables, code) use the full column.
-    _len(Category.FONT, "measure", "46rem"),
+    _len(
+        Category.FONT,
+        "measure",
+        "46rem",
+        "The prose reading measure: paragraphs and lists cap here while tables and"
+        " code take the column's full width",
+    ),
     # Space: a step scale plus the control inset (a semantic token the density modes
     # reassign, distinct from the scale so density does not move every md use).
-    _len(Category.SPACE, "2xs", "0.125rem"),
-    _len(Category.SPACE, "xs", "0.25rem"),
-    _len(Category.SPACE, "sm", "0.5rem"),
-    _len(Category.SPACE, "md", "0.75rem"),
-    _len(Category.SPACE, "lg", "1rem"),
-    _len(Category.SPACE, "xl", "1.5rem"),
+    _len(
+        Category.SPACE,
+        "2xs",
+        "0.125rem",
+        "The tightest rhythm: rail rows, a heading's inset over its rule",
+    ),
+    _len(
+        Category.SPACE,
+        "xs",
+        "0.25rem",
+        "Quiet chrome: a nav row's inset, a text action",
+    ),
+    _len(
+        Category.SPACE,
+        "sm",
+        "0.5rem",
+        "Table cells, chrome strips, the gap within a control group",
+    ),
+    _len(Category.SPACE, "md", "0.75rem", "The common gap between blocks"),
+    _len(Category.SPACE, "lg", "1rem", "Prose code blocks and list indents"),
+    _len(Category.SPACE, "xl", "1.5rem", "The gap between unrelated groups in a bar"),
     # The generous end of the scale: document-surface insets, so a reading
     # column gets real breathing room rather than a control-sized gap.
-    _len(Category.SPACE, "2xl", "2rem"),
-    _len(Category.SPACE, "3xl", "3rem"),
-    _len(Category.SPACE, "inset", "0.75rem"),
+    _len(
+        Category.SPACE,
+        "2xl",
+        "2rem",
+        "Document-surface insets: a reading column's breathing room",
+    ),
+    _len(Category.SPACE, "3xl", "3rem", "The widest document inset"),
+    _len(
+        Category.SPACE,
+        "inset",
+        "0.75rem",
+        "The inset a control applies to its own content, and a density cause",
+    ),
     # Radius: base is 0 (square default, the common token); steps for opt-in rounding.
-    _len(Category.RADIUS, "base", "0"),
-    _len(Category.RADIUS, "sm", "0.125rem"),
-    _len(Category.RADIUS, "lg", "0.375rem"),
+    _len(Category.RADIUS, "base", "0", "The default corner: square"),
+    _len(Category.RADIUS, "sm", "0.125rem", "The small opt-in rounding step"),
+    _len(Category.RADIUS, "lg", "0.375rem", "The large opt-in rounding step"),
     # Border width. Border color is --sb-color-border.
-    _len(Category.BORDER_WIDTH, "thin", "1px"),
-    _len(Category.BORDER_WIDTH, "accent", "2px"),
+    _len(Category.BORDER_WIDTH, "thin", "1px", "Every hairline"),
+    _len(
+        Category.BORDER_WIDTH,
+        "accent",
+        "2px",
+        "The selection stripe and the focus-ring width",
+    ),
     # Shadow: none by default (the look has no shadows); shadow-sm is the themed step
     # a host opts into (its color varies by scheme, so it gets arms).
-    Token(Category.SHADOW, "base", ValueType.SHADOW, Fixed("none")),
+    Token(
+        Category.SHADOW,
+        "base",
+        ValueType.SHADOW,
+        Fixed("none"),
+        "The default: no shadow, so the look stays flat",
+    ),
     Token(
         Category.SHADOW,
         "sm",
         ValueType.SHADOW,
         Themed("0 1px 2px rgb(0 0 0 / 0.08)", "0 1px 2px rgb(0 0 0 / 0.45)"),
+        "The themed step a host opts into",
     ),
     # Component Geometry Contract: obligations projected from the causes above; the
     # only theme values structure consumes (test_contract.py).
@@ -236,46 +361,100 @@ REGISTRY: tuple[Token, ...] = (
             "calc(var(--sb-font-size-base) * var(--sb-font-line-height)"
             " + 2 * var(--sb-space-inset) + 2 * var(--sb-border-width-thin))"
         ),
+        "The rendered height of one standard control: line box + symmetric inset +"
+        " symmetric hairline",
     ),
-    Token(Category.FIT, "control-inline", ValueType.LENGTH, Fixed("6rem")),
+    Token(
+        Category.FIT,
+        "control-inline",
+        ValueType.LENGTH,
+        Fixed("6rem"),
+        "The short-label minimum width",
+    ),
     # The content column's cap: how wide a document surface grows before the
     # column stops and the margins take the rest. Wider than the prose measure
     # (a table or a code block uses the full column while paragraphs stay
     # readable inside it), and consumed by the opt-in chrome in chrome.py.
-    Token(Category.FIT, "content-inline", ValueType.LENGTH, Fixed("60rem")),
+    Token(
+        Category.FIT,
+        "content-inline",
+        ValueType.LENGTH,
+        Fixed("60rem"),
+        "The content column's cap: how wide a document surface grows before the"
+        " margins take the rest",
+    ),
     # The minimum pointer-target square (24px): the block-size floor an
     # interactive control's hit area must grant even when its visual reads
     # smaller. Interaction geometry is an obligation like any other, so it is
     # published here rather than guessed per control.
-    Token(Category.FIT, "hit-target", ValueType.LENGTH, Fixed("1.5rem")),
+    Token(
+        Category.FIT,
+        "hit-target",
+        ValueType.LENGTH,
+        Fixed("1.5rem"),
+        "The minimum pointer-target square",
+    ),
     Token(
         Category.FIT,
         "rail-block",
         ValueType.LENGTH,
         Derived("var(--sb-fit-control-block)"),
+        "A rail row is one control tall",
     ),
     # Color-picker geometry: the square saturation/value surface, its slim hue
     # track (one control-block tall, so it reads as a control row and reprojects
     # under density), and the drag handle.
-    Token(Category.FIT, "color-area", ValueType.LENGTH, Fixed("12rem")),
+    Token(
+        Category.FIT,
+        "color-area",
+        ValueType.LENGTH,
+        Fixed("12rem"),
+        "The square saturation/value surface",
+    ),
     Token(
         Category.FIT,
         "color-hue",
         ValueType.LENGTH,
         Derived("var(--sb-fit-control-block)"),
+        "The hue track is one control tall",
     ),
-    Token(Category.FIT, "color-handle", ValueType.LENGTH, Fixed("0.75rem")),
+    Token(
+        Category.FIT,
+        "color-handle",
+        ValueType.LENGTH,
+        Fixed("0.75rem"),
+        "The picker drag handle",
+    ),
     # Slider geometry: the thumb's inline size. Its block size is the hit-target
     # obligation — the input is exactly that tall and the thumb fills the height,
     # so it centers with no margin (banned) or transform (forbidden) while the
     # whole control grants the minimum pointer target.
-    Token(Category.FIT, "slider-thumb", ValueType.LENGTH, Fixed("0.875rem")),
+    Token(
+        Category.FIT,
+        "slider-thumb",
+        ValueType.LENGTH,
+        Fixed("0.875rem"),
+        "The slider thumb's inline size",
+    ),
     # Modal geometry: the dialog's max width (it caps at this or the viewport,
     # whichever is smaller) and its max height. The block cap stops short of the
     # full viewport so a band of scrim stays visible around the dialog — it reads
     # as an overlay on the page, never as a page itself.
-    Token(Category.FIT, "modal-inline", ValueType.LENGTH, Fixed("32rem")),
-    Token(Category.FIT, "modal-block", ValueType.LENGTH, Fixed("90dvb")),
+    Token(
+        Category.FIT,
+        "modal-inline",
+        ValueType.LENGTH,
+        Fixed("32rem"),
+        "The modal width cap",
+    ),
+    Token(
+        Category.FIT,
+        "modal-block",
+        ValueType.LENGTH,
+        Fixed("90dvb"),
+        "The modal height cap, stopping short of the viewport so a band of scrim stays"
+        " visible",
+    ),
 )
 
 
@@ -313,7 +492,8 @@ _HEADER = """\
 /* switchboard-ui default theme -- GENERATED from tokens.py; do not edit here.
  *
  * Rendered from the typed token registry in tokens.py (the source of truth). Edit
- * tokens there and regenerate; test_generated.py fails the build if this file drifts.
+ * tokens there and run `just generate`; test_generated.py fails the build if this
+ * file drifts.
  * The theme paints the mechanism's hooks with --sb-* tokens; scheme-varying colors
  * use the -light / -dark arm model so the builder edits each scheme value
  * (test_tokens.py). */"""

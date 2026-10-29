@@ -1,7 +1,8 @@
 /* switchboard-ui default theme -- GENERATED from tokens.py; do not edit here.
  *
  * Rendered from the typed token registry in tokens.py (the source of truth). Edit
- * tokens there and regenerate; test_generated.py fails the build if this file drifts.
+ * tokens there and run `just generate`; test_generated.py fails the build if this
+ * file drifts.
  * The theme paints the mechanism's hooks with --sb-* tokens; scheme-varying colors
  * use the -light / -dark arm model so the builder edits each scheme value
  * (test_tokens.py). */

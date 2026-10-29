@@ -81,5 +81,6 @@ Runnable examples live in [`examples/`](examples/README.md):
 ```bash
 just check          # lint, format check, type check, tests (what CI runs)
 just format         # apply formatting
+just generate       # rerender what the theme's token registry generates
 just typecheck-ty   # supplementary type check with ty
 ```
