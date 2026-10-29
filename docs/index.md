@@ -36,6 +36,7 @@ Information-oriented description of every surface.
 | [The workbench preset](reference/workbench.md) | The viewport-locked nine-region preset: the regions scroll, the page does not. |
 | [Browser support](reference/browser-support.md) | The four newer platform features the structural layer uses, and what happens without each. |
 | [Theme tokens](reference/tokens.md) | Every `--sb-*` token: color, type, space, radius, border, shadow, the `--sb-fit-*` contract, and density. |
+| [Icons](reference/icons.md) | The theme's glyph set: `icon` for server markup, the generated ES module for client code, the glyph CSS, and the categories that say which glyph to use. |
 | [The browser runtime](reference/browser-runtime.md) | `window.switchboard`, the bus, the registry, the mount loop. |
 | [The wiring analyzer](reference/analyzer.md) | `wiring`: the declared pub/sub graph recovered from rendered HTML. |
 | [The CLI](reference/cli.md) | The `switchboard-ui` command. |

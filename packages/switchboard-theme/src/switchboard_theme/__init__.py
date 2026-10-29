@@ -29,10 +29,24 @@ Paint for the layout's own regions travels a third module
 (:mod:`switchboard_theme.chrome`), because the shipped sheet may not dress a
 structural hook: :func:`content_column_styles` is the document-shaped center
 column, opted in through ``extra_head`` like any other chrome.
+
+The icon set travels a fourth module (:mod:`switchboard_theme.icons`): a closed vocabulary of glyphs shipped as SVG files under ``static/icons/``, rendered inline by :func:`icon`, sized by :func:`icon_styles` through ``extra_head``, and offered to client code as the ES module :func:`icon_module` returns, which the host serves at a URL it owns.
 """
 
 from switchboard_theme.api import THEMES, font_bytes, font_head, head
 from switchboard_theme.chrome import content_column_styles
+from switchboard_theme.icons import (
+    CATEGORY_GUIDANCE,
+    ICON_CATEGORIES,
+    ICON_NAMES,
+    ICONS,
+    IconCategory,
+    IconEntry,
+    IconName,
+    icon,
+    icon_module,
+    icon_styles,
+)
 from switchboard_theme.modes import (
     DENSITY_TOPIC,
     SCHEME_TOPIC,
@@ -57,7 +71,11 @@ from switchboard_theme.tokens import (
 # generate one control per editable token, grouped by Category, choosing the
 # control by ValueType and the binding by value kind (Themed arms vs Fixed).
 __all__ = [
+    "CATEGORY_GUIDANCE",
     "DENSITY_TOPIC",
+    "ICONS",
+    "ICON_CATEGORIES",
+    "ICON_NAMES",
     "MODES",
     "REGISTRY",
     "SCHEME_TOPIC",
@@ -65,6 +83,9 @@ __all__ = [
     "Category",
     "Derived",
     "Fixed",
+    "IconCategory",
+    "IconEntry",
+    "IconName",
     "Themed",
     "Token",
     "ValueType",
@@ -72,6 +93,9 @@ __all__ = [
     "font_bytes",
     "font_head",
     "head",
+    "icon",
+    "icon_module",
+    "icon_styles",
     "mode_stamp_head",
     "mode_state",
     "mode_switch",
