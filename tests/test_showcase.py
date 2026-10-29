@@ -12,6 +12,7 @@ from showcase.build import (
     showcase_styles,
 )
 from showcase.server import render_island_response
+from switchboard_theme.icons import ICONS
 from switchboard_ui import render_document, wiring
 from switchboard_ui.model import Frame, Slot
 from tests.htmlprobe import find
@@ -72,7 +73,19 @@ _EXPECTED_IDS = [
     "section",
     "prose",
     "filter-table",
+    "icons",
 ]
+
+
+def test_showcase_icon_specimen_lists_every_glyph_with_its_name() -> None:
+    """The icon specimen renders each glyph once, beside its name, and the page
+    carries the glyph's CSS, so the showcase is where a glyph is looked up."""
+    html = render_document(build_showcase())
+    glyphs = find(html, "svg", **{"class": "sb-icon"})
+    assert len(glyphs) == len(ICONS)
+    for entry in ICONS:
+        assert f"<code>{entry.name}</code>" in html, entry.name
+    assert ".sb-icon" in showcase_styles()
 
 
 def test_showcase_nav_publishes_selection_and_inspector_subscribes() -> None:

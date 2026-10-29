@@ -25,6 +25,7 @@ from typing import assert_never
 
 from showcase.chrome import surface_switch, surface_switch_styles
 from switchboard_theme import REGISTRY, Category, Fixed, Themed, Token, ValueType
+from switchboard_theme.icons import ICONS, icon, icon_styles
 from switchboard_theme.modes import (
     mode_stamp_head,
     mode_state,
@@ -36,6 +37,7 @@ from switchboard_ui import Document, Island, render_island
 from switchboard_ui.components import (
     ArmBinding,
     Binding,
+    Cell,
     FilterControl,
     NavItem,
     NavSection,
@@ -375,6 +377,26 @@ def _filter_table_specimen() -> Island:
         topic=_GALLERY_FILTER_TOPIC,
         keys=[" ".join(row).lower() for row in rows],
         controls=(FilterControl(label="Filter", control=query),),
+    )
+
+
+def _icon_specimen() -> Island:
+    """The icon set as a lookup table: every glyph beside its name, category, and guidance.
+
+    The rows come straight from the theme's curated metadata, in its grouping order, so a glyph added to the set appears here without touching the gallery.
+    """
+    return table(
+        columns=("Glyph", "Name", "Category", "Use"),
+        rows=tuple(
+            (
+                Cell(icon(entry.name)),
+                Cell(element("code", {}, [escape_text(entry.name)])),
+                entry.category,
+                entry.guidance,
+            )
+            for entry in ICONS
+        ),
+        label="Icon set",
     )
 
 
@@ -777,6 +799,18 @@ def _gallery_specs() -> tuple[_Spec, ...]:
                 "--sb-color-bg-raised",
                 "--sb-font-tracking-wide",
             ),
+        ),
+        _Spec(
+            id="icons",
+            name="Icons",
+            section="Theme",
+            body=(_icon_specimen(),),
+            props=(
+                DisplayProp("glyphs", str(len(ICONS))),
+                DisplayProp("size", "1em"),
+                DisplayProp("paint", "currentColor"),
+            ),
+            tokens=(),
         ),
     )
 
@@ -1318,7 +1352,8 @@ def showcase_styles() -> str:
     )
     return (
         f"<style>{sheets}</style><style>{_GALLERY_CSS}</style>"
-        f"{surface_switch_styles()}{mode_switch_styles()}{mode_stamp_head()}"
+        f"{surface_switch_styles()}{mode_switch_styles()}{icon_styles()}"
+        f"{mode_stamp_head()}"
     )
 
 
