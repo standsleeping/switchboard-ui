@@ -1,6 +1,6 @@
 """The icon set's ES module is generated; this guards it against drift.
 
-``static/icons.js`` must equal what :func:`switchboard_theme.icons.render_icon_module` renders from the SVG files and the curated metadata, so those stay the single source and the module can never be hand-edited out of sync with them. If the first test fails, regenerate the module with the command in its message and commit the result.
+``static/icons.js`` must equal what :func:`switchboard_theme.icons.render_icon_module` renders from the SVG files and the curated metadata, so those stay the single source and the module can never be hand-edited out of sync with them. If the first test fails, run `just generate` and commit the result.
 """
 
 import json
@@ -8,20 +8,13 @@ import re
 
 from switchboard_theme.icons import ICON_NAMES, ICONS, icon_module, render_icon_module
 
-_REGENERATE = (
-    'uv run python -c "import pathlib, switchboard_theme; '
-    "from switchboard_theme.icons import render_icon_module; "
-    "pathlib.Path(switchboard_theme.__file__).parent.joinpath('static', 'icons.js')"
-    ".write_text(render_icon_module(), encoding='utf-8')\""
-)
-
 
 def test_committed_module_matches_the_set() -> None:
     """The committed icons.js is exactly what the files and metadata render (no drift)."""
     assert icon_module() == render_icon_module(), (
         "static/icons.js has drifted from static/icons/*.svg and the metadata in "
-        f"icons.py; regenerate it from the repository root with `{_REGENERATE}` and "
-        "commit the result. The SVGs and the metadata are the source, not the module"
+        "icons.py; regenerate it with `just generate` and commit the result. The "
+        "SVGs and the metadata are the source, not the module"
     )
 
 

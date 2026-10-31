@@ -6,7 +6,7 @@ How the package is tested: four rungs, each one step further from the code and o
 
 | Rung | Command | What it proves | Needs |
 |---|---|---|---|
-| Fast gate (`tests/`, theme tests) | `just check` | The structural contracts, at 100% branch coverage, plus the static guards: the layer never styles the scrollbar, never animates scrolling, no shipped script requests smooth scrolling, and every artifact rendered from the token registry (the theme stylesheet, the [token reference](../reference/tokens.md)) still matches it. | Nothing |
+| Fast gate (`tests/`, theme tests) | `just check` | The structural contracts, at 100% branch coverage, plus the static guards: the layer never styles the scrollbar, never animates scrolling, no shipped script requests smooth scrolling, and every generated file still matches its source: the theme stylesheet and the [token reference](../reference/tokens.md) match the token registry, and the [icon module](../reference/icons.md) matches the glyph files. | Nothing |
 | Browser suite (`tests_browser/`) | `just browser-test` | Behaviour in Chromium, Firefox, and WebKit: scroll ownership, rail continuity, first-paint restoration, keyboard traversal, anchor landings, font loading, viewport widths, canvas colour, and classic-scrollbar geometry. | `just browser-install` once |
 | Real Safari (`tests_safari/`) | `just safari-test` | The same shipped assembly in the engine Safari actually ships, including a Back navigation that Safari may serve from its back/forward cache. | macOS, `safaridriver --enable` once |
 | Eyes | — | The perceptual residue: how the focus ring is drawn, how rubber-band overscroll looks, whether anything reads as a jump. The measurable halves of each are guarded on the rungs above. | Ordinary use |

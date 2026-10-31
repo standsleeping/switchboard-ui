@@ -119,14 +119,14 @@ The module sizes nothing itself: a page that renders glyphs from it includes `ic
 
 ### A generated module
 
-`render_icon_module()` in `switchboard_theme.icons` renders the module from the SVG files and `ICONS`. Its output is committed as `static/icons.js`, and the theme's `tests/test_icon_module.py` fails when the committed file drifts from what the files and the metadata render; its failure message names the command that regenerates it. Edit the SVG files or the metadata, never the module.
+`render_icon_module()` in `switchboard_theme.icons` renders the module from the SVG files and `ICONS`. Its output is committed as `static/icons.js`, and the theme's `tests/test_icon_module.py` fails when the committed file drifts from what the files and the metadata render; `just generate` rewrites it. Edit the SVG files or the metadata, never the module.
 
 ## Adding a glyph
 
 1. Copy the Radix SVG into `static/icons/` and delete its `width` and `height` attributes.
 2. Add its name to `IconName`, keeping the list alphabetical.
 3. Add an `IconEntry` to `ICONS` in its category's group.
-4. Regenerate the module and commit all three changes together.
+4. Run `just generate` and commit the file, the name, the entry, and the regenerated module together.
 
 The theme's `tests/test_icons.py` fails until the name, the entry, and the file all agree, and until the file keeps the contract above.
 

@@ -20,12 +20,14 @@ format-check:
 format:
     uv run ruff format .
 
-# Regenerate everything rendered from the theme's token registry: the theme
-# stylesheet and the token reference page. `just check` fails when either has
-# drifted, so run this after editing tokens.py.
+# Regenerate every file the theme renders from a source: the theme stylesheet
+# and the token reference page (from tokens.py), and the icon module (from the
+# glyph files and the metadata in icons.py). `just check` fails when any of
+# them has drifted, so run this after editing a source.
 generate:
     uv run python -c "import pathlib, switchboard_theme; from switchboard_theme.tokens import render_css; pathlib.Path(switchboard_theme.__file__).parent.joinpath('static', 'default.css').write_text(render_css(), encoding='utf-8')"
     uv run python -c "import pathlib; from switchboard_theme.reference import render_reference; pathlib.Path('docs', 'reference', 'tokens.md').write_text(render_reference(), encoding='utf-8')"
+    uv run python -c "import pathlib, switchboard_theme; from switchboard_theme.icons import render_icon_module; pathlib.Path(switchboard_theme.__file__).parent.joinpath('static', 'icons.js').write_text(render_icon_module(), encoding='utf-8')"
 
 # Type-check the workspace with mypy (the authoritative gate): core + theme src.
 typecheck:
